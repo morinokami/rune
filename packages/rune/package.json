@@ -21,9 +21,18 @@
   ],
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs",
-    "./cli": "./dist/cli.mjs",
-    "./test": "./dist/test.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.mts",
+      "import": "./dist/cli.mjs"
+    },
+    "./test": {
+      "types": "./dist/test.d.mts",
+      "import": "./dist/test.mjs"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

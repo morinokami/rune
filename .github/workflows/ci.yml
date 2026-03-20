@@ -93,4 +93,4 @@ jobs:
         run: vpx publint ./packages/rune
 
       - name: Run attw
-        run: vpx attw --pack ./packages/rune
+        run: vpx attw --pack --profile esm-only ./packages/rune
