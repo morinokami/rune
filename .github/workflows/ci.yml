@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: vp install --frozen-lockfile
 
+      - name: Build packages
+        run: vp run build -r
+
       - name: Sync Scaffold Versions
         run: vp run sync:scaffold-versions
 
@@ -58,6 +61,9 @@ jobs:
 
       - name: Install dependencies
         run: vp install --frozen-lockfile
+
+      - name: Build packages
+        run: vp run build -r
 
       - name: Run tests
         run: vp run test -r

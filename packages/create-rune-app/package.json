@@ -27,8 +27,8 @@
     "predev": "node ../../scripts/sync-scaffold-versions.ts",
     "pretest": "node ../../scripts/sync-scaffold-versions.ts",
     "precheck": "node ../../scripts/sync-scaffold-versions.ts",
-    "build": "rune build",
-    "dev": "rune dev",
+    "build": "node ../../packages/rune/dist/cli.mjs build",
+    "dev": "node ../../packages/rune/dist/cli.mjs dev",
     "test": "vp test",
     "check": "vp check",
     "prepublishOnly": "pnpm run build"
