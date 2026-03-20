@@ -1,4 +1,33 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "tags": ["-lintignore"]
+  "tags": ["-lintignore"],
+  "ignoreExportsUsedInFile": true,
+  "exclude": ["catalog"],
+  "workspaces": {
+    ".": {
+      "entry": ["vite.config.ts"],
+      "ignoreDependencies": ["@arethetypeswrong/cli", "publint"]
+    },
+    "packages/core": {
+      "entry": ["src/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignoreDependencies": ["@typescript/native-preview"]
+    },
+    "packages/create-rune-app": {
+      "entry": ["src/commands/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignoreDependencies": ["@typescript/native-preview", "bumpp", "vp"]
+    },
+    "packages/rune": {
+      "entry": [
+        "src/index.ts",
+        "src/runtime.ts",
+        "src/cli.ts",
+        "tests/**/*.test.ts",
+        "vite.config.ts"
+      ],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignoreDependencies": ["@typescript/native-preview", "bumpp", "vp"]
+    }
+  }
 }

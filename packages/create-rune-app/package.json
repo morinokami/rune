@@ -1,7 +1,6 @@
 {
-  "name": "@rune-cli/rune",
+  "name": "create-rune-app",
   "version": "0.0.1",
-  "description": "Rune is a CLI framework built around the concept of file-based command routing.",
   "homepage": "https://github.com/morinokami/rune#readme",
   "bugs": {
     "url": "https://github.com/morinokami/rune/issues"
@@ -11,44 +10,36 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/morinokami/rune.git",
-    "directory": "packages/rune"
+    "directory": "packages/create-rune-app"
   },
   "bin": {
-    "rune": "./dist/cli.mjs"
+    "create-rune-app": "./dist/cli.mjs"
   },
   "files": [
     "dist"
   ],
   "type": "module",
-  "exports": {
-    ".": "./dist/index.mjs",
-    "./cli": "./dist/cli.mjs",
-    "./test": "./dist/test.mjs",
-    "./package.json": "./package.json"
-  },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "vp pack",
-    "dev": "vp pack --watch",
+    "prebuild": "node ../../scripts/sync-scaffold-versions.ts",
+    "predev": "node ../../scripts/sync-scaffold-versions.ts",
+    "pretest": "node ../../scripts/sync-scaffold-versions.ts",
+    "precheck": "node ../../scripts/sync-scaffold-versions.ts",
+    "build": "rune build",
+    "dev": "rune dev",
     "test": "vp test",
     "check": "vp check",
-    "prepublishOnly": "vp run build"
-  },
-  "dependencies": {
-    "@rune-cli/core": "workspace:*",
-    "esbuild": "catalog:"
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
+    "@rune-cli/rune": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "bumpp": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "peerDependencies": {
-    "typescript": ">=5.0.0"
   },
   "engines": {
     "node": ">=24.12.0"

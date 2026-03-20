@@ -2,14 +2,21 @@ packages:
   - packages/*
 
 catalog:
+  "@arethetypeswrong/cli": 0.18.2
+  "@ls-lint/ls-lint": 2.3.1
+  "@standard-schema/spec": 1.1.0
   "@types/node": 24.12.0
   "@typescript/native-preview": 7.0.0-dev.20260317.1
   bumpp: 11.0.1
+  esbuild: 0.27.4
   knip: 5.87.0
+  publint: 0.3.18
+  sherif: 1.10.0
   typescript: 5.9.3
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vite-plus: latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
+  vite: npm:@voidzero-dev/vite-plus-core@0.1.12
+  vite-plus: v0.1.12
+  vitest: npm:@voidzero-dev/vite-plus-test@0.1.12
+  zod: 4.3.6
 
 catalogMode: prefer
 overrides:

@@ -1,0 +1,251 @@
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, expect, test } from "vite-plus/test";
+
+import {
+  commandManifestPathToKey,
+  createCommandManifestNodeMap,
+  generateCommandManifest,
+  serializeCommandManifest,
+} from "../src/manifest/generate-manifest";
+
+const fixtureRootDirectories = new Set<string>();
+
+afterEach(async () => {
+  await Promise.all(
+    [...fixtureRootDirectories].map((rootDirectory) =>
+      rm(rootDirectory, { recursive: true, force: true }),
+    ),
+  );
+  fixtureRootDirectories.clear();
+});
+
+async function createCommandsFixture(files: Readonly<Record<string, string>>): Promise<string> {
+  const rootDirectory = await mkdtemp(path.join(os.tmpdir(), "rune-manifest-"));
+  const commandsDirectory = path.join(rootDirectory, "src", "commands");
+  fixtureRootDirectories.add(rootDirectory);
+
+  await mkdir(commandsDirectory, { recursive: true });
+
+  await Promise.all(
+    Object.entries(files).map(async ([relativePath, contents]) => {
+      const absolutePath = path.join(commandsDirectory, relativePath);
+      await mkdir(path.dirname(absolutePath), { recursive: true });
+      await writeFile(absolutePath, contents);
+    }),
+  );
+
+  return commandsDirectory;
+}
+
+test("generateCommandManifest discovers nested commands and groups deterministically", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello/index.ts": "export default {};",
+    "project/index.ts": "export default {};",
+    "project/create/index.ts": "export default {};",
+    "project/list/index.ts": "export default {};",
+    "user/delete/index.ts": "export default {};",
+  });
+
+  const descriptions: Record<string, string> = {
+    "hello/index.ts": "Say hello",
+    "project/index.ts": "Project commands",
+    "project/create/index.ts": "Create a project",
+    "project/list/index.ts": "List projects",
+    "user/delete/index.ts": "Delete a user",
+  };
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription(sourceFilePath) {
+      const relativePath = path.relative(commandsDirectory, sourceFilePath);
+      return descriptions[relativePath];
+    },
+  });
+
+  expect(manifest).toEqual({
+    nodes: [
+      {
+        pathSegments: [],
+        kind: "group",
+        childNames: ["hello", "project", "user"],
+      },
+      {
+        pathSegments: ["hello"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+        childNames: [],
+        description: "Say hello",
+      },
+      {
+        pathSegments: ["project"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "project", "index.ts"),
+        childNames: ["create", "list"],
+        description: "Project commands",
+      },
+      {
+        pathSegments: ["project", "create"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "project", "create", "index.ts"),
+        childNames: [],
+        description: "Create a project",
+      },
+      {
+        pathSegments: ["project", "list"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "project", "list", "index.ts"),
+        childNames: [],
+        description: "List projects",
+      },
+      {
+        pathSegments: ["user"],
+        kind: "group",
+        childNames: ["delete"],
+      },
+      {
+        pathSegments: ["user", "delete"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "user", "delete", "index.ts"),
+        childNames: [],
+        description: "Delete a user",
+      },
+    ],
+  });
+});
+
+test("generateCommandManifest supports a root command at `src/commands/index.ts`", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "index.ts": "export default {};",
+    "hello/index.ts": "export default {};",
+  });
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription(sourceFilePath) {
+      const relativePath = path.relative(commandsDirectory, sourceFilePath);
+      return relativePath === "index.ts" ? "Create a project" : "Say hello";
+    },
+  });
+
+  expect(manifest).toEqual({
+    nodes: [
+      {
+        pathSegments: [],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "index.ts"),
+        childNames: ["hello"],
+        description: "Create a project",
+      },
+      {
+        pathSegments: ["hello"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+        childNames: [],
+        description: "Say hello",
+      },
+    ],
+  });
+});
+
+test("generateCommandManifest skips empty directories and serializes to stable JSON", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "admin/users/index.ts": "export default {};",
+  });
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription() {
+      return undefined;
+    },
+  });
+
+  expect(manifest).toEqual({
+    nodes: [
+      {
+        pathSegments: [],
+        kind: "group",
+        childNames: ["admin"],
+      },
+      {
+        pathSegments: ["admin"],
+        kind: "group",
+        childNames: ["users"],
+      },
+      {
+        pathSegments: ["admin", "users"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "admin", "users", "index.ts"),
+        childNames: [],
+        description: undefined,
+      },
+    ],
+  });
+
+  expect(commandManifestPathToKey(["admin", "users"])).toBe("admin users");
+  expect(createCommandManifestNodeMap(manifest)[""]).toEqual(manifest.nodes[0]);
+  expect(serializeCommandManifest(manifest)).toBe(JSON.stringify(manifest, null, 2));
+});
+
+test("generateCommandManifest extracts literal descriptions from source files by default", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello/index.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Say hello",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+
+  expect(manifest.nodes).toEqual([
+    {
+      pathSegments: [],
+      kind: "group",
+      childNames: ["hello"],
+    },
+    {
+      pathSegments: ["hello"],
+      kind: "command",
+      sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+      childNames: [],
+      description: "Say hello",
+    },
+  ]);
+});
+
+test("generateCommandManifest extracts descriptions from exported command variables", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello/index.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "const command = defineCommand({",
+      '  description: "Say hello",',
+      "  async run() {},",
+      "});",
+      "",
+      "export default command;",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+
+  expect(manifest.nodes).toEqual([
+    {
+      pathSegments: [],
+      kind: "group",
+      childNames: ["hello"],
+    },
+    {
+      pathSegments: ["hello"],
+      kind: "command",
+      sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+      childNames: [],
+      description: "Say hello",
+    },
+  ]);
+});

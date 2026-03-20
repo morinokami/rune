@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: "24"
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      - name: Sync Scaffold Versions
+        run: vp run sync:scaffold-versions
+
+      - name: Check Scaffold Version Drift
+        run: git diff --exit-code -- packages/create-rune-app/src/generated/scaffold-versions.ts
+
+      - name: Run Vite+ check
+        run: vp check
+
+      - name: Run ls-lint
+        run: vpx ls-lint
+
+      - name: Run knip
+        run: vpx knip
+
+      - name: Run sherif
+        run: vpx sherif
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: "24"
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      - name: Run tests
+        run: vp run test -r
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: "24"
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      - name: Build packages
+        run: vp run build -r
+
+      - name: Run publint
+        run: vpx publint ./packages/rune
+
+      - name: Run attw
+        run: vpx attw --pack ./packages/rune

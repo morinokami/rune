@@ -1,29 +1,70 @@
-# Vite+ Monorepo Starter
+# Rune
 
-A starter for creating a Vite+ monorepo.
+Rune is a CLI framework built around the concept of file-based command routing. Directory structure maps directly to CLI command structure.
 
-## Development
+> [!IMPORTANT]
+> This package is experimental and unstable. Proceed with caution when using it.
 
-- Check everything is ready:
+## Getting Started
+
+Scaffold a new project:
 
 ```bash
-vp run ready
+npm create rune-app my-cli
+cd my-cli
+npm install
 ```
 
-- Run the tests:
+This generates the following structure:
 
-```bash
-vp run test -r
+```
+my-cli/
+  src/
+    commands/
+      hello/
+        index.ts
+  package.json
+  tsconfig.json
 ```
 
-- Build the monorepo:
+Run your CLI in development mode:
 
 ```bash
-vp run build -r
+npx rune dev -- hello
+# => hello from my-cli
 ```
 
-- Run the development server:
+Build for production:
 
 ```bash
-vp run dev
+npx rune build
+```
+
+## Defining Commands
+
+Commands are TypeScript files under `src/commands/`. The directory structure maps directly to the command structure:
+
+```
+src/commands/
+  hello/index.ts          → my-cli hello
+  project/
+    index.ts              → my-cli project
+    create/index.ts       → my-cli project create
+    list/index.ts         → my-cli project list
+```
+
+Each command file exports a default `defineCommand()` call:
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Greet someone",
+  args: [{ name: "name", type: "string", required: true }],
+  options: [{ name: "loud", type: "boolean", alias: "l" }],
+  async run(ctx) {
+    const greeting = `Hello, ${ctx.args.name}!`;
+    console.log(ctx.options.loud ? greeting.toUpperCase() : greeting);
+  },
+});
 ```

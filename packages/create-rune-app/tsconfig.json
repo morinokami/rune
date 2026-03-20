@@ -9,6 +9,7 @@
     "types": ["node"],
     "strict": true,
     "noUnusedLocals": true,
+    "allowImportingTsExtensions": true,
     "declaration": true,
     "emitDeclarationOnly": true,
     "esModuleInterop": true,

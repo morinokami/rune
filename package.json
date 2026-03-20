@@ -1,21 +1,29 @@
 {
-  "name": "rune",
+  "name": "rune-root",
   "version": "0.0.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/morinokami/rune.git"
+  },
   "type": "module",
   "scripts": {
-    "ready": "vp fmt && vp lint && vp run test -r && vp run build -r",
-    "dev": "vp run website#dev",
+    "sync:scaffold-versions": "node scripts/sync-scaffold-versions.ts",
+    "ready": "vp fmt && vp lint && ls-lint && knip && sherif && vp run test -r && vp run build -r",
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@ls-lint/ls-lint": "catalog:",
     "@types/node": "catalog:",
     "knip": "catalog:",
+    "publint": "catalog:",
+    "sherif": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24.12.0"
   },
   "packageManager": "pnpm@10.32.1"
 }
