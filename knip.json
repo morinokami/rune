@@ -6,7 +6,7 @@
   "workspaces": {
     ".": {
       "entry": ["vite.config.ts"],
-      "ignoreDependencies": ["@arethetypeswrong/cli", "publint"]
+      "ignoreDependencies": ["@arethetypeswrong/cli", "@changesets/cli", "publint"]
     },
     "packages/core": {
       "entry": ["src/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
