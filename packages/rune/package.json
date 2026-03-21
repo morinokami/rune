@@ -1,6 +1,6 @@
 {
   "name": "@rune-cli/rune",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Rune is a CLI framework built around the concept of file-based command routing.",
   "homepage": "https://github.com/morinokami/rune#readme",
   "bugs": {
@@ -46,10 +46,10 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "@rune-cli/core": "workspace:*",
     "esbuild": "catalog:"
   },
   "devDependencies": {
+    "@rune-cli/core": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:",
