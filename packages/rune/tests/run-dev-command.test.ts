@@ -122,7 +122,7 @@ test("runRuneCli shows dev help without loading a project", async () => {
 
   expect(result).toEqual({
     exitCode: 0,
-    stdout: expect.stringContaining("Usage: rune dev [--project <path>] [--] [command...]\n"),
+    stdout: expect.stringContaining("Usage: rune dev [options] [command...]\n"),
     stderr: "",
   });
 });
