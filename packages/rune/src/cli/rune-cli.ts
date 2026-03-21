@@ -1,7 +1,7 @@
 import type { CommandExecutionResult } from "@rune-cli/core";
 
 import { renderRuneBuildHelp, runBuildCommand } from "./build-command";
-import { renderRuneCliHelp, renderRuneDevHelp, runDevCommand } from "./dev-command";
+import { renderRuneDevHelp, runDevCommand } from "./dev-command";
 import { failureResult, successResult } from "./result";
 
 interface ParsedProjectOption {
@@ -111,6 +111,19 @@ function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | CommandExecu
 export interface RunRuneCliOptions {
   readonly argv: readonly string[];
   readonly cwd?: string | undefined;
+}
+
+function renderRuneCliHelp(): string {
+  return `\
+Usage: rune <command>
+
+Commands:
+  build  Build a Rune project into a distributable CLI
+  dev    Run a Rune project in development mode
+
+Options:
+  -h, --help  Show this help message
+`;
 }
 
 // Parses Rune's own CLI arguments and dispatches to subcommands such as `rune dev`.
