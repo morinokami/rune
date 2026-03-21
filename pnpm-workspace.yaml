@@ -3,6 +3,7 @@ packages:
 
 catalog:
   "@arethetypeswrong/cli": 0.18.2
+  "@bluwy/giget-core": ^0.1.7
   "@changesets/changelog-github": 0.6.0
   "@changesets/cli": 2.30.0
   "@ls-lint/ls-lint": 2.3.1

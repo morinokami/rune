@@ -23,15 +23,13 @@
     "access": "public"
   },
   "scripts": {
-    "prebuild": "node ../../scripts/sync-scaffold-versions.ts",
-    "predev": "node ../../scripts/sync-scaffold-versions.ts",
-    "pretest": "node ../../scripts/sync-scaffold-versions.ts",
-    "precheck": "node ../../scripts/sync-scaffold-versions.ts",
     "build": "node ../../packages/rune/dist/cli.mjs build",
     "dev": "node ../../packages/rune/dist/cli.mjs dev",
-    "test": "vp test",
     "check": "vp check",
     "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@bluwy/giget-core": "catalog:"
   },
   "devDependencies": {
     "@rune-cli/rune": "workspace:*",

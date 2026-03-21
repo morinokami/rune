@@ -9,6 +9,9 @@ catalogs:
     '@arethetypeswrong/cli':
       specifier: 0.18.2
       version: 0.18.2
+    '@bluwy/giget-core':
+      specifier: ^0.1.7
+      version: 0.1.7
     '@changesets/changelog-github':
       specifier: 0.6.0
       version: 0.6.0
@@ -110,6 +113,10 @@ importers:
         version: 4.3.6
 
   packages/create-rune-app:
+    dependencies:
+      '@bluwy/giget-core':
+        specifier: 'catalog:'
+        version: 0.1.7
     devDependencies:
       '@rune-cli/rune':
         specifier: workspace:*
@@ -166,6 +173,10 @@ packages:
   '@babel/runtime@7.29.2':
     resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
     engines: {node: '>=6.9.0'}
+
+  '@bluwy/giget-core@0.1.7':
+    resolution: {integrity: sha512-6XG8TZt8DVYLuGDVSpFJaSMlNowOg5RGecvWbKvlgMoqVbztUAQ3AcWq6oZ5DoCnTzNAPcO7rhkwt8ZVgrS7CQ==}
+    engines: {node: '>=18'}
 
   '@braidai/lang@1.1.2':
     resolution: {integrity: sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA==}
@@ -1510,6 +1521,10 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
+  modern-tar@0.7.6:
+    resolution: {integrity: sha512-sweCIVXzx1aIGTCdzcMlSZt1h8k5Tmk08VNAuRk3IU28XamGiOH5ypi11g6De2CH7PhYqSSnGy2A/EFhbWnVKg==}
+    engines: {node: '>=18.0.0'}
+
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
@@ -2000,6 +2015,10 @@ snapshots:
       validate-npm-package-name: 5.0.1
 
   '@babel/runtime@7.29.2': {}
+
+  '@bluwy/giget-core@0.1.7':
+    dependencies:
+      modern-tar: 0.7.6
 
   '@braidai/lang@1.1.2': {}
 
@@ -3039,6 +3058,8 @@ snapshots:
       picomatch: 2.3.1
 
   minimist@1.2.8: {}
+
+  modern-tar@0.7.6: {}
 
   mri@1.2.0: {}
 

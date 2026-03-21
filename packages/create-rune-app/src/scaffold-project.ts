@@ -1,10 +1,8 @@
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { downloadTemplate } from "@bluwy/giget-core";
+import fs from "node:fs/promises";
 import path from "node:path";
 
-import { SCAFFOLDED_NODE_VERSION, SCAFFOLDED_RUNE_VERSION } from "./generated/scaffold-versions.ts";
-
-const SCAFFOLDED_RUNE_PACKAGE_NAME = "@rune-cli/rune";
-const SCAFFOLDED_TYPESCRIPT_VERSION = "^5.9.3";
+const GITHUB_TEMPLATE = "github:morinokami/rune/examples/starter";
 
 export interface ScaffoldedProject {
   readonly projectRoot: string;
@@ -28,73 +26,9 @@ function resolveCliName(packageName: string): string {
   return packageName.startsWith("@") ? (packageName.split("/")[1] ?? packageName) : packageName;
 }
 
-function renderTemplatePackageJson(packageName: string, cliName: string): string {
-  return `${JSON.stringify(
-    {
-      name: packageName,
-      version: "0.0.0",
-      type: "module",
-      bin: {
-        [cliName]: "dist/cli.mjs",
-      },
-      files: ["dist"],
-      scripts: {
-        dev: "rune dev",
-        build: "rune build",
-      },
-      devDependencies: {
-        [SCAFFOLDED_RUNE_PACKAGE_NAME]: SCAFFOLDED_RUNE_VERSION,
-        typescript: SCAFFOLDED_TYPESCRIPT_VERSION,
-      },
-      engines: {
-        node: SCAFFOLDED_NODE_VERSION,
-      },
-    },
-    null,
-    2,
-  )}\n`;
-}
-
-function renderTemplateTsconfig(): string {
-  return `${JSON.stringify(
-    {
-      compilerOptions: {
-        target: "ES2022",
-        module: "NodeNext",
-        moduleResolution: "NodeNext",
-        strict: true,
-        noEmit: true,
-        verbatimModuleSyntax: true,
-        allowImportingTsExtensions: true,
-      },
-      include: ["src"],
-    },
-    null,
-    2,
-  )}\n`;
-}
-
-function renderTemplateHelloCommand(cliName: string): string {
-  return [
-    'import { defineCommand } from "@rune-cli/rune";',
-    "",
-    "export default defineCommand({",
-    '  description: "Say hello from your new Rune CLI",',
-    "  async run() {",
-    `    console.log(${JSON.stringify(`hello from ${cliName}`)});`,
-    "  },",
-    "});",
-    "",
-  ].join("\n");
-}
-
-function renderTemplateGitignore(): string {
-  return ["node_modules", "dist", ".rune", ""].join("\n");
-}
-
 async function pathExists(filePath: string): Promise<boolean> {
   try {
-    await stat(filePath);
+    await fs.stat(filePath);
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -103,16 +37,6 @@ async function pathExists(filePath: string): Promise<boolean> {
 
     throw error;
   }
-}
-
-async function writeProjectFile(
-  projectRoot: string,
-  relativePath: string,
-  contents: string,
-): Promise<void> {
-  const absolutePath = path.join(projectRoot, relativePath);
-  await mkdir(path.dirname(absolutePath), { recursive: true });
-  await writeFile(absolutePath, contents);
 }
 
 // Creates a minimal Rune project starter in a new directory.
@@ -129,16 +53,28 @@ export async function scaffoldProject(
   const packageName = resolvePackageName(projectName, projectRoot);
   const cliName = resolveCliName(packageName);
 
-  await Promise.all([
-    writeProjectFile(projectRoot, "package.json", renderTemplatePackageJson(packageName, cliName)),
-    writeProjectFile(projectRoot, "tsconfig.json", renderTemplateTsconfig()),
-    writeProjectFile(projectRoot, ".gitignore", renderTemplateGitignore()),
-    writeProjectFile(
-      projectRoot,
-      path.join("src", "commands", "hello", "index.ts"),
-      renderTemplateHelloCommand(cliName),
-    ),
-  ]);
+  await downloadTemplate(GITHUB_TEMPLATE, {
+    dir: ".",
+    cwd: projectRoot,
+  });
+
+  // Post-process: update package.json with the actual project name and CLI binary name.
+  const packageJsonPath = path.join(projectRoot, "package.json");
+  const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf-8")) as Record<
+    string,
+    unknown
+  >;
+
+  delete packageJson.private;
+  packageJson.name = packageName;
+  packageJson.bin = { [cliName]: "dist/cli.mjs" };
+
+  await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
+
+  // Post-process: update the hello command with the actual CLI name.
+  const helloCommandPath = path.join(projectRoot, "src", "commands", "hello", "index.ts");
+  const helloCommandContents = await fs.readFile(helloCommandPath, "utf-8");
+  await fs.writeFile(helloCommandPath, helloCommandContents.replaceAll("my-cli", cliName));
 
   return {
     projectRoot,

@@ -8,7 +8,7 @@
   },
   "type": "module",
   "scripts": {
-    "sync:scaffold-versions": "node scripts/sync-scaffold-versions.ts",
+    "version": "changeset version && node scripts/update-example-versions.ts",
     "ready": "vp fmt && vp lint && ls-lint && knip && sherif && vp run test -r && vp run build -r",
     "prepare": "vp config"
   },

@@ -1,0 +1,23 @@
+{
+  "name": "my-cli",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "my-cli": "dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "rune dev",
+    "build": "rune build"
+  },
+  "devDependencies": {
+    "@rune-cli/rune": "^0.0.1",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=24.12.0"
+  }
+}
