@@ -16,7 +16,7 @@
     "packages/create-rune-app": {
       "entry": ["src/commands/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignoreDependencies": ["@typescript/native-preview", "bumpp", "vp"]
+      "ignoreDependencies": ["@typescript/native-preview", "vp"]
     },
     "packages/rune": {
       "entry": [
@@ -27,7 +27,7 @@
         "vite.config.ts"
       ],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignoreDependencies": ["@typescript/native-preview", "bumpp", "vp"]
+      "ignoreDependencies": ["@typescript/native-preview", "vp"]
     }
   }
 }
