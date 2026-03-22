@@ -74,6 +74,8 @@ export async function assertCommandsDirectoryExists(commandsDirectory: string): 
   );
 
   if (!commandsDirectoryStats?.isDirectory()) {
-    throw new Error(`Commands directory not found: ${commandsDirectory}`);
+    throw new Error(
+      `Commands directory not found at ${COMMANDS_DIRECTORY_NAME}. Create it or check the --project <path> option.`,
+    );
   }
 }

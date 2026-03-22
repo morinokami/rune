@@ -135,7 +135,7 @@ test("runRuneCli reports unknown top-level subcommands", async () => {
   expect(result).toEqual({
     exitCode: 1,
     stdout: "",
-    stderr: "Unknown rune command: unknown\n",
+    stderr: "Unknown command: unknown. Available commands: build, dev\n",
   });
 });
 
@@ -370,6 +370,6 @@ test("runRuneCli reports missing src/commands directories", async () => {
   expect(result).toEqual({
     exitCode: 1,
     stdout: "",
-    stderr: expect.stringContaining("Commands directory not found:"),
+    stderr: expect.stringContaining("Commands directory not found at src/commands"),
   });
 });
