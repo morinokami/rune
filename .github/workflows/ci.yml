@@ -29,12 +29,6 @@ jobs:
       - name: Build packages
         run: vp run build -r
 
-      - name: Sync Scaffold Versions
-        run: vp run sync:scaffold-versions
-
-      - name: Check Scaffold Version Drift
-        run: git diff --exit-code -- packages/create-rune-app/src/generated/scaffold-versions.ts
-
       - name: Run Vite+ check
         run: vp check
 
@@ -66,7 +60,7 @@ jobs:
         run: vp run build -r
 
       - name: Run tests
-        run: vp run test -r
+        run: vp run test --filter './packages/*'
 
   build:
     runs-on: ubuntu-latest

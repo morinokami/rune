@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "version": "changeset version && node scripts/update-example-versions.ts",
-    "ready": "vp fmt && vp lint && ls-lint && knip && sherif && vp run test --filter './packages/*' && vp run build --filter './packages/*'",
+    "ready": "vp fmt && vp lint && ls-lint && knip && sherif && vp run test --filter './packages/*' && vp run build",
     "prepare": "vp config"
   },
   "devDependencies": {
