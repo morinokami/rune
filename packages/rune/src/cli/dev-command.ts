@@ -7,11 +7,12 @@ import { generateCommandManifest, serializeCommandManifest } from "../manifest/g
 import { runManifestCommand } from "../manifest/run-manifest-command";
 import {
   assertCommandsDirectoryExists,
-  readProjectCliName,
+  readProjectCliInfo,
   resolveCommandsDirectory,
   resolveProjectPath,
 } from "../project/project-files";
-import { failureResult } from "./result";
+import { isVersionFlag } from "./flags";
+import { failureResult, successResult } from "./result";
 
 const DEV_MANIFEST_DIRECTORY_PATH = ".rune";
 const DEV_MANIFEST_FILENAME = "manifest.json";
@@ -54,6 +55,12 @@ export async function runDevCommand(
 ): Promise<CommandExecutionResult> {
   try {
     const projectRoot = resolveProjectPath(options);
+    const cliInfo = await readProjectCliInfo(projectRoot);
+
+    if (cliInfo.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
+      return successResult(`${cliInfo.name} v${cliInfo.version}\n`);
+    }
+
     const commandsDirectory = resolveCommandsDirectory(projectRoot);
 
     await assertCommandsDirectoryExists(commandsDirectory);
@@ -64,7 +71,8 @@ export async function runDevCommand(
     return runManifestCommand({
       manifest,
       rawArgs: options.rawArgs,
-      cliName: await readProjectCliName(projectRoot),
+      cliName: cliInfo.name,
+      version: cliInfo.version,
       cwd: options.cwd,
     });
   } catch (error) {

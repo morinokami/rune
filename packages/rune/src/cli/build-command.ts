@@ -10,7 +10,7 @@ import type { CommandManifest, CommandManifestCommandNode } from "../manifest/ma
 import { generateCommandManifest, serializeCommandManifest } from "../manifest/generate-manifest";
 import {
   assertCommandsDirectoryExists,
-  readProjectCliName,
+  readProjectCliInfo,
   resolveCommandsDirectory,
   resolveDistDirectory,
   resolveProjectPath,
@@ -127,13 +127,18 @@ async function copyBuiltAssets(sourceDirectory: string, distDirectory: string): 
   );
 }
 
-function renderBuiltCliEntry(cliName: string, runtimeImportPath: string): string {
+function renderBuiltCliEntry(
+  cliName: string,
+  version: string | undefined,
+  runtimeImportPath: string,
+): string {
   return `import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { runManifestCommand, writeCommandExecutionResult } from ${JSON.stringify(runtimeImportPath)};
 
 const cliName = ${JSON.stringify(cliName)};
+const version = ${JSON.stringify(version)};
 const distDirectoryUrl = new URL("./", import.meta.url);
 const manifestPath = fileURLToPath(new URL("./${BUILD_MANIFEST_FILENAME}", distDirectoryUrl));
 const manifestContents = await readFile(manifestPath, "utf8");
@@ -153,6 +158,7 @@ const result = await runManifestCommand({
   manifest: runtimeManifest,
   rawArgs: process.argv.slice(2),
   cliName,
+  version,
   cwd: process.cwd(),
 });
 
@@ -269,13 +275,14 @@ async function buildCliEntry(
   projectRoot: string,
   distDirectory: string,
   cliName: string,
+  version: string | undefined,
 ): Promise<void> {
   const runtimeHelperEntryPath = await resolveRuntimeHelperEntryPath();
 
   await build({
     absWorkingDir: projectRoot,
     stdin: {
-      contents: renderBuiltCliEntry(cliName, `./${path.basename(runtimeHelperEntryPath)}`),
+      contents: renderBuiltCliEntry(cliName, version, `./${path.basename(runtimeHelperEntryPath)}`),
       loader: "ts",
       resolveDir: path.dirname(runtimeHelperEntryPath),
       sourcefile: "rune-built-cli-entry.ts",
@@ -336,13 +343,13 @@ export async function runBuildCommand(
     await assertCommandsDirectoryExists(commandsDirectory);
     const sourceManifest = await generateCommandManifest({ commandsDirectory });
     const builtManifest = createBuiltManifest(sourceManifest, sourceDirectory);
-    const cliName = await readProjectCliName(projectRoot);
+    const cliInfo = await readProjectCliInfo(projectRoot);
 
     await rm(distDirectory, { recursive: true, force: true });
     await writeBuiltRuntimeFiles(distDirectory, builtManifest);
     await Promise.all([
       buildCommandEntries(projectRoot, sourceDirectory, distDirectory, sourceManifest),
-      buildCliEntry(projectRoot, distDirectory, cliName),
+      buildCliEntry(projectRoot, distDirectory, cliInfo.name, cliInfo.version),
       copyBuiltAssets(sourceDirectory, distDirectory),
     ]);
 
