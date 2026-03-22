@@ -71,10 +71,15 @@ export async function scaffoldProject(
 
   await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
 
-  // Post-process: update the hello command with the actual CLI name.
-  const helloCommandPath = path.join(projectRoot, "src", "commands", "hello", "index.ts");
-  const helloCommandContents = await fs.readFile(helloCommandPath, "utf-8");
-  await fs.writeFile(helloCommandPath, helloCommandContents.replaceAll("my-cli", cliName));
+  // Post-process: replace the placeholder CLI name with the actual one.
+  for (const relativePath of [
+    path.join("src", "commands", "hello", "index.ts"),
+    path.join("tests", "commands", "hello.test.ts"),
+  ]) {
+    const filePath = path.join(projectRoot, relativePath);
+    const contents = await fs.readFile(filePath, "utf-8");
+    await fs.writeFile(filePath, contents.replaceAll("my-cli", cliName));
+  }
 
   return {
     projectRoot,
