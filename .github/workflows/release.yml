@@ -56,6 +56,8 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         run: |
           node scripts/update-example-versions.ts
+          # Wait for the npm registry to propagate the newly published versions.
+          sleep 10
           vp install --no-frozen-lockfile
 
       - name: Commit updated examples
