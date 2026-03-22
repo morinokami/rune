@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.3
+
+### Patch Changes
+
+- [#4](https://github.com/morinokami/rune/pull/4) [`1d3bb0d`](https://github.com/morinokami/rune/commit/1d3bb0d2df0f47b4368eade50428e9d9faa6ffef) Thanks [@morinokami](https://github.com/morinokami)! - fix(create-rune-app): replace placeholder CLI name in test file during scaffold
+
 ## 0.0.2
 
 ### Patch Changes
