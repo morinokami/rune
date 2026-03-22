@@ -1,5 +1,6 @@
 import type { CommandExecutionResult } from "@rune-cli/core";
 
+import runePackageJson from "../../package.json" with { type: "json" };
 import { renderRuneBuildHelp, runBuildCommand } from "./build-command";
 import { renderRuneDevHelp, runDevCommand } from "./dev-command";
 import { failureResult, successResult } from "./result";
@@ -34,6 +35,14 @@ function tryParseProjectOption(
 
 function isHelpFlag(token: string): boolean {
   return token === "--help" || token === "-h";
+}
+
+function isVersionFlag(token: string): boolean {
+  return token === "--version" || token === "-V";
+}
+
+function getRuneVersion(): string {
+  return runePackageJson.version;
 }
 
 interface ParsedDevArgs {
@@ -122,7 +131,8 @@ Commands:
   dev    Run a Rune project in development mode
 
 Options:
-  -h, --help  Show this help message
+  -h, --help     Show this help message
+  -V, --version  Show the version number
 `;
 }
 
@@ -132,6 +142,10 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<CommandExe
 
   if (!subcommand || isHelpFlag(subcommand)) {
     return successResult(renderRuneCliHelp());
+  }
+
+  if (isVersionFlag(subcommand)) {
+    return successResult(`rune v${getRuneVersion()}\n`);
   }
 
   if (subcommand === "dev") {
