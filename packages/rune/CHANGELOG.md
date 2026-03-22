@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.6
+
+### Patch Changes
+
+- [#16](https://github.com/morinokami/rune/pull/16) [`8cd0fff`](https://github.com/morinokami/rune/commit/8cd0fff01e84e881955641e30b6a8c422530e21e) Thanks [@morinokami](https://github.com/morinokami)! - feat(cli): add --version support to Rune-built CLIs
+
 ## 0.0.5
 
 ### Patch Changes
