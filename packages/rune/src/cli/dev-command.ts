@@ -30,6 +30,22 @@ async function writeDevManifest(projectRoot: string, manifestContents: string): 
   await writeFile(manifestPath, manifestContents);
 }
 
+export function renderRuneDevHelp(): string {
+  return `\
+Run a Rune project in development mode.
+
+Usage: rune dev [options] [command...]
+
+Options:
+  --project <path>  Path to the Rune project root (default: current directory)
+  -h, --help        Show this help message
+
+Examples:
+  rune dev hello
+  rune dev --project ./my-app hello
+`;
+}
+
 // Generates a fresh manifest and executes commands directly from source.
 // `rune dev` imports command `.ts` modules without an extra loader, so it relies
 // on a Node.js runtime that can execute native type-stripped TypeScript.
@@ -54,24 +70,4 @@ export async function runDevCommand(
   } catch (error) {
     return failureResult(error instanceof Error ? error.message : "Failed to run rune dev");
   }
-}
-
-export function renderRuneDevHelp(): string {
-  return [
-    "Usage: rune dev [--project <path>] [--] [command...]",
-    "",
-    "Run a Rune project in development mode.",
-    "",
-  ].join("\n");
-}
-
-export function renderRuneCliHelp(): string {
-  return [
-    "Usage: rune <command>",
-    "",
-    "Commands:",
-    "  build  Build a Rune project into a distributable CLI",
-    "  dev  Run a Rune project in development mode",
-    "",
-  ].join("\n");
 }

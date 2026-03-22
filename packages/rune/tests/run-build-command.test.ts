@@ -171,7 +171,7 @@ test("runRuneCli shows help for `rune build --help`", async () => {
 
   expect(result).toEqual({
     exitCode: 0,
-    stdout: expect.stringContaining("Usage: rune build [--project <path>]\n"),
+    stdout: expect.stringContaining("Usage: rune build [options]\n"),
     stderr: "",
   });
 });

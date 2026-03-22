@@ -306,6 +306,22 @@ async function writeBuiltRuntimeFiles(
   );
 }
 
+export function renderRuneBuildHelp(): string {
+  return `\
+Build a Rune project into a distributable CLI.
+
+Usage: rune build [options]
+
+Options:
+  --project <path>  Path to the Rune project root (default: current directory)
+  -h, --help        Show this help message
+
+Examples:
+  rune build
+  rune build --project ./my-app
+`;
+}
+
 export async function runBuildCommand(
   options: RunBuildCommandOptions,
 ): Promise<CommandExecutionResult> {
@@ -338,13 +354,4 @@ export async function runBuildCommand(
 
     return failureResult(error instanceof Error ? error.message : "Failed to run rune build");
   }
-}
-
-export function renderRuneBuildHelp(): string {
-  return [
-    "Usage: rune build [--project <path>]",
-    "",
-    "Build a Rune project into a distributable CLI.",
-    "",
-  ].join("\n");
 }
