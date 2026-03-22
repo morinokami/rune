@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.5
+
+### Patch Changes
+
+- [#10](https://github.com/morinokami/rune/pull/10) [`3b677d5`](https://github.com/morinokami/rune/commit/3b677d5cee8b1b57dd192fb0e7e9a84de1537026) Thanks [@morinokami](https://github.com/morinokami)! - fix(cli): improve error messages with actionable hints
+
 ## 0.0.4
 
 ### Patch Changes
