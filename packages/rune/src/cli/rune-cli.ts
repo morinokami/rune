@@ -24,7 +24,7 @@ function tryParseProjectOption(
     const nextToken = argv[index + 1];
 
     if (!nextToken) {
-      return failureResult("Missing value for --project");
+      return failureResult("Missing value for --project. Usage: --project <path>");
     }
 
     return { projectPath: nextToken, nextIndex: index + 2 };
@@ -175,5 +175,5 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<CommandExe
     });
   }
 
-  return failureResult(`Unknown rune command: ${subcommand}`);
+  return failureResult(`Unknown command: ${subcommand}. Available commands: build, dev`);
 }
