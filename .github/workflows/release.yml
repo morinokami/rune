@@ -38,11 +38,25 @@ jobs:
         run: vp run build -r
 
       - name: Create Release Pull Request
+        id: changesets
         uses: changesets/action@v1
         with:
-          version: vp run version
+          version: vpx changeset version
           publish: vpx changeset publish
           commit: "[ci] release"
           title: "[ci] release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync example versions after publish
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          node scripts/update-example-versions.ts
+          vp install --no-frozen-lockfile
+
+      - name: Commit updated examples
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          git add examples/ pnpm-lock.yaml
+          git diff --staged --quiet || git commit -m "chore: sync example versions"
+          git push
