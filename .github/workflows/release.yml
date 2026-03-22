@@ -41,7 +41,11 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          version: vpx changeset version
+          # "changeset version" also updates examples/ via updateInternalDependencies,
+          # but that causes a lockfile mismatch because the new version isn't published yet.
+          # Example versions are updated at the right time by update-example-versions.ts
+          # after "changeset publish", so we revert the premature changes here.
+          version: vpx changeset version && git checkout examples/
           publish: vpx changeset publish
           commit: "[ci] release"
           title: "[ci] release"
