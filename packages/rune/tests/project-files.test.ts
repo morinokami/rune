@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, expect, test } from "vite-plus/test";
 
-import { readProjectCliName } from "../src/project/project-files";
+import { readProjectCliInfo } from "../src/project/project-files";
 
 const fixtureRootDirectories = new Set<string>();
 
@@ -31,11 +31,12 @@ async function createProjectFixture(files: Readonly<Record<string, string>>): Pr
   return projectRoot;
 }
 
-test("readProjectCliName prefers the sorted bin object key", async () => {
+test("readProjectCliInfo prefers the sorted bin object key", async () => {
   const projectRoot = await createProjectFixture({
     "package.json": JSON.stringify(
       {
         name: "@scope/mycli",
+        version: "2.0.0",
         bin: {
           zebra: "./dist/zebra.mjs",
           alpha: "./dist/alpha.mjs",
@@ -46,14 +47,18 @@ test("readProjectCliName prefers the sorted bin object key", async () => {
     ),
   });
 
-  await expect(readProjectCliName(projectRoot)).resolves.toBe("alpha");
+  await expect(readProjectCliInfo(projectRoot)).resolves.toEqual({
+    name: "alpha",
+    version: "2.0.0",
+  });
 });
 
-test("readProjectCliName falls back to the package name when bin is a string", async () => {
+test("readProjectCliInfo falls back to the package name when bin is a string", async () => {
   const projectRoot = await createProjectFixture({
     "package.json": JSON.stringify(
       {
         name: "@scope/mycli",
+        version: "1.0.0",
         bin: "./dist/cli.mjs",
       },
       null,
@@ -61,19 +66,39 @@ test("readProjectCliName falls back to the package name when bin is a string", a
     ),
   });
 
-  await expect(readProjectCliName(projectRoot)).resolves.toBe("mycli");
+  await expect(readProjectCliInfo(projectRoot)).resolves.toEqual({
+    name: "mycli",
+    version: "1.0.0",
+  });
 });
 
-test("readProjectCliName falls back to the package name when no bin field exists", async () => {
+test("readProjectCliInfo falls back to the package name when no bin field exists", async () => {
   const projectRoot = await createProjectFixture({
-    "package.json": JSON.stringify({ name: "@scope/mycli" }, null, 2),
+    "package.json": JSON.stringify({ name: "@scope/mycli", version: "0.1.0" }, null, 2),
   });
 
-  await expect(readProjectCliName(projectRoot)).resolves.toBe("mycli");
+  await expect(readProjectCliInfo(projectRoot)).resolves.toEqual({
+    name: "mycli",
+    version: "0.1.0",
+  });
 });
 
-test("readProjectCliName falls back to the project directory name when package.json is missing", async () => {
+test("readProjectCliInfo returns undefined version when version is not set", async () => {
+  const projectRoot = await createProjectFixture({
+    "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+  });
+
+  await expect(readProjectCliInfo(projectRoot)).resolves.toEqual({
+    name: "mycli",
+    version: undefined,
+  });
+});
+
+test("readProjectCliInfo falls back to the project directory name when package.json is missing", async () => {
   const projectRoot = await createProjectFixture({});
 
-  await expect(readProjectCliName(projectRoot)).resolves.toBe(path.basename(projectRoot));
+  await expect(readProjectCliInfo(projectRoot)).resolves.toEqual({
+    name: path.basename(projectRoot),
+    version: undefined,
+  });
 });

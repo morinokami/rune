@@ -2,6 +2,7 @@ import { executeCommand, parseCommand, type CommandExecutionResult } from "@rune
 
 import type { CommandManifest } from "./manifest-types";
 
+import { isVersionFlag } from "../cli/flags";
 import { failureResult, successResult } from "../cli/result";
 import { defaultLoadCommand, renderResolvedHelp, type LoadCommandFn } from "./render-help";
 import { resolveCommandPath } from "./resolve-command-path";
@@ -10,6 +11,7 @@ export interface RunManifestCommandOptions {
   readonly manifest: CommandManifest;
   readonly rawArgs: readonly string[];
   readonly cliName: string;
+  readonly version?: string | undefined;
   readonly cwd?: string | undefined;
   readonly loadCommand?: LoadCommandFn | undefined;
 }
@@ -18,6 +20,10 @@ export interface RunManifestCommandOptions {
 export async function runManifestCommand(
   options: RunManifestCommandOptions,
 ): Promise<CommandExecutionResult> {
+  if (options.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
+    return successResult(`${options.cliName} v${options.version}\n`);
+  }
+
   const route = resolveCommandPath(options.manifest, options.rawArgs);
 
   if (route.kind === "unknown" || route.kind === "group" || route.helpRequested) {
@@ -25,6 +31,7 @@ export async function runManifestCommand(
       manifest: options.manifest,
       route,
       cliName: options.cliName,
+      version: options.version,
       loadCommand: options.loadCommand,
     });
 

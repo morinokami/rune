@@ -300,3 +300,125 @@ test("runManifestCommand returns unknown command failures with suggestions", asy
   expect(result.stderr).toContain("create");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
 });
+
+test("runManifestCommand prints version when --version is passed with version set", async () => {
+  const { manifest } = await createRuntimeFixture({
+    "commands/project/create/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+    "commands/project/list/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+  });
+
+  const result = await runManifestCommand({
+    manifest,
+    rawArgs: ["--version"],
+    cliName: "mycli",
+    version: "1.2.3",
+  });
+
+  expect(result).toEqual({
+    exitCode: 0,
+    stdout: "mycli v1.2.3\n",
+    stderr: "",
+  });
+});
+
+test("runManifestCommand prints version when -V is passed with version set", async () => {
+  const { manifest } = await createRuntimeFixture({
+    "commands/project/create/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+    "commands/project/list/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+  });
+
+  const result = await runManifestCommand({
+    manifest,
+    rawArgs: ["-V"],
+    cliName: "mycli",
+    version: "1.2.3",
+  });
+
+  expect(result).toEqual({
+    exitCode: 0,
+    stdout: "mycli v1.2.3\n",
+    stderr: "",
+  });
+});
+
+test("runManifestCommand ignores --version when version is not set", async () => {
+  const { manifest } = await createRuntimeFixture({
+    "commands/project/create/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+    "commands/project/list/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+  });
+
+  const result = await runManifestCommand({
+    manifest,
+    rawArgs: ["--version"],
+    cliName: "mycli",
+  });
+
+  // Without version, falls through to normal routing (shows help for root group)
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toContain("mycli");
+});
+
+test("runManifestCommand does not treat --version as version request when passed to a subcommand", async () => {
+  const { manifest } = await createRuntimeFixture({
+    "commands/project/create/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+    "commands/project/list/index.mjs": [
+      "export default {",
+      "  args: [],",
+      "  options: [],",
+      "  async run() {},",
+      "};",
+    ].join("\n"),
+  });
+
+  const result = await runManifestCommand({
+    manifest,
+    rawArgs: ["project", "--version"],
+    cliName: "mycli",
+    version: "1.2.3",
+  });
+
+  // Should not print version; falls through to routing (group help for "project")
+  expect(result.stdout).not.toContain("v1.2.3");
+});

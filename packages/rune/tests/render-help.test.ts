@@ -67,10 +67,38 @@ test("renderGroupHelp lists child commands using manifest metadata only", () => 
     throw new Error("Expected user node to be a group");
   }
 
-  const help = renderGroupHelp(manifest, userGroup, "mycli");
+  const help = renderGroupHelp({ manifest, node: userGroup, cliName: "mycli" });
 
   expect(help).toContain("Usage: mycli user <command>");
   expect(help).toContain("delete  Delete a user");
+  expect(help).toContain("-h, --help");
+  expect(help).not.toContain("--version");
+});
+
+test("renderGroupHelp shows --version for the root group when version is set", () => {
+  const rootGroup = manifest.nodes[0];
+
+  if (rootGroup.kind !== "group") {
+    throw new Error("Expected root node to be a group");
+  }
+
+  const help = renderGroupHelp({ manifest, node: rootGroup, cliName: "mycli", version: "1.0.0" });
+
+  expect(help).toContain("-V, --version");
+  expect(help).toContain("-h, --help");
+});
+
+test("renderGroupHelp does not show --version for the root group when version is not set", () => {
+  const rootGroup = manifest.nodes[0];
+
+  if (rootGroup.kind !== "group") {
+    throw new Error("Expected root node to be a group");
+  }
+
+  const help = renderGroupHelp({ manifest, node: rootGroup, cliName: "mycli" });
+
+  expect(help).not.toContain("--version");
+  expect(help).toContain("-h, --help");
 });
 
 test("renderCommandHelp includes usage, description, args, and options", async () => {

@@ -3,6 +3,7 @@ import type { CommandExecutionResult } from "@rune-cli/core";
 import runePackageJson from "../../package.json" with { type: "json" };
 import { renderRuneBuildHelp, runBuildCommand } from "./build-command";
 import { renderRuneDevHelp, runDevCommand } from "./dev-command";
+import { isHelpFlag, isVersionFlag } from "./flags";
 import { failureResult, successResult } from "./result";
 
 interface ParsedProjectOption {
@@ -31,14 +32,6 @@ function tryParseProjectOption(
   }
 
   return undefined;
-}
-
-function isHelpFlag(token: string): boolean {
-  return token === "--help" || token === "-h";
-}
-
-function isVersionFlag(token: string): boolean {
-  return token === "--version" || token === "-V";
 }
 
 function getRuneVersion(): string {

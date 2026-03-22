@@ -8,6 +8,12 @@ const DIST_DIRECTORY_NAME = "dist";
 interface ProjectPackageJson {
   readonly bin?: string | Readonly<Record<string, string>> | undefined;
   readonly name?: string | undefined;
+  readonly version?: string | undefined;
+}
+
+export interface ProjectCliInfo {
+  readonly name: string;
+  readonly version?: string | undefined;
 }
 
 export interface ResolveProjectPathOptions {
@@ -32,12 +38,14 @@ export function resolveDistDirectory(projectRoot: string): string {
   return path.join(projectRoot, DIST_DIRECTORY_NAME);
 }
 
-export async function readProjectCliName(projectRoot: string): Promise<string> {
+export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCliInfo> {
   const packageJsonPath = path.join(projectRoot, "package.json");
 
   try {
     const packageJsonContents = await readFile(packageJsonPath, "utf8");
     const packageJson = JSON.parse(packageJsonContents) as ProjectPackageJson;
+
+    let name: string | undefined;
 
     if (packageJson.bin && typeof packageJson.bin === "object") {
       const binNames = Object.keys(packageJson.bin).sort((left, right) =>
@@ -45,21 +53,26 @@ export async function readProjectCliName(projectRoot: string): Promise<string> {
       );
 
       if (binNames.length > 0) {
-        return binNames[0];
+        name = binNames[0];
       }
     }
 
-    if (packageJson.name && packageJson.name.length > 0) {
+    if (!name && packageJson.name && packageJson.name.length > 0) {
       const packageNameSegments = packageJson.name.split("/");
-      return packageNameSegments.at(-1) ?? packageJson.name;
+      name = packageNameSegments.at(-1) ?? packageJson.name;
     }
+
+    return {
+      name: name ?? path.basename(projectRoot),
+      version: packageJson.version,
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error;
     }
   }
 
-  return path.basename(projectRoot);
+  return { name: path.basename(projectRoot) };
 }
 
 export async function assertCommandsDirectoryExists(commandsDirectory: string): Promise<void> {

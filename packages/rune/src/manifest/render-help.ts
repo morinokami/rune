@@ -92,12 +92,16 @@ function getOptionUsageSuffix(fields: readonly CommandOptionField[]): string {
   return fields.length === 0 ? "" : "[options]";
 }
 
+export interface RenderGroupHelpOptions {
+  readonly manifest: CommandManifest;
+  readonly node: CommandManifestGroupNode;
+  readonly cliName: string;
+  readonly version?: string | undefined;
+}
+
 // Renders help for a command group using only manifest metadata.
-export function renderGroupHelp(
-  manifest: CommandManifest,
-  node: CommandManifestGroupNode,
-  cliName: string,
-): string {
+export function renderGroupHelp(options: RenderGroupHelpOptions): string {
+  const { manifest, node, cliName, version } = options;
   const nodeMap = createCommandManifestNodeMap(manifest);
   const entries = node.childNames.map((childName) => {
     const childNode =
@@ -114,6 +118,16 @@ export function renderGroupHelp(
   if (entries.length > 0) {
     parts.push(`Subcommands:\n${formatSectionEntries(entries)}`);
   }
+
+  const isRoot = node.pathSegments.length === 0;
+  const optionEntries = [
+    { label: "-h, --help", description: "Show help" },
+    ...(isRoot && version
+      ? [{ label: "-V, --version", description: "Show the version number" }]
+      : []),
+  ];
+
+  parts.push(`Options:\n${formatSectionEntries(optionEntries)}`);
 
   return `${parts.join("\n\n")}\n`;
 }
@@ -178,6 +192,7 @@ export interface RenderResolvedHelpOptions {
   readonly manifest: CommandManifest;
   readonly route: ResolveCommandPathResult;
   readonly cliName: string;
+  readonly version?: string | undefined;
   readonly loadCommand?: LoadCommandFn | undefined;
 }
 
@@ -188,7 +203,12 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
   }
 
   if (options.route.kind === "group") {
-    return renderGroupHelp(options.manifest, options.route.node, options.cliName);
+    return renderGroupHelp({
+      manifest: options.manifest,
+      node: options.route.node,
+      cliName: options.cliName,
+      version: options.version,
+    });
   }
 
   const loadCommand = options.loadCommand ?? defaultLoadCommand;

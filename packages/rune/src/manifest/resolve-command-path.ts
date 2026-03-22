@@ -6,6 +6,7 @@ import type {
   CommandManifestPath,
 } from "./manifest-types";
 
+import { isHelpFlag } from "../cli/flags";
 import { damerauLevenshteinDistance } from "./damerau-levenshtein";
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "./manifest-map";
 
@@ -57,7 +58,7 @@ function isOptionLikeToken(token: string): boolean {
 }
 
 function getHelpRequested(args: readonly string[]): boolean {
-  return args.includes("--help") || args.includes("-h");
+  return args.some(isHelpFlag);
 }
 
 function getSuggestionThreshold(candidate: string): number {
