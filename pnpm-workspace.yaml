@@ -15,7 +15,7 @@ catalog:
   knip: 5.87.0
   pkg-pr-new: 0.0.66
   publint: 0.3.18
-  sherif: 1.10.0
+  sherif: 1.11.0
   typescript: 5.9.3
   vite: npm:@voidzero-dev/vite-plus-core@0.1.12
   vite-plus: v0.1.13
