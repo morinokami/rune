@@ -4,10 +4,7 @@ export default defineConfig({
   staged: {
     "*": "vp check --fix",
   },
-  lint: {
-    options: { typeAware: true, typeCheck: true },
-    ignorePatterns: ["examples/**"],
-  },
+  lint: { options: { typeAware: true, typeCheck: true } },
   fmt: {
     sortImports: {
       groups: [

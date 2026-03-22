@@ -37,7 +37,7 @@ jobs:
       - name: Create Release Pull Request
         uses: changesets/action@v1
         with:
-          version: vpx changeset version
+          version: vp run version
           publish: vpx changeset publish
           commit: "[ci] release"
           title: "[ci] release"

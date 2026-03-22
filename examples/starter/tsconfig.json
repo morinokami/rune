@@ -1,12 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "esnext",
+    "lib": ["es2023"],
+    "moduleDetection": "force",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": ["node"],
     "strict": true,
-    "noEmit": true,
+    "noUnusedLocals": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "allowImportingTsExtensions": true
+    "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }
