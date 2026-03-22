@@ -56,8 +56,18 @@ jobs:
         run: |
           node scripts/update-example-versions.ts
           # Wait for the npm registry to propagate the newly published versions.
-          sleep 10
-          vp install --no-frozen-lockfile
+          # Retry up to 5 times with increasing backoff (10s, 20s, 30s, …).
+          for i in 1 2 3 4 5; do
+            sleep $((i * 10))
+            if vp install --no-frozen-lockfile; then
+              break
+            fi
+            if [ "$i" -eq 5 ]; then
+              echo "Failed to install after 5 retries"
+              exit 1
+            fi
+            echo "Retry $i/5: registry not ready yet..."
+          done
 
       - name: Commit updated examples
         if: steps.changesets.outputs.published == 'true'
