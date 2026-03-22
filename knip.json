@@ -3,10 +3,11 @@
   "tags": ["-lintignore"],
   "ignoreExportsUsedInFile": true,
   "exclude": ["catalog"],
+  "ignoreWorkspaces": ["examples/*"],
   "workspaces": {
     ".": {
       "entry": ["vite.config.ts"],
-      "ignoreDependencies": ["@arethetypeswrong/cli", "@changesets/cli", "publint"]
+      "ignoreDependencies": ["@arethetypeswrong/cli", "publint"]
     },
     "packages/core": {
       "entry": ["src/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
@@ -14,9 +15,9 @@
       "ignoreDependencies": ["@typescript/native-preview"]
     },
     "packages/create-rune-app": {
-      "entry": ["src/commands/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
-      "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignoreDependencies": ["@typescript/native-preview", "vp"]
+      "entry": ["src/commands/index.ts", "vite.config.ts"],
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@typescript/native-preview"]
     },
     "packages/rune": {
       "entry": [

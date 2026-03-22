@@ -9,6 +9,9 @@ catalogs:
     '@arethetypeswrong/cli':
       specifier: 0.18.2
       version: 0.18.2
+    '@bluwy/giget-core':
+      specifier: ^0.1.7
+      version: 0.1.7
     '@changesets/changelog-github':
       specifier: 0.6.0
       version: 0.6.0
@@ -88,6 +91,18 @@ importers:
         specifier: 'catalog:'
         version: 0.1.13(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
 
+  examples/starter:
+    devDependencies:
+      '@rune-cli/rune':
+        specifier: ^0.0.2
+        version: 0.0.2(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: npm:@voidzero-dev/vite-plus-test@0.1.12
+        version: '@voidzero-dev/vite-plus-test@0.1.12(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)'
+
   packages/core:
     devDependencies:
       '@standard-schema/spec':
@@ -110,6 +125,10 @@ importers:
         version: 4.3.6
 
   packages/create-rune-app:
+    dependencies:
+      '@bluwy/giget-core':
+        specifier: 'catalog:'
+        version: 0.1.7
     devDependencies:
       '@rune-cli/rune':
         specifier: workspace:*
@@ -166,6 +185,10 @@ packages:
   '@babel/runtime@7.29.2':
     resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
     engines: {node: '>=6.9.0'}
+
+  '@bluwy/giget-core@0.1.7':
+    resolution: {integrity: sha512-6XG8TZt8DVYLuGDVSpFJaSMlNowOg5RGecvWbKvlgMoqVbztUAQ3AcWq6oZ5DoCnTzNAPcO7rhkwt8ZVgrS7CQ==}
+    engines: {node: '>=18'}
 
   '@braidai/lang@1.1.2':
     resolution: {integrity: sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA==}
@@ -940,6 +963,13 @@ packages:
   '@rolldown/pluginutils@1.0.0-rc.9':
     resolution: {integrity: sha512-w6oiRWgEBl04QkFZgmW+jnU1EC9b57Oihi2ot3HNWIQRqgHp5PnYDia5iZ5FF7rpa4EQdiqMDXjlqKGXBhsoXw==}
 
+  '@rune-cli/rune@0.0.2':
+    resolution: {integrity: sha512-ZOIpUngxtFJOSpNS/A6/fSAYe6sTwCPCl/cvZnzOD63rVA/x7kQhKjUnhSW0GkkCRAznjRSiwEnSl0i8OeaNWw==}
+    engines: {node: '>=24.12.0'}
+    hasBin: true
+    peerDependencies:
+      typescript: '>=5.0.0'
+
   '@sindresorhus/is@4.6.0':
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
@@ -1000,6 +1030,66 @@ packages:
   '@typescript/native-preview@7.0.0-dev.20260317.1':
     resolution: {integrity: sha512-HmYNuhDoN9OHfsSHuSRvYJobHAHDVubLvSGSrjfNL6C34fVlPkPDi+iA53LcN1pVX5J30kajcKC7Snm13xmuKA==}
     hasBin: true
+
+  '@voidzero-dev/vite-plus-core@0.1.12':
+    resolution: {integrity: sha512-j8YNe7A+8JcSoddztf5whvom/yJ7OKUO3Y5a3UoLIUmOL8YEKVv5nPANrxJ7eaFfHJoMnBEwzBpq1YVZ+H3uPA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      '@arethetypeswrong/core': ^0.18.1
+      '@tsdown/css': 0.21.3
+      '@tsdown/exe': 0.21.3
+      '@types/node': ^20.19.0 || >=22.12.0
+      '@vitejs/devtools': ^0.0.0-alpha.31
+      esbuild: ^0.27.0
+      jiti: '>=1.21.0'
+      less: ^4.0.0
+      publint: ^0.3.0
+      sass: ^1.70.0
+      sass-embedded: ^1.70.0
+      stylus: '>=0.54.8'
+      sugarss: ^5.0.0
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      typescript: ^5.0.0
+      unplugin-unused: ^0.5.0
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@arethetypeswrong/core':
+        optional: true
+      '@tsdown/css':
+        optional: true
+      '@tsdown/exe':
+        optional: true
+      '@types/node':
+        optional: true
+      '@vitejs/devtools':
+        optional: true
+      esbuild:
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      publint:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      typescript:
+        optional: true
+      unplugin-unused:
+        optional: true
+      yaml:
+        optional: true
 
   '@voidzero-dev/vite-plus-core@0.1.13':
     resolution: {integrity: sha512-72dAIYgGrrmh4ap5Tbvzo0EYCrmVRoPQjz3NERpZ34CWCjFB8+WAyBkxG631Jz9/qC1TR/ZThjOKbdYXQ5z9Aw==}
@@ -1086,6 +1176,31 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@voidzero-dev/vite-plus-test@0.1.12':
+    resolution: {integrity: sha512-EE8Y2vQvqS4c/1qSa7qlhUY9koAG6wYev0NFAtDZsijQCHUqE7nYXGJYnyUInAE6GX4zlQDGg7tf2DAl+CISYw==}
+    engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
+    peerDependencies:
+      '@edge-runtime/vm': '*'
+      '@opentelemetry/api': ^1.9.0
+      '@types/node': ^20.0.0 || ^22.0.0 || >=24.0.0
+      '@vitest/ui': 4.1.0
+      happy-dom: '*'
+      jsdom: '*'
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0-0
+    peerDependenciesMeta:
+      '@edge-runtime/vm':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+      '@types/node':
+        optional: true
+      '@vitest/ui':
+        optional: true
+      happy-dom:
+        optional: true
+      jsdom:
+        optional: true
 
   '@voidzero-dev/vite-plus-test@0.1.13':
     resolution: {integrity: sha512-P3n9adJZsaIUGlgbzyT2YvlA1yr2lCYhNjrZsiLAKMVyQzk2D++ptTre3SnYf9j1TQeMP1VonRXGjtZhTf8wHg==}
@@ -1509,6 +1624,10 @@ packages:
 
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
+
+  modern-tar@0.7.6:
+    resolution: {integrity: sha512-sweCIVXzx1aIGTCdzcMlSZt1h8k5Tmk08VNAuRk3IU28XamGiOH5ypi11g6De2CH7PhYqSSnGy2A/EFhbWnVKg==}
+    engines: {node: '>=18.0.0'}
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -2000,6 +2119,10 @@ snapshots:
       validate-npm-package-name: 5.0.1
 
   '@babel/runtime@7.29.2': {}
+
+  '@bluwy/giget-core@0.1.7':
+    dependencies:
+      modern-tar: 0.7.6
 
   '@braidai/lang@1.1.2': {}
 
@@ -2561,6 +2684,11 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.0-rc.9': {}
 
+  '@rune-cli/rune@0.0.2(typescript@5.9.3)':
+    dependencies:
+      esbuild: 0.27.4
+      typescript: 5.9.3
+
   '@sindresorhus/is@4.6.0': {}
 
   '@standard-schema/spec@1.1.0': {}
@@ -2614,6 +2742,22 @@ snapshots:
       '@typescript/native-preview-win32-arm64': 7.0.0-dev.20260317.1
       '@typescript/native-preview-win32-x64': 7.0.0-dev.20260317.1
 
+  '@voidzero-dev/vite-plus-core@0.1.12(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(yaml@2.8.2)':
+    dependencies:
+      '@oxc-project/runtime': 0.115.0
+      '@oxc-project/types': 0.115.0
+      lightningcss: 1.32.0
+      postcss: 8.5.8
+    optionalDependencies:
+      '@arethetypeswrong/core': 0.18.2
+      '@types/node': 24.12.0
+      esbuild: 0.27.4
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      publint: 0.3.18
+      typescript: 5.9.3
+      yaml: 2.8.2
+
   '@voidzero-dev/vite-plus-core@0.1.13(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(yaml@2.8.2)':
     dependencies:
       '@oxc-project/runtime': 0.120.0
@@ -2641,6 +2785,45 @@ snapshots:
 
   '@voidzero-dev/vite-plus-linux-x64-gnu@0.1.13':
     optional: true
+
+  '@voidzero-dev/vite-plus-test@0.1.12(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@types/chai': 5.2.3
+      '@voidzero-dev/vite-plus-core': 0.1.12(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(yaml@2.8.2)
+      es-module-lexer: 1.7.0
+      obug: 2.1.1
+      pixelmatch: 7.1.0
+      pngjs: 7.0.0
+      sirv: 3.0.2
+      std-env: 4.0.0
+      tinybench: 2.9.0
+      tinyexec: 1.0.4
+      tinyglobby: 0.2.15
+      vite: 8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2)
+      ws: 8.19.0
+    optionalDependencies:
+      '@types/node': 24.12.0
+    transitivePeerDependencies:
+      - '@arethetypeswrong/core'
+      - '@tsdown/css'
+      - '@tsdown/exe'
+      - '@vitejs/devtools'
+      - bufferutil
+      - esbuild
+      - jiti
+      - less
+      - publint
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - typescript
+      - unplugin-unused
+      - utf-8-validate
+      - yaml
 
   '@voidzero-dev/vite-plus-test@0.1.13(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)':
     dependencies:
@@ -3039,6 +3222,8 @@ snapshots:
       picomatch: 2.3.1
 
   minimist@1.2.8: {}
+
+  modern-tar@0.7.6: {}
 
   mri@1.2.0: {}
 
