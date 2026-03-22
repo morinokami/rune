@@ -41,14 +41,10 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          # "changeset version" also updates examples/ via updateInternalDependencies,
-          # but that causes a lockfile mismatch because the new version isn't published yet.
-          # Example versions are updated at the right time by update-example-versions.ts
-          # after "changeset publish", so we revert the premature changes here.
-          # changesets/action splits this string on whitespace and passes each
-          # token as a literal argument via @actions/exec (no shell). Wrapping
-          # with "bash -c" ensures "&&" is interpreted as a shell operator.
-          version: bash -c 'vpx changeset version && git checkout examples/'
+          # changesets/action splits the version string on whitespace and passes
+          # each token as a literal argument via @actions/exec (no shell), so
+          # shell operators like "&&" cannot be used inline. We use a script instead.
+          version: scripts/version.sh
           publish: vpx changeset publish
           commit: "[ci] release"
           title: "[ci] release"
