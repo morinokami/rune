@@ -94,8 +94,8 @@ importers:
   examples/starter:
     devDependencies:
       '@rune-cli/rune':
-        specifier: ^0.0.2
-        version: 0.0.2(typescript@5.9.3)
+        specifier: ^0.0.3
+        version: 0.0.3(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -963,8 +963,8 @@ packages:
   '@rolldown/pluginutils@1.0.0-rc.9':
     resolution: {integrity: sha512-w6oiRWgEBl04QkFZgmW+jnU1EC9b57Oihi2ot3HNWIQRqgHp5PnYDia5iZ5FF7rpa4EQdiqMDXjlqKGXBhsoXw==}
 
-  '@rune-cli/rune@0.0.2':
-    resolution: {integrity: sha512-ZOIpUngxtFJOSpNS/A6/fSAYe6sTwCPCl/cvZnzOD63rVA/x7kQhKjUnhSW0GkkCRAznjRSiwEnSl0i8OeaNWw==}
+  '@rune-cli/rune@0.0.3':
+    resolution: {integrity: sha512-lVlx/93+eznYwVD2TAgyoCus6o14ismD6Ab0USOjb7mC8y661HkLgqFF7AxUgMnoO+Qu/H34WWdCfREcQsJy8w==}
     engines: {node: '>=24.12.0'}
     hasBin: true
     peerDependencies:
@@ -2684,7 +2684,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.0-rc.9': {}
 
-  '@rune-cli/rune@0.0.2(typescript@5.9.3)':
+  '@rune-cli/rune@0.0.3(typescript@5.9.3)':
     dependencies:
       esbuild: 0.27.4
       typescript: 5.9.3
