@@ -1,7 +1,6 @@
 export { defineCommand } from "./define-command";
 export { executeCommand } from "./execute-command";
 export { captureProcessOutput } from "./capture-output";
-export { formatFieldTypeHint } from "./format";
 export { parseCommand } from "./parse-command";
 export { isSchemaField } from "./schema-field";
 

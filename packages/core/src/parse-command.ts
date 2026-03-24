@@ -9,7 +9,6 @@ import type {
   InferNamedFields,
 } from "./command-types";
 
-import { formatFieldTypeHint } from "./format";
 import { isSchemaField } from "./schema-field";
 
 // Parsed command input ready to be passed into the low-level executor.
@@ -67,8 +66,12 @@ type TokenizedParseArgsResult = ReturnType<typeof parseArgs<TokenizedParseArgsCo
 
 type ParseArgsToken = NonNullable<TokenizedParseArgsResult["tokens"]>[number];
 
+function formatTypeHint(field: CommandOptionField): string {
+  return isSchemaField(field) ? "" : ` <${field.type}>`;
+}
+
 function formatOptionLabel(field: CommandOptionField): string {
-  return `--${field.name}${formatFieldTypeHint(field)}`;
+  return `--${field.name}${formatTypeHint(field)}`;
 }
 
 function formatArgumentLabel(field: CommandArgField): string {

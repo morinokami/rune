@@ -1,5 +1,4 @@
 import {
-  formatFieldTypeHint,
   isSchemaField,
   type CommandArgField,
   type CommandOptionField,
@@ -54,12 +53,16 @@ function formatSectionEntries(
     .join("\n");
 }
 
+function formatTypeHint(field: CommandArgField | CommandOptionField): string {
+  return isSchemaField(field) ? "" : ` <${field.type}>`;
+}
+
 function formatArgumentLabel(field: CommandArgField): string {
-  return `${field.name}${formatFieldTypeHint(field)}`;
+  return `${field.name}${formatTypeHint(field)}`;
 }
 
 function formatOptionLabel(field: CommandOptionField): string {
-  const longOptionLabel = `--${field.name}${formatFieldTypeHint(field)}`;
+  const longOptionLabel = `--${field.name}${formatTypeHint(field)}`;
 
   if (!field.alias) {
     return longOptionLabel;
