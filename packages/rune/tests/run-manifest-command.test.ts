@@ -6,6 +6,7 @@ import { afterEach, expect, test } from "vite-plus/test";
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
 import { runManifestCommand } from "../src/manifest/run-manifest-command";
+import { captureExitCode } from "./helpers";
 
 const fixtureRootDirectories = new Set<string>();
 
@@ -70,6 +71,10 @@ async function createRuntimeFixture(files: Readonly<Record<string, string>>): Pr
   };
 }
 
+async function captureRunManifestCommand(options: Parameters<typeof runManifestCommand>[0]) {
+  return captureExitCode(() => runManifestCommand(options));
+}
+
 test("runManifestCommand executes the matched leaf command through the router", async () => {
   const { manifest } = await createRuntimeFixture({
     "commands/project/create/index.mjs": [
@@ -101,18 +106,18 @@ test("runManifestCommand executes the matched leaf command through the router", 
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["project", "create", "42", "--name", "rune"],
     cliName: "mycli",
     cwd: "/tmp/rune-project",
   });
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: ["name=rune", "id=42", "cwd=/tmp/rune-project", "raw=42,--name,rune", ""].join("\n"),
-    stderr: "",
-  });
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toBe(
+    ["name=rune", "id=42", "cwd=/tmp/rune-project", "raw=42,--name,rune", ""].join("\n"),
+  );
+  expect(captured.stderr).toBe("");
 });
 
 test("runManifestCommand loads only the matched leaf module", async () => {
@@ -137,17 +142,15 @@ test("runManifestCommand loads only the matched leaf module", async () => {
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["project", "create"],
     cliName: "mycli",
   });
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: "",
-    stderr: "",
-  });
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toBe("");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
     "create",
   ]);
@@ -175,15 +178,15 @@ test("runManifestCommand returns help output without loading child commands for 
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["project"],
     cliName: "mycli",
   });
 
-  expect(result.exitCode).toBe(0);
-  expect(result.stdout).toContain("Usage: mycli project <command>");
-  expect(result.stderr).toBe("");
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toContain("Usage: mycli project <command>");
+  expect(captured.stderr).toBe("");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
 });
 
@@ -212,17 +215,15 @@ test("runManifestCommand returns parse failures as non-zero stderr results", asy
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["project", "create"],
     cliName: "mycli",
   });
 
-  expect(result).toEqual({
-    exitCode: 1,
-    stdout: "",
-    stderr: "Missing required option:\n\n  --name <string>\n",
-  });
+  expect(captured.exitCode).toBe(1);
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toBe("Missing required option:\n\n  --name <string>\n");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
     "create",
   ]);
@@ -251,16 +252,16 @@ test("runManifestCommand returns leaf help through the routed command path", asy
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["project", "create", "--help"],
     cliName: "mycli",
   });
 
-  expect(result.exitCode).toBe(0);
-  expect(result.stdout).toContain("Usage: mycli project create <id> [options]");
-  expect(result.stdout).toContain("-f, --force <boolean>");
-  expect(result.stderr).toBe("");
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toContain("Usage: mycli project create <id> [options]");
+  expect(captured.stdout).toContain("-f, --force <boolean>");
+  expect(captured.stderr).toBe("");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
     "create",
   ]);
@@ -288,16 +289,16 @@ test("runManifestCommand returns unknown command failures with suggestions", asy
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["project", "cretae"],
     cliName: "mycli",
   });
 
-  expect(result.exitCode).toBe(1);
-  expect(result.stdout).toBe("");
-  expect(result.stderr).toContain("Unknown command: mycli project cretae");
-  expect(result.stderr).toContain("create");
+  expect(captured.exitCode).toBe(1);
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toContain("Unknown command: mycli project cretae");
+  expect(captured.stderr).toContain("create");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
 });
 
@@ -319,18 +320,16 @@ test("runManifestCommand prints version when --version is passed with version se
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["--version"],
     cliName: "mycli",
     version: "1.2.3",
   });
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: "mycli v1.2.3\n",
-    stderr: "",
-  });
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toBe("mycli v1.2.3\n");
+  expect(captured.stderr).toBe("");
 });
 
 test("runManifestCommand prints version when -V is passed with version set", async () => {
@@ -351,18 +350,16 @@ test("runManifestCommand prints version when -V is passed with version set", asy
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["-V"],
     cliName: "mycli",
     version: "1.2.3",
   });
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: "mycli v1.2.3\n",
-    stderr: "",
-  });
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toBe("mycli v1.2.3\n");
+  expect(captured.stderr).toBe("");
 });
 
 test("runManifestCommand ignores --version when version is not set", async () => {
@@ -383,15 +380,15 @@ test("runManifestCommand ignores --version when version is not set", async () =>
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["--version"],
     cliName: "mycli",
   });
 
-  // Without version, falls through to normal routing (shows help for root group)
-  expect(result.exitCode).toBe(0);
-  expect(result.stdout).toContain("mycli");
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toContain("mycli");
+  expect(captured.stderr).toBe("");
 });
 
 test("runManifestCommand does not treat --version as version request when passed to a subcommand", async () => {
@@ -412,13 +409,14 @@ test("runManifestCommand does not treat --version as version request when passed
     ].join("\n"),
   });
 
-  const result = await runManifestCommand({
+  const captured = await captureRunManifestCommand({
     manifest,
     rawArgs: ["project", "--version"],
     cliName: "mycli",
     version: "1.2.3",
   });
 
-  // Should not print version; falls through to routing (group help for "project")
-  expect(result.stdout).not.toContain("v1.2.3");
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).not.toContain("v1.2.3");
+  expect(captured.stderr).toBe("");
 });

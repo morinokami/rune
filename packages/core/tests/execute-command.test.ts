@@ -1,7 +1,16 @@
 import { expect, test } from "vite-plus/test";
 
 import { defineCommand } from "../src";
+import { captureProcessOutput } from "../src/capture-output";
 import { executeCommand } from "../src/execute-command";
+
+function unwrap<T>(captured: Awaited<ReturnType<typeof captureProcessOutput<T>>>) {
+  if (!captured.ok) {
+    throw captured.error;
+  }
+
+  return captured;
+}
 
 test("executeCommand runs a command with injected context", async () => {
   const command = defineCommand({
@@ -15,36 +24,36 @@ test("executeCommand runs a command with injected context", async () => {
     },
   });
 
-  const result = await executeCommand(command, {
-    options: { name: "rune" },
-    args: { id: "42" },
-    cwd: "/tmp/rune-project",
-    rawArgs: ["project", "42", "--name", "rune"],
-  });
-
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: ["name=rune", "id=42", "cwd=/tmp/rune-project", "raw=project,42,--name,rune", ""].join(
-      "\n",
+  const captured = unwrap(
+    await captureProcessOutput(() =>
+      executeCommand(command, {
+        options: { name: "rune" },
+        args: { id: "42" },
+        cwd: "/tmp/rune-project",
+        rawArgs: ["project", "42", "--name", "rune"],
+      }),
     ),
-    stderr: "",
-  });
+  );
+
+  expect(captured.stdout).toBe(
+    ["name=rune", "id=42", "cwd=/tmp/rune-project", "raw=project,42,--name,rune", ""].join("\n"),
+  );
+  expect(captured.stderr).toBe("");
+  expect(captured.value).toEqual({ exitCode: 0 });
 });
 
-test("executeCommand captures stderr output", async () => {
+test("executeCommand lets stderr flow through", async () => {
   const command = defineCommand({
     async run() {
       process.stderr.write("warning\n");
     },
   });
 
-  const result = await executeCommand(command);
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: "",
-    stderr: "warning\n",
-  });
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toBe("warning\n");
+  expect(captured.value).toEqual({ exitCode: 0 });
 });
 
 test("executeCommand supports synchronous run functions", async () => {
@@ -54,13 +63,10 @@ test("executeCommand supports synchronous run functions", async () => {
     },
   });
 
-  const result = await executeCommand(command);
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: "sync\n",
-    stderr: "",
-  });
+  expect(captured.stdout).toBe("sync\n");
+  expect(captured.value).toEqual({ exitCode: 0 });
 });
 
 test("executeCommand accepts omitted required and default-backed fields", async () => {
@@ -74,15 +80,12 @@ test("executeCommand accepts omitted required and default-backed fields", async 
     },
   });
 
-  const result = await executeCommand(command, {
-    options: {},
-  });
+  const captured = unwrap(
+    await captureProcessOutput(() => executeCommand(command, { options: {} })),
+  );
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: "no validation\n",
-    stderr: "",
-  });
+  expect(captured.stdout).toBe("no validation\n");
+  expect(captured.value).toEqual({ exitCode: 0 });
 });
 
 test("executeCommand returns a non-zero result when a command throws", async () => {
@@ -94,13 +97,11 @@ test("executeCommand returns a non-zero result when a command throws", async () 
     },
   });
 
-  const result = await executeCommand(command);
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
-  expect(result).toEqual({
-    exitCode: 1,
-    stdout: "before failure\n",
-    stderr: "partial stderr\nBoom\n",
-  });
+  expect(captured.stdout).toBe("before failure\n");
+  expect(captured.stderr).toBe("partial stderr\n");
+  expect(captured.value).toEqual({ exitCode: 1, errorMessage: "Boom" });
 });
 
 test("executeCommand preserves an empty Error message", async () => {
@@ -112,11 +113,7 @@ test("executeCommand preserves an empty Error message", async () => {
 
   const result = await executeCommand(command);
 
-  expect(result).toEqual({
-    exitCode: 1,
-    stdout: "",
-    stderr: "",
-  });
+  expect(result).toEqual({ exitCode: 1 });
 });
 
 test("executeCommand normalizes non-Error throws", async () => {
@@ -128,11 +125,7 @@ test("executeCommand normalizes non-Error throws", async () => {
 
   const result = await executeCommand(command);
 
-  expect(result).toEqual({
-    exitCode: 1,
-    stdout: "",
-    stderr: "Unknown error\n",
-  });
+  expect(result).toEqual({ exitCode: 1, errorMessage: "Unknown error" });
 });
 
 test("executeCommand falls back to process defaults", async () => {
@@ -143,11 +136,8 @@ test("executeCommand falls back to process defaults", async () => {
     },
   });
 
-  const result = await executeCommand(command);
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: [`cwd=${process.cwd()}`, "raw=", ""].join("\n"),
-    stderr: "",
-  });
+  expect(captured.stdout).toBe([`cwd=${process.cwd()}`, "raw=", ""].join("\n"));
+  expect(captured.value).toEqual({ exitCode: 0 });
 });

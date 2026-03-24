@@ -4,12 +4,11 @@ export type {
   CommandContext,
   CommandOptionField,
   DefinedCommand,
+  ExecuteCommandInput,
   InferExecutionFields,
   PrimitiveFieldType,
   PrimitiveArgField,
   PrimitiveOptionField,
   SchemaArgField,
   SchemaOptionField,
-  CommandExecutionResult,
-  ExecuteCommandInput,
 } from "@rune-cli/core";

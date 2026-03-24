@@ -1,9 +1,8 @@
-import { executeCommand, parseCommand, type CommandExecutionResult } from "@rune-cli/core";
+import { executeCommand, parseCommand } from "@rune-cli/core";
 
 import type { CommandManifest } from "./manifest-types";
 
 import { isVersionFlag } from "../cli/flags";
-import { failureResult, successResult } from "../cli/result";
 import { defaultLoadCommand, renderResolvedHelp, type LoadCommandFn } from "./render-help";
 import { resolveCommandPath } from "./resolve-command-path";
 
@@ -16,12 +15,15 @@ export interface RunManifestCommandOptions {
   readonly loadCommand?: LoadCommandFn | undefined;
 }
 
+function ensureTrailingNewline(text: string): string {
+  return text.endsWith("\n") ? text : `${text}\n`;
+}
+
 // Resolves argv, loads only the matched leaf module, and executes it in-process.
-export async function runManifestCommand(
-  options: RunManifestCommandOptions,
-): Promise<CommandExecutionResult> {
+export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
   if (options.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
-    return successResult(`${options.cliName} v${options.version}\n`);
+    process.stdout.write(`${options.cliName} v${options.version}\n`);
+    return 0;
   }
 
   const route = resolveCommandPath(options.manifest, options.rawArgs);
@@ -35,7 +37,13 @@ export async function runManifestCommand(
       loadCommand: options.loadCommand,
     });
 
-    return route.kind === "unknown" ? failureResult(output) : successResult(output);
+    if (route.kind === "unknown") {
+      process.stderr.write(ensureTrailingNewline(output));
+      return 1;
+    }
+
+    process.stdout.write(output);
+    return 0;
   }
 
   const loadCommand = options.loadCommand ?? defaultLoadCommand;
@@ -43,13 +51,20 @@ export async function runManifestCommand(
   const parsed = await parseCommand(command, route.remainingArgs);
 
   if (!parsed.ok) {
-    return failureResult(parsed.error.message);
+    process.stderr.write(ensureTrailingNewline(parsed.error.message));
+    return 1;
   }
 
-  return executeCommand(command, {
+  const result = await executeCommand(command, {
     options: parsed.value.options,
     args: parsed.value.args,
     cwd: options.cwd,
     rawArgs: parsed.value.rawArgs,
   });
+
+  if (result.errorMessage) {
+    process.stderr.write(ensureTrailingNewline(result.errorMessage));
+  }
+
+  return result.exitCode;
 }

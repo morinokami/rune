@@ -1,29 +1,18 @@
 import { format } from "node:util";
 
 // Result of capturing process output around an in-process command execution.
-export interface CapturedOutput<TValue> {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly value?: TValue;
-  readonly error?: unknown;
-}
+export type CapturedOutput<TValue> =
+  | { readonly ok: true; readonly value: TValue; readonly stdout: string; readonly stderr: string }
+  | {
+      readonly ok: false;
+      readonly error: unknown;
+      readonly stdout: string;
+      readonly stderr: string;
+    };
 
-// Converts a thrown value into deterministic stderr text.
-export function formatExecutionError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message === "" ? "" : error.message || error.name || "Unknown error";
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  return "Unknown error";
-}
-
-// TODO: Replace this temporary implementation once `runCommand` / `rune/test`
-// output semantics are designed. It is not concurrency-safe because it patches
-// global process and console state.
+// Captures process output by temporarily patching stdout, stderr, and console.
+// Used by test helpers (`runCommand`) to assert on command output.
+// TODO: Not concurrency-safe because it patches global process and console state.
 export async function captureProcessOutput<TValue>(
   action: () => Promise<TValue>,
 ): Promise<CapturedOutput<TValue>> {
@@ -87,15 +76,17 @@ export async function captureProcessOutput<TValue>(
     const value = await action();
 
     return {
+      ok: true,
+      value,
       stdout: stdoutChunks.join(""),
       stderr: stderrChunks.join(""),
-      value,
     };
   } catch (error) {
     return {
+      ok: false,
+      error,
       stdout: stdoutChunks.join(""),
       stderr: stderrChunks.join(""),
-      error,
     };
   } finally {
     process.stdout.write = originalStdoutWrite as typeof process.stdout.write;

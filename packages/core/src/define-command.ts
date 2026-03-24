@@ -9,8 +9,6 @@ import type {
 
 import { isSchemaField } from "./schema-field";
 
-const EMPTY_FIELDS = [] as const;
-
 function isOptionalArg(field: CommandArgField): boolean | undefined {
   if (isSchemaField(field)) {
     // Standard Schema exposes no optionality metadata and validate() can be
@@ -109,8 +107,8 @@ export function defineCommand<
 
   return {
     description: input.description,
-    args: (input.args ?? EMPTY_FIELDS) as NormalizeFields<TArgsFields, CommandArgField>,
-    options: (input.options ?? EMPTY_FIELDS) as NormalizeFields<TOptionsFields, CommandOptionField>,
+    args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,
+    options: (input.options ?? []) as NormalizeFields<TOptionsFields, CommandOptionField>,
     run: input.run,
   };
 }
