@@ -1,20 +1,24 @@
-import type { CommandExecutionResult } from "@rune-cli/core";
-
 import runePackageJson from "../../package.json" with { type: "json" };
 import { renderRuneBuildHelp, runBuildCommand } from "./build-command";
 import { renderRuneDevHelp, runDevCommand } from "./dev-command";
 import { isHelpFlag, isVersionFlag } from "./flags";
-import { failureResult, successResult } from "./result";
+import { writeStderrLine, writeStdout } from "./write-result";
 
 interface ParsedProjectOption {
   readonly projectPath: string;
   readonly nextIndex: number;
 }
 
+interface EarlyExit {
+  readonly exitCode: number;
+  readonly output: string;
+  readonly stream: "stdout" | "stderr";
+}
+
 function tryParseProjectOption(
   argv: readonly string[],
   index: number,
-): ParsedProjectOption | CommandExecutionResult | undefined {
+): ParsedProjectOption | EarlyExit | undefined {
   const token = argv[index];
 
   if (token.startsWith("--project=")) {
@@ -25,7 +29,11 @@ function tryParseProjectOption(
     const nextToken = argv[index + 1];
 
     if (!nextToken) {
-      return failureResult("Missing value for --project. Usage: --project <path>");
+      return {
+        exitCode: 1,
+        output: "Missing value for --project. Usage: --project <path>",
+        stream: "stderr",
+      };
     }
 
     return { projectPath: nextToken, nextIndex: index + 2 };
@@ -43,7 +51,7 @@ interface ParsedDevArgs {
   readonly commandArgs: readonly string[];
 }
 
-function parseDevArgs(argv: readonly string[]): ParsedDevArgs | CommandExecutionResult {
+function parseDevArgs(argv: readonly string[]): ParsedDevArgs | EarlyExit {
   const commandArgs: string[] = [];
   let projectPath: string | undefined;
 
@@ -56,7 +64,7 @@ function parseDevArgs(argv: readonly string[]): ParsedDevArgs | CommandExecution
     }
 
     if (isHelpFlag(token)) {
-      return successResult(renderRuneDevHelp());
+      return { exitCode: 0, output: renderRuneDevHelp(), stream: "stdout" };
     }
 
     const projectResult = tryParseProjectOption(argv, index);
@@ -82,14 +90,14 @@ interface ParsedBuildArgs {
   readonly projectPath?: string | undefined;
 }
 
-function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | CommandExecutionResult {
+function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
   let projectPath: string | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
 
     if (isHelpFlag(token)) {
-      return successResult(renderRuneBuildHelp());
+      return { exitCode: 0, output: renderRuneBuildHelp(), stream: "stdout" };
     }
 
     const projectResult = tryParseProjectOption(argv, index);
@@ -104,7 +112,11 @@ function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | CommandExecu
       continue;
     }
 
-    return failureResult(`Unexpected argument for rune build: ${token}`);
+    return {
+      exitCode: 1,
+      output: `Unexpected argument for rune build: ${token}`,
+      stream: "stderr",
+    };
   }
 
   return { projectPath };
@@ -130,22 +142,30 @@ Options:
 }
 
 // Parses Rune's own CLI arguments and dispatches to subcommands such as `rune dev`.
-export async function runRuneCli(options: RunRuneCliOptions): Promise<CommandExecutionResult> {
+export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   const [subcommand, ...restArgs] = options.argv;
 
   if (!subcommand || isHelpFlag(subcommand)) {
-    return successResult(renderRuneCliHelp());
+    await writeStdout(renderRuneCliHelp());
+    return 0;
   }
 
   if (isVersionFlag(subcommand)) {
-    return successResult(`rune v${getRuneVersion()}\n`);
+    await writeStdout(`rune v${getRuneVersion()}\n`);
+    return 0;
   }
 
   if (subcommand === "dev") {
     const parsedDevArgs = parseDevArgs(restArgs);
 
     if ("exitCode" in parsedDevArgs) {
-      return parsedDevArgs;
+      if (parsedDevArgs.stream === "stdout") {
+        await writeStdout(parsedDevArgs.output);
+      } else {
+        await writeStderrLine(parsedDevArgs.output);
+      }
+
+      return parsedDevArgs.exitCode;
     }
 
     return runDevCommand({
@@ -159,7 +179,13 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<CommandExe
     const parsedBuildArgs = parseBuildArgs(restArgs);
 
     if ("exitCode" in parsedBuildArgs) {
-      return parsedBuildArgs;
+      if (parsedBuildArgs.stream === "stdout") {
+        await writeStdout(parsedBuildArgs.output);
+      } else {
+        await writeStderrLine(parsedBuildArgs.output);
+      }
+
+      return parsedBuildArgs.exitCode;
     }
 
     return runBuildCommand({
@@ -168,5 +194,6 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<CommandExe
     });
   }
 
-  return failureResult(`Unknown command: ${subcommand}. Available commands: build, dev`);
+  await writeStderrLine(`Unknown command: ${subcommand}. Available commands: build, dev`);
+  return 1;
 }

@@ -1,3 +1,4 @@
+import { captureProcessOutput } from "@rune-cli/core";
 import { spawn } from "node:child_process";
 import {
   mkdtemp,
@@ -164,16 +165,16 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
-test("runRuneCli shows help for `rune build --help`", async () => {
-  const result = await runRuneCli({
-    argv: ["build", "--help"],
-  });
+async function captureRuneCli(argv: readonly string[], cwd?: string) {
+  return captureProcessOutput(() => runRuneCli({ argv, cwd }));
+}
 
-  expect(result).toEqual({
-    exitCode: 0,
-    stdout: expect.stringContaining("Usage: rune build [options]\n"),
-    stderr: "",
-  });
+test("runRuneCli shows help for `rune build --help`", async () => {
+  const captured = await captureRuneCli(["build", "--help"]);
+
+  expect(captured.value).toBe(0);
+  expect(captured.stdout).toContain("Usage: rune build [options]\n");
+  expect(captured.stderr).toBe("");
 });
 
 // Core runnable build behavior.
@@ -200,16 +201,11 @@ test("runRuneCli builds a fixture project and emits a runnable dist CLI", async 
   });
   await installRuneFixturePackage(projectRoot);
 
-  const buildResult = await runRuneCli({
-    argv: ["build"],
-    cwd: projectRoot,
-  });
+  const buildResult = await captureRuneCli(["build"], projectRoot);
 
-  expect(buildResult).toEqual({
-    exitCode: 0,
-    stdout: expect.stringContaining(path.join(projectRoot, "dist", "cli.mjs")),
-    stderr: "",
-  });
+  expect(buildResult.value).toBe(0);
+  expect(buildResult.stdout).toContain(path.join(projectRoot, "dist", "cli.mjs"));
+  expect(buildResult.stderr).toBe("");
 
   const manifestContents = await readFile(path.join(projectRoot, "dist", "manifest.json"), "utf8");
   expect(manifestContents).toContain('"sourceFilePath": "commands/hello/index.mjs"');
@@ -243,11 +239,9 @@ test("the built CLI shows help without invoking rune dev", async () => {
   });
   await installRuneFixturePackage(projectRoot);
 
-  const buildResult = await runRuneCli({
-    argv: ["build"],
-    cwd: projectRoot,
-  });
-  expect(buildResult.exitCode).toBe(0);
+  const buildResult = await captureRuneCli(["build"], projectRoot);
+  expect(buildResult.value).toBe(0);
+  expect(buildResult.stderr).toBe("");
 
   const rootHelpResult = await runBuiltCli(projectRoot, []);
   expect(rootHelpResult.exitCode).toBe(0);
@@ -276,11 +270,9 @@ test("runRuneCli build copies non-TypeScript files and skips declaration files",
   });
   await installRuneFixturePackage(projectRoot);
 
-  const buildResult = await runRuneCli({
-    argv: ["build"],
-    cwd: projectRoot,
-  });
-  expect(buildResult.exitCode).toBe(0);
+  const buildResult = await captureRuneCli(["build"], projectRoot);
+  expect(buildResult.value).toBe(0);
+  expect(buildResult.stderr).toBe("");
 
   expect(await readFile(path.join(projectRoot, "dist", "config.json"), "utf8")).toBe(
     JSON.stringify({ greeting: "hello" }, null, 2),
@@ -320,11 +312,9 @@ test("runRuneCli build emits shared chunks for command dependencies", async () =
   });
   await installRuneFixturePackage(projectRoot);
 
-  const buildResult = await runRuneCli({
-    argv: ["build"],
-    cwd: projectRoot,
-  });
-  expect(buildResult.exitCode).toBe(0);
+  const buildResult = await captureRuneCli(["build"], projectRoot);
+  expect(buildResult.value).toBe(0);
+  expect(buildResult.stderr).toBe("");
 
   expect(await pathExists(path.join(projectRoot, "dist", "shared.js"))).toBe(false);
   expect((await readdir(path.join(projectRoot, "dist", "chunks"))).length).toBeGreaterThan(0);
@@ -358,12 +348,10 @@ test("runRuneCli build does not apply the project tsconfig to the built CLI entr
   });
   await installRuneFixturePackage(projectRoot);
 
-  const buildResult = await runRuneCli({
-    argv: ["build"],
-    cwd: projectRoot,
-  });
+  const buildResult = await captureRuneCli(["build"], projectRoot);
 
-  expect(buildResult.exitCode).toBe(0);
+  expect(buildResult.value).toBe(0);
+  expect(buildResult.stderr).toBe("");
 
   const builtCommandResult = await runBuiltCli(projectRoot, ["hello"]);
   expect(builtCommandResult).toEqual({
@@ -392,12 +380,9 @@ test("runRuneCli build reports transpile failures", async () => {
   });
   await installRuneFixturePackage(projectRoot);
 
-  const buildResult = await runRuneCli({
-    argv: ["build"],
-    cwd: projectRoot,
-  });
+  const buildResult = await captureRuneCli(["build"], projectRoot);
 
-  expect(buildResult.exitCode).toBe(1);
+  expect(buildResult.value).toBe(1);
   expect(buildResult.stdout).toBe("");
   expect(buildResult.stderr).toContain("Failed to compile");
   expect(buildResult.stderr).toContain("src/broken.ts");

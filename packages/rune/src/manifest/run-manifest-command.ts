@@ -1,9 +1,9 @@
-import { executeCommand, parseCommand, type CommandExecutionResult } from "@rune-cli/core";
+import { executeCommand, parseCommand } from "@rune-cli/core";
 
 import type { CommandManifest } from "./manifest-types";
 
 import { isVersionFlag } from "../cli/flags";
-import { failureResult, successResult } from "../cli/result";
+import { writeStderrLine, writeStdout } from "../cli/write-result";
 import { defaultLoadCommand, renderResolvedHelp, type LoadCommandFn } from "./render-help";
 import { resolveCommandPath } from "./resolve-command-path";
 
@@ -17,11 +17,10 @@ export interface RunManifestCommandOptions {
 }
 
 // Resolves argv, loads only the matched leaf module, and executes it in-process.
-export async function runManifestCommand(
-  options: RunManifestCommandOptions,
-): Promise<CommandExecutionResult> {
+export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
   if (options.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
-    return successResult(`${options.cliName} v${options.version}\n`);
+    await writeStdout(`${options.cliName} v${options.version}\n`);
+    return 0;
   }
 
   const route = resolveCommandPath(options.manifest, options.rawArgs);
@@ -35,7 +34,13 @@ export async function runManifestCommand(
       loadCommand: options.loadCommand,
     });
 
-    return route.kind === "unknown" ? failureResult(output) : successResult(output);
+    if (route.kind === "unknown") {
+      await writeStderrLine(output);
+      return 1;
+    }
+
+    await writeStdout(output);
+    return 0;
   }
 
   const loadCommand = options.loadCommand ?? defaultLoadCommand;
@@ -43,13 +48,20 @@ export async function runManifestCommand(
   const parsed = await parseCommand(command, route.remainingArgs);
 
   if (!parsed.ok) {
-    return failureResult(parsed.error.message);
+    await writeStderrLine(parsed.error.message);
+    return 1;
   }
 
-  return executeCommand(command, {
+  const result = await executeCommand(command, {
     options: parsed.value.options,
     args: parsed.value.args,
     cwd: options.cwd,
     rawArgs: parsed.value.rawArgs,
   });
+
+  if (result.errorMessage) {
+    await writeStderrLine(result.errorMessage);
+  }
+
+  return result.exitCode;
 }

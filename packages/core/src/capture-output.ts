@@ -8,22 +8,9 @@ export interface CapturedOutput<TValue> {
   readonly error?: unknown;
 }
 
-// Converts a thrown value into deterministic stderr text.
-export function formatExecutionError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message === "" ? "" : error.message || error.name || "Unknown error";
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  return "Unknown error";
-}
-
-// TODO: Replace this temporary implementation once `runCommand` / `rune/test`
-// output semantics are designed. It is not concurrency-safe because it patches
-// global process and console state.
+// Captures process output by temporarily patching stdout, stderr, and console.
+// Used by test helpers (`runCommand`) to assert on command output.
+// TODO: Not concurrency-safe because it patches global process and console state.
 export async function captureProcessOutput<TValue>(
   action: () => Promise<TValue>,
 ): Promise<CapturedOutput<TValue>> {

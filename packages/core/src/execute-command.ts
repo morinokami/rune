@@ -6,8 +6,6 @@ import type {
   InferNamedFields,
 } from "./command-types";
 
-import { captureProcessOutput, formatExecutionError } from "./internal/capture-output";
-
 // Input accepted by the low-level direct executor before validation exists.
 export interface ExecuteCommandInput<TOptions, TArgs> {
   readonly options?: TOptions | undefined;
@@ -17,13 +15,22 @@ export interface ExecuteCommandInput<TOptions, TArgs> {
 }
 
 // The normalized result of running a command without spawning a process.
-export interface CommandExecutionResult {
+export interface ExecuteCommandResult {
   readonly exitCode: number;
-  readonly stdout: string;
-  readonly stderr: string;
+  readonly errorMessage?: string | undefined;
 }
 
-const EMPTY_ARGS = [] as const;
+function formatExecutionError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message === "" ? "" : error.message || error.name || "Unknown error";
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "Unknown error";
+}
 
 // This is a low-level executor intended to sit below future validation helpers.
 export async function executeCommand<
@@ -35,29 +42,19 @@ export async function executeCommand<
     InferExecutionFields<TOptionsFields>,
     InferExecutionFields<TArgsFields>
   > = {},
-): Promise<CommandExecutionResult> {
-  const result = await captureProcessOutput(async () => {
+): Promise<ExecuteCommandResult> {
+  try {
     await command.run({
       options: (input.options ?? {}) as InferNamedFields<TOptionsFields>,
       args: (input.args ?? {}) as InferNamedFields<TArgsFields>,
       cwd: input.cwd ?? process.cwd(),
-      rawArgs: input.rawArgs ?? EMPTY_ARGS,
+      rawArgs: input.rawArgs ?? [],
     });
-  });
 
-  if (result.error === undefined) {
-    return {
-      exitCode: 0,
-      stdout: result.stdout,
-      stderr: result.stderr,
-    };
+    return { exitCode: 0 };
+  } catch (error) {
+    const message = formatExecutionError(error);
+
+    return message ? { exitCode: 1, errorMessage: message } : { exitCode: 1 };
   }
-
-  const message = formatExecutionError(result.error);
-
-  return {
-    exitCode: 1,
-    stdout: result.stdout,
-    stderr: `${result.stderr}${message ? `${message}\n` : ""}`,
-  };
 }

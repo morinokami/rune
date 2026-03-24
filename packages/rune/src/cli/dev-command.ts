@@ -1,5 +1,3 @@
-import type { CommandExecutionResult } from "@rune-cli/core";
-
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -12,7 +10,7 @@ import {
   resolveProjectPath,
 } from "../project/project-files";
 import { isVersionFlag } from "./flags";
-import { failureResult, successResult } from "./result";
+import { writeStderrLine, writeStdout } from "./write-result";
 
 const DEV_MANIFEST_DIRECTORY_PATH = ".rune";
 const DEV_MANIFEST_FILENAME = "manifest.json";
@@ -50,15 +48,14 @@ Examples:
 // Generates a fresh manifest and executes commands directly from source.
 // `rune dev` imports command `.ts` modules without an extra loader, so it relies
 // on a Node.js runtime that can execute native type-stripped TypeScript.
-export async function runDevCommand(
-  options: RunDevCommandOptions,
-): Promise<CommandExecutionResult> {
+export async function runDevCommand(options: RunDevCommandOptions): Promise<number> {
   try {
     const projectRoot = resolveProjectPath(options);
     const cliInfo = await readProjectCliInfo(projectRoot);
 
     if (cliInfo.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
-      return successResult(`${cliInfo.name} v${cliInfo.version}\n`);
+      await writeStdout(`${cliInfo.name} v${cliInfo.version}\n`);
+      return 0;
     }
 
     const commandsDirectory = resolveCommandsDirectory(projectRoot);
@@ -76,6 +73,7 @@ export async function runDevCommand(
       cwd: options.cwd,
     });
   } catch (error) {
-    return failureResult(error instanceof Error ? error.message : "Failed to run rune dev");
+    await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune dev");
+    return 1;
   }
 }

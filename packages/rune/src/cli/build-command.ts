@@ -1,5 +1,3 @@
-import type { CommandExecutionResult } from "@rune-cli/core";
-
 import { build, type BuildFailure } from "esbuild";
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -16,7 +14,7 @@ import {
   resolveProjectPath,
   resolveSourceDirectory,
 } from "../project/project-files";
-import { failureResult, successResult } from "./result";
+import { writeStderrLine, writeStdout } from "./write-result";
 
 const BUILD_CLI_FILENAME = "cli.mjs";
 const BUILD_MANIFEST_FILENAME = "manifest.json";
@@ -135,7 +133,7 @@ function renderBuiltCliEntry(
   return `import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { runManifestCommand, writeCommandExecutionResult } from ${JSON.stringify(runtimeImportPath)};
+import { runManifestCommand } from ${JSON.stringify(runtimeImportPath)};
 
 const cliName = ${JSON.stringify(cliName)};
 const version = ${JSON.stringify(version)};
@@ -154,15 +152,13 @@ const runtimeManifest = {
       : node,
   ),
 };
-const result = await runManifestCommand({
+process.exitCode = await runManifestCommand({
   manifest: runtimeManifest,
   rawArgs: process.argv.slice(2),
   cliName,
   version,
   cwd: process.cwd(),
 });
-
-await writeCommandExecutionResult(result);
 `;
 }
 
@@ -329,9 +325,7 @@ Examples:
 `;
 }
 
-export async function runBuildCommand(
-  options: RunBuildCommandOptions,
-): Promise<CommandExecutionResult> {
+export async function runBuildCommand(options: RunBuildCommandOptions): Promise<number> {
   let projectRoot = "";
 
   try {
@@ -353,12 +347,15 @@ export async function runBuildCommand(
       copyBuiltAssets(sourceDirectory, distDirectory),
     ]);
 
-    return successResult(`Built CLI to ${path.join(distDirectory, BUILD_CLI_FILENAME)}\n`);
+    await writeStdout(`Built CLI to ${path.join(distDirectory, BUILD_CLI_FILENAME)}\n`);
+    return 0;
   } catch (error) {
     if (isBuildFailure(error)) {
-      return failureResult(formatBuildFailure(projectRoot, error));
+      await writeStderrLine(formatBuildFailure(projectRoot, error));
+      return 1;
     }
 
-    return failureResult(error instanceof Error ? error.message : "Failed to run rune build");
+    await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune build");
+    return 1;
   }
 }
