@@ -3,7 +3,6 @@ import { executeCommand, parseCommand } from "@rune-cli/core";
 import type { CommandManifest } from "./manifest-types";
 
 import { isVersionFlag } from "../cli/flags";
-import { writeStderrLine, writeStdout } from "../cli/write-result";
 import { defaultLoadCommand, renderResolvedHelp, type LoadCommandFn } from "./render-help";
 import { resolveCommandPath } from "./resolve-command-path";
 
@@ -16,10 +15,14 @@ export interface RunManifestCommandOptions {
   readonly loadCommand?: LoadCommandFn | undefined;
 }
 
+function ensureTrailingNewline(text: string): string {
+  return text.endsWith("\n") ? text : `${text}\n`;
+}
+
 // Resolves argv, loads only the matched leaf module, and executes it in-process.
 export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
   if (options.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
-    await writeStdout(`${options.cliName} v${options.version}\n`);
+    process.stdout.write(`${options.cliName} v${options.version}\n`);
     return 0;
   }
 
@@ -35,11 +38,11 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
     });
 
     if (route.kind === "unknown") {
-      await writeStderrLine(output);
+      process.stderr.write(ensureTrailingNewline(output));
       return 1;
     }
 
-    await writeStdout(output);
+    process.stdout.write(output);
     return 0;
   }
 
@@ -48,7 +51,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
   const parsed = await parseCommand(command, route.remainingArgs);
 
   if (!parsed.ok) {
-    await writeStderrLine(parsed.error.message);
+    process.stderr.write(ensureTrailingNewline(parsed.error.message));
     return 1;
   }
 
@@ -60,7 +63,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
   });
 
   if (result.errorMessage) {
-    await writeStderrLine(result.errorMessage);
+    process.stderr.write(ensureTrailingNewline(result.errorMessage));
   }
 
   return result.exitCode;

@@ -1,12 +1,14 @@
 import { format } from "node:util";
 
 // Result of capturing process output around an in-process command execution.
-export interface CapturedOutput<TValue> {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly value?: TValue;
-  readonly error?: unknown;
-}
+export type CapturedOutput<TValue> =
+  | { readonly ok: true; readonly value: TValue; readonly stdout: string; readonly stderr: string }
+  | {
+      readonly ok: false;
+      readonly error: unknown;
+      readonly stdout: string;
+      readonly stderr: string;
+    };
 
 // Captures process output by temporarily patching stdout, stderr, and console.
 // Used by test helpers (`runCommand`) to assert on command output.
@@ -74,15 +76,17 @@ export async function captureProcessOutput<TValue>(
     const value = await action();
 
     return {
+      ok: true,
+      value,
       stdout: stdoutChunks.join(""),
       stderr: stderrChunks.join(""),
-      value,
     };
   } catch (error) {
     return {
+      ok: false,
+      error,
       stdout: stdoutChunks.join(""),
       stderr: stderrChunks.join(""),
-      error,
     };
   } finally {
     process.stdout.write = originalStdoutWrite as typeof process.stdout.write;

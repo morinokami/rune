@@ -35,7 +35,8 @@ test("runCommand captures command failures without spawning a process", async ()
   expect(result).toEqual({
     exitCode: 1,
     stdout: "",
-    stderr: "boom\n",
+    stderr: "",
+    errorMessage: "boom",
   });
 });
 

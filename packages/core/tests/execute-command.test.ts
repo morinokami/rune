@@ -4,6 +4,14 @@ import { defineCommand } from "../src";
 import { captureProcessOutput } from "../src/capture-output";
 import { executeCommand } from "../src/execute-command";
 
+function unwrap<T>(captured: Awaited<ReturnType<typeof captureProcessOutput<T>>>) {
+  if (!captured.ok) {
+    throw captured.error;
+  }
+
+  return captured;
+}
+
 test("executeCommand runs a command with injected context", async () => {
   const command = defineCommand({
     args: [{ name: "id", type: "string", required: true }],
@@ -16,13 +24,15 @@ test("executeCommand runs a command with injected context", async () => {
     },
   });
 
-  const captured = await captureProcessOutput(() =>
-    executeCommand(command, {
-      options: { name: "rune" },
-      args: { id: "42" },
-      cwd: "/tmp/rune-project",
-      rawArgs: ["project", "42", "--name", "rune"],
-    }),
+  const captured = unwrap(
+    await captureProcessOutput(() =>
+      executeCommand(command, {
+        options: { name: "rune" },
+        args: { id: "42" },
+        cwd: "/tmp/rune-project",
+        rawArgs: ["project", "42", "--name", "rune"],
+      }),
+    ),
   );
 
   expect(captured.stdout).toBe(
@@ -39,7 +49,7 @@ test("executeCommand lets stderr flow through", async () => {
     },
   });
 
-  const captured = await captureProcessOutput(() => executeCommand(command));
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toBe("warning\n");
@@ -53,7 +63,7 @@ test("executeCommand supports synchronous run functions", async () => {
     },
   });
 
-  const captured = await captureProcessOutput(() => executeCommand(command));
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
   expect(captured.stdout).toBe("sync\n");
   expect(captured.value).toEqual({ exitCode: 0 });
@@ -70,7 +80,9 @@ test("executeCommand accepts omitted required and default-backed fields", async 
     },
   });
 
-  const captured = await captureProcessOutput(() => executeCommand(command, { options: {} }));
+  const captured = unwrap(
+    await captureProcessOutput(() => executeCommand(command, { options: {} })),
+  );
 
   expect(captured.stdout).toBe("no validation\n");
   expect(captured.value).toEqual({ exitCode: 0 });
@@ -85,7 +97,7 @@ test("executeCommand returns a non-zero result when a command throws", async () 
     },
   });
 
-  const captured = await captureProcessOutput(() => executeCommand(command));
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
   expect(captured.stdout).toBe("before failure\n");
   expect(captured.stderr).toBe("partial stderr\n");
@@ -124,7 +136,7 @@ test("executeCommand falls back to process defaults", async () => {
     },
   });
 
-  const captured = await captureProcessOutput(() => executeCommand(command));
+  const captured = unwrap(await captureProcessOutput(() => executeCommand(command)));
 
   expect(captured.stdout).toBe([`cwd=${process.cwd()}`, "raw=", ""].join("\n"));
   expect(captured.value).toEqual({ exitCode: 0 });

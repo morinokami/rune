@@ -5,14 +5,26 @@ import { isHelpFlag, isVersionFlag } from "./flags";
 import { writeStderrLine, writeStdout } from "./write-result";
 
 interface ParsedProjectOption {
+  readonly ok: true;
   readonly projectPath: string;
   readonly nextIndex: number;
 }
 
 interface EarlyExit {
+  readonly ok: false;
   readonly exitCode: number;
   readonly output: string;
   readonly stream: "stdout" | "stderr";
+}
+
+async function writeEarlyExit(exit: EarlyExit): Promise<number> {
+  if (exit.stream === "stdout") {
+    await writeStdout(exit.output);
+  } else {
+    await writeStderrLine(exit.output);
+  }
+
+  return exit.exitCode;
 }
 
 function tryParseProjectOption(
@@ -22,7 +34,7 @@ function tryParseProjectOption(
   const token = argv[index];
 
   if (token.startsWith("--project=")) {
-    return { projectPath: token.slice("--project=".length), nextIndex: index + 1 };
+    return { ok: true, projectPath: token.slice("--project=".length), nextIndex: index + 1 };
   }
 
   if (token === "--project") {
@@ -30,13 +42,14 @@ function tryParseProjectOption(
 
     if (!nextToken) {
       return {
+        ok: false,
         exitCode: 1,
         output: "Missing value for --project. Usage: --project <path>",
         stream: "stderr",
       };
     }
 
-    return { projectPath: nextToken, nextIndex: index + 2 };
+    return { ok: true, projectPath: nextToken, nextIndex: index + 2 };
   }
 
   return undefined;
@@ -47,6 +60,7 @@ function getRuneVersion(): string {
 }
 
 interface ParsedDevArgs {
+  readonly ok: true;
   readonly projectPath?: string | undefined;
   readonly commandArgs: readonly string[];
 }
@@ -60,17 +74,17 @@ function parseDevArgs(argv: readonly string[]): ParsedDevArgs | EarlyExit {
 
     if (token === "--") {
       commandArgs.push(...argv.slice(index + 1));
-      return { projectPath, commandArgs };
+      return { ok: true, projectPath, commandArgs };
     }
 
     if (isHelpFlag(token)) {
-      return { exitCode: 0, output: renderRuneDevHelp(), stream: "stdout" };
+      return { ok: false, exitCode: 0, output: renderRuneDevHelp(), stream: "stdout" };
     }
 
     const projectResult = tryParseProjectOption(argv, index);
 
     if (projectResult) {
-      if ("exitCode" in projectResult) {
+      if (!projectResult.ok) {
         return projectResult;
       }
 
@@ -80,13 +94,14 @@ function parseDevArgs(argv: readonly string[]): ParsedDevArgs | EarlyExit {
     }
 
     commandArgs.push(token, ...argv.slice(index + 1));
-    return { projectPath, commandArgs };
+    return { ok: true, projectPath, commandArgs };
   }
 
-  return { projectPath, commandArgs };
+  return { ok: true, projectPath, commandArgs };
 }
 
 interface ParsedBuildArgs {
+  readonly ok: true;
   readonly projectPath?: string | undefined;
 }
 
@@ -97,13 +112,13 @@ function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
     const token = argv[index];
 
     if (isHelpFlag(token)) {
-      return { exitCode: 0, output: renderRuneBuildHelp(), stream: "stdout" };
+      return { ok: false, exitCode: 0, output: renderRuneBuildHelp(), stream: "stdout" };
     }
 
     const projectResult = tryParseProjectOption(argv, index);
 
     if (projectResult) {
-      if ("exitCode" in projectResult) {
+      if (!projectResult.ok) {
         return projectResult;
       }
 
@@ -113,13 +128,14 @@ function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
     }
 
     return {
+      ok: false,
       exitCode: 1,
       output: `Unexpected argument for rune build: ${token}`,
       stream: "stderr",
     };
   }
 
-  return { projectPath };
+  return { ok: true, projectPath };
 }
 
 export interface RunRuneCliOptions {
@@ -158,14 +174,8 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   if (subcommand === "dev") {
     const parsedDevArgs = parseDevArgs(restArgs);
 
-    if ("exitCode" in parsedDevArgs) {
-      if (parsedDevArgs.stream === "stdout") {
-        await writeStdout(parsedDevArgs.output);
-      } else {
-        await writeStderrLine(parsedDevArgs.output);
-      }
-
-      return parsedDevArgs.exitCode;
+    if (!parsedDevArgs.ok) {
+      return writeEarlyExit(parsedDevArgs);
     }
 
     return runDevCommand({
@@ -178,14 +188,8 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   if (subcommand === "build") {
     const parsedBuildArgs = parseBuildArgs(restArgs);
 
-    if ("exitCode" in parsedBuildArgs) {
-      if (parsedBuildArgs.stream === "stdout") {
-        await writeStdout(parsedBuildArgs.output);
-      } else {
-        await writeStderrLine(parsedBuildArgs.output);
-      }
-
-      return parsedBuildArgs.exitCode;
+    if (!parsedBuildArgs.ok) {
+      return writeEarlyExit(parsedBuildArgs);
     }
 
     return runBuildCommand({

@@ -1,4 +1,3 @@
-import { captureProcessOutput } from "@rune-cli/core";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -7,6 +6,7 @@ import { afterEach, expect, test } from "vite-plus/test";
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
 import { runManifestCommand } from "../src/manifest/run-manifest-command";
+import { captureExitCode } from "./helpers";
 
 const fixtureRootDirectories = new Set<string>();
 
@@ -72,7 +72,7 @@ async function createRuntimeFixture(files: Readonly<Record<string, string>>): Pr
 }
 
 async function captureRunManifestCommand(options: Parameters<typeof runManifestCommand>[0]) {
-  return captureProcessOutput(() => runManifestCommand(options));
+  return captureExitCode(() => runManifestCommand(options));
 }
 
 test("runManifestCommand executes the matched leaf command through the router", async () => {
@@ -113,7 +113,7 @@ test("runManifestCommand executes the matched leaf command through the router", 
     cwd: "/tmp/rune-project",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe(
     ["name=rune", "id=42", "cwd=/tmp/rune-project", "raw=42,--name,rune", ""].join("\n"),
   );
@@ -148,7 +148,7 @@ test("runManifestCommand loads only the matched leaf module", async () => {
     cliName: "mycli",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toBe("");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
@@ -184,7 +184,7 @@ test("runManifestCommand returns help output without loading child commands for 
     cliName: "mycli",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: mycli project <command>");
   expect(captured.stderr).toBe("");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
@@ -221,7 +221,7 @@ test("runManifestCommand returns parse failures as non-zero stderr results", asy
     cliName: "mycli",
   });
 
-  expect(captured.value).toBe(1);
+  expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toBe("Missing required option:\n\n  --name <string>\n");
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
@@ -258,7 +258,7 @@ test("runManifestCommand returns leaf help through the routed command path", asy
     cliName: "mycli",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: mycli project create <id> [options]");
   expect(captured.stdout).toContain("-f, --force <boolean>");
   expect(captured.stderr).toBe("");
@@ -295,7 +295,7 @@ test("runManifestCommand returns unknown command failures with suggestions", asy
     cliName: "mycli",
   });
 
-  expect(captured.value).toBe(1);
+  expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toContain("Unknown command: mycli project cretae");
   expect(captured.stderr).toContain("create");
@@ -327,7 +327,7 @@ test("runManifestCommand prints version when --version is passed with version se
     version: "1.2.3",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("mycli v1.2.3\n");
   expect(captured.stderr).toBe("");
 });
@@ -357,7 +357,7 @@ test("runManifestCommand prints version when -V is passed with version set", asy
     version: "1.2.3",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("mycli v1.2.3\n");
   expect(captured.stderr).toBe("");
 });
@@ -386,7 +386,7 @@ test("runManifestCommand ignores --version when version is not set", async () =>
     cliName: "mycli",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("mycli");
   expect(captured.stderr).toBe("");
 });
@@ -416,7 +416,7 @@ test("runManifestCommand does not treat --version as version request when passed
     version: "1.2.3",
   });
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).not.toContain("v1.2.3");
   expect(captured.stderr).toBe("");
 });

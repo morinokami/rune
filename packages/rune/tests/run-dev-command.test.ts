@@ -1,4 +1,3 @@
-import { captureProcessOutput } from "@rune-cli/core";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -6,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vite-plus/test";
 
 import { runRuneCli } from "../src/cli/rune-cli";
+import { captureExitCode } from "./helpers";
 
 const fixtureRootDirectories = new Set<string>();
 const runeEntryPath = fileURLToPath(new URL("../src/index.ts", import.meta.url));
@@ -35,7 +35,7 @@ async function createDevProject(files: Readonly<Record<string, string>>): Promis
 }
 
 async function captureRuneCli(argv: readonly string[], cwd?: string) {
-  return captureProcessOutput(() => runRuneCli({ argv, cwd }));
+  return captureExitCode(() => runRuneCli({ argv, cwd }));
 }
 
 test("runRuneCli executes a simple command through `rune dev`", async () => {
@@ -55,7 +55,7 @@ test("runRuneCli executes a simple command through `rune dev`", async () => {
 
   const captured = await captureRuneCli(["dev", "hello", "--name", "rune"], projectRoot);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("hello rune\n");
   expect(captured.stderr).toBe("");
 
@@ -78,7 +78,7 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
 
   const firstResult = await captureRuneCli(["dev"], projectRoot);
 
-  expect(firstResult.value).toBe(0);
+  expect(firstResult.exitCode).toBe(0);
   expect(firstResult.stdout).toContain("hello  Say hello");
   expect(firstResult.stderr).toBe("");
 
@@ -96,7 +96,7 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
 
   const secondResult = await captureRuneCli(["dev"], projectRoot);
 
-  expect(secondResult.value).toBe(0);
+  expect(secondResult.exitCode).toBe(0);
   expect(secondResult.stdout).toContain("hello  Say hi");
   expect(secondResult.stderr).toBe("");
 });
@@ -104,7 +104,7 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
 test("runRuneCli shows top-level help with no args", async () => {
   const captured = await captureRuneCli([]);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: rune <command>\n");
   expect(captured.stderr).toBe("");
 });
@@ -112,7 +112,7 @@ test("runRuneCli shows top-level help with no args", async () => {
 test("runRuneCli shows dev help without loading a project", async () => {
   const captured = await captureRuneCli(["dev", "--help"]);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: rune dev [options] [command...]\n");
   expect(captured.stderr).toBe("");
 });
@@ -120,7 +120,7 @@ test("runRuneCli shows dev help without loading a project", async () => {
 test("runRuneCli reports unknown top-level subcommands", async () => {
   const captured = await captureRuneCli(["unknown"]);
 
-  expect(captured.value).toBe(1);
+  expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toBe("Unknown command: unknown. Available commands: build, dev\n");
 });
@@ -141,7 +141,7 @@ test("runRuneCli only parses rune dev options before the command path", async ()
 
   const captured = await captureRuneCli(["dev", "create", "--project", "myapp"], projectRoot);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("create myapp\n");
   expect(captured.stderr).toBe("");
 });
@@ -175,7 +175,7 @@ test("runRuneCli supports forwarding commands after `--` with an explicit projec
     workspaceRoot,
   );
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("hello\n");
   expect(captured.stderr).toBe("");
 });
@@ -211,7 +211,7 @@ test("runRuneCli preserves the caller cwd when using `--project` in dev mode", a
     invocationRoot,
   );
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe(`${invocationRoot}\n`);
   expect(captured.stderr).toBe("");
 });
@@ -241,7 +241,7 @@ test("runRuneCli supports `--project=<path>` before the command path", async () 
 
   const captured = await captureRuneCli(["dev", "--project=./fixture", "hello"], workspaceRoot);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("hello\n");
   expect(captured.stderr).toBe("");
 });
@@ -270,7 +270,7 @@ test("runRuneCli uses the package bin name for help output", async () => {
 
   const captured = await captureRuneCli(["dev"], projectRoot);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: runeplay <command>\n");
   expect(captured.stderr).toBe("");
 });
@@ -290,7 +290,7 @@ test("runRuneCli falls back to the unscoped package name when no bin field exist
 
   const captured = await captureRuneCli(["dev"], projectRoot);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: mycli <command>\n");
   expect(captured.stderr).toBe("");
 });
@@ -309,7 +309,7 @@ test("runRuneCli falls back to the project directory name when package.json is m
 
   const captured = await captureRuneCli(["dev"], projectRoot);
 
-  expect(captured.value).toBe(0);
+  expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain(`Usage: ${path.basename(projectRoot)} <command>\n`);
   expect(captured.stderr).toBe("");
 });
@@ -321,7 +321,7 @@ test("runRuneCli reports missing src/commands directories", async () => {
 
   const captured = await captureRuneCli(["dev"], projectRoot);
 
-  expect(captured.value).toBe(1);
+  expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toContain("Commands directory not found at src/commands");
 });
