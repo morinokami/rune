@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process";
 import {
+  cp,
   mkdtemp,
   mkdir,
   open,
+  realpath,
   readFile,
   readdir,
   rm,
@@ -13,17 +15,21 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, expect, test } from "vite-plus/test";
+import { afterAll, afterEach, expect, test } from "vite-plus/test";
 
 import { runRuneCli } from "../src/cli/rune-cli";
 import { captureExitCode } from "./helpers";
 
 const fixtureRootDirectories = new Set<string>();
-const corePackageRoot = fileURLToPath(new URL("../../core", import.meta.url));
-const runePackageRoot = fileURLToPath(new URL("..", import.meta.url));
+const packagedWorkspaceDirectories = new Set<string>();
+const sourceCorePackageRoot = fileURLToPath(new URL("../../core", import.meta.url));
+const sourceRunePackageRoot = fileURLToPath(new URL("..", import.meta.url));
 const vpBinaryPath = fileURLToPath(new URL("../node_modules/.bin/vp", import.meta.url));
-let builtCorePackagePromise: Promise<void> | undefined;
-let builtRunePackagePromise: Promise<void> | undefined;
+let builtPackageEnvironmentPromise:
+  | Promise<{ corePackageRoot: string; runePackageRoot: string }>
+  | undefined;
+
+const PACKAGED_ENTRIES = ["package.json", "src", "tsconfig.json", "vite.config.ts"];
 
 afterEach(async () => {
   await Promise.all(
@@ -32,6 +38,15 @@ afterEach(async () => {
     ),
   );
   fixtureRootDirectories.clear();
+});
+
+afterAll(async () => {
+  await Promise.all(
+    [...packagedWorkspaceDirectories].map((rootDirectory) =>
+      rm(rootDirectory, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 }),
+    ),
+  );
+  packagedWorkspaceDirectories.clear();
 });
 
 async function createBuildProject(files: Readonly<Record<string, string>>): Promise<string> {
@@ -88,39 +103,126 @@ async function runChildProcess(
   });
 }
 
-async function ensureBuiltCorePackage(): Promise<void> {
-  builtCorePackagePromise ??= runChildProcess(vpBinaryPath, ["pack"], corePackageRoot)
-    .then(({ exitCode, stderr }) => {
-      if (exitCode !== 0) {
-        throw new Error(stderr || "Failed to build the local core package");
-      }
-    })
-    .catch((error) => {
-      builtCorePackagePromise = undefined;
-      throw error;
-    });
+async function entryExists(entryPath: string): Promise<boolean> {
+  try {
+    await stat(entryPath);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
 
-  await builtCorePackagePromise;
+    throw error;
+  }
 }
 
-async function ensureBuiltRunePackage(): Promise<void> {
-  builtRunePackagePromise ??= ensureBuiltCorePackage()
-    .then(() => runChildProcess(vpBinaryPath, ["pack"], runePackageRoot))
-    .then(({ exitCode, stderr }) => {
-      if (exitCode !== 0) {
-        throw new Error(stderr || "Failed to build the local rune package");
-      }
-    })
-    .catch((error) => {
-      builtRunePackagePromise = undefined;
-      throw error;
+interface TestPackageJson {
+  readonly dependencies?: Readonly<Record<string, string>> | undefined;
+  readonly devDependencies?: Readonly<Record<string, string>> | undefined;
+}
+
+async function copyPackageForPack(
+  sourcePackageRoot: string,
+  targetWorkspaceRoot: string,
+): Promise<string> {
+  const targetPackageRoot = path.join(targetWorkspaceRoot, path.basename(sourcePackageRoot));
+
+  await mkdir(targetPackageRoot, { recursive: true });
+
+  for (const entryName of PACKAGED_ENTRIES) {
+    const sourceEntryPath = path.join(sourcePackageRoot, entryName);
+
+    if (!(await entryExists(sourceEntryPath))) {
+      continue;
+    }
+
+    await cp(sourceEntryPath, path.join(targetPackageRoot, entryName), { recursive: true });
+  }
+
+  return targetPackageRoot;
+}
+
+async function symlinkPath(sourcePath: string, targetPath: string): Promise<void> {
+  const resolvedSourcePath = await realpath(sourcePath);
+  await mkdir(path.dirname(targetPath), { recursive: true });
+  await symlink(resolvedSourcePath, targetPath, "dir");
+}
+
+async function linkPackageDependencies(
+  sourcePackageRoot: string,
+  targetPackageRoot: string,
+  overrides: Readonly<Record<string, string>> = {},
+): Promise<void> {
+  const sourceNodeModulesDirectory = path.join(sourcePackageRoot, "node_modules");
+  const targetNodeModulesDirectory = path.join(targetPackageRoot, "node_modules");
+  const packageJson = JSON.parse(
+    await readFile(path.join(sourcePackageRoot, "package.json"), "utf8"),
+  ) as TestPackageJson;
+  const dependencies = new Set<string>([
+    ...Object.keys(packageJson.dependencies ?? {}),
+    ...Object.keys(packageJson.devDependencies ?? {}),
+  ]);
+
+  await mkdir(targetNodeModulesDirectory, { recursive: true });
+
+  if (await entryExists(path.join(sourceNodeModulesDirectory, ".bin"))) {
+    await symlinkPath(
+      path.join(sourceNodeModulesDirectory, ".bin"),
+      path.join(targetNodeModulesDirectory, ".bin"),
+    );
+  }
+
+  for (const dependencyName of dependencies) {
+    const targetDependencyPath = path.join(targetNodeModulesDirectory, dependencyName);
+    const overriddenDependencyPath = overrides[dependencyName];
+
+    if (overriddenDependencyPath) {
+      await mkdir(path.dirname(targetDependencyPath), { recursive: true });
+      await symlink(overriddenDependencyPath, targetDependencyPath, "dir");
+      continue;
+    }
+
+    await symlinkPath(path.join(sourceNodeModulesDirectory, dependencyName), targetDependencyPath);
+  }
+}
+
+async function ensureBuiltPackageEnvironment(): Promise<{
+  corePackageRoot: string;
+  runePackageRoot: string;
+}> {
+  builtPackageEnvironmentPromise ??= (async () => {
+    const packagedWorkspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-packages-"));
+    packagedWorkspaceDirectories.add(packagedWorkspaceRoot);
+
+    const corePackageRoot = await copyPackageForPack(sourceCorePackageRoot, packagedWorkspaceRoot);
+    await linkPackageDependencies(sourceCorePackageRoot, corePackageRoot);
+
+    const coreBuildResult = await runChildProcess(vpBinaryPath, ["pack"], corePackageRoot);
+    if (coreBuildResult.exitCode !== 0) {
+      throw new Error(coreBuildResult.stderr || "Failed to build the isolated core package");
+    }
+
+    const runePackageRoot = await copyPackageForPack(sourceRunePackageRoot, packagedWorkspaceRoot);
+    await linkPackageDependencies(sourceRunePackageRoot, runePackageRoot, {
+      "@rune-cli/core": corePackageRoot,
     });
 
-  await builtRunePackagePromise;
+    const runeBuildResult = await runChildProcess(vpBinaryPath, ["pack"], runePackageRoot);
+    if (runeBuildResult.exitCode !== 0) {
+      throw new Error(runeBuildResult.stderr || "Failed to build the isolated rune package");
+    }
+
+    return { corePackageRoot, runePackageRoot };
+  })().catch((error) => {
+    builtPackageEnvironmentPromise = undefined;
+    throw error;
+  });
+
+  return await builtPackageEnvironmentPromise;
 }
 
 async function installRuneFixturePackage(projectRoot: string): Promise<void> {
-  await ensureBuiltRunePackage();
+  const { runePackageRoot } = await ensureBuiltPackageEnvironment();
 
   const nodeModulesDirectory = path.join(projectRoot, "node_modules");
   const runeScopeDirectory = path.join(nodeModulesDirectory, "@rune-cli");
