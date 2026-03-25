@@ -128,6 +128,22 @@ test("executeCommand normalizes non-Error throws", async () => {
   expect(result).toEqual({ exitCode: 1, errorMessage: "Unknown error" });
 });
 
+test("executeCommand defaults omitted boolean options to false", async () => {
+  const command = defineCommand({
+    options: [{ name: "force", type: "boolean" }],
+    run(ctx) {
+      console.log(`force=${ctx.options.force}`);
+    },
+  });
+
+  const captured = unwrap(
+    await captureProcessOutput(() => executeCommand(command, { options: {} })),
+  );
+
+  expect(captured.stdout).toBe("force=false\n");
+  expect(captured.value).toEqual({ exitCode: 0 });
+});
+
 test("executeCommand falls back to process defaults", async () => {
   const command = defineCommand({
     run(ctx) {

@@ -429,7 +429,9 @@ export async function parseCommand<
 >(
   command: DefinedCommand<TArgsFields, TOptionsFields>,
   rawArgs: readonly string[],
-): Promise<ParseCommandResult<InferNamedFields<TOptionsFields>, InferNamedFields<TArgsFields>>> {
+): Promise<
+  ParseCommandResult<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>
+> {
   let parsed: TokenizedParseArgsResult | undefined;
 
   try {
@@ -496,13 +498,15 @@ export async function parseCommand<
 
     if (result.present) {
       parsedOptions[field.name] = result.value;
+    } else if (!isSchemaField(field) && field.type === "boolean") {
+      parsedOptions[field.name] = false;
     }
   }
 
   return {
     ok: true,
     value: {
-      options: parsedOptions as InferNamedFields<TOptionsFields>,
+      options: parsedOptions as InferNamedFields<TOptionsFields, true>,
       args: parsedArgs as InferNamedFields<TArgsFields>,
       rawArgs,
     },

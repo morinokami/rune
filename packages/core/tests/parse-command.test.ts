@@ -278,6 +278,24 @@ test("parseCommand succeeds for commands without fields", async () => {
   });
 });
 
+test("parseCommand defaults omitted boolean options to false", async () => {
+  const command = defineCommand({
+    options: [{ name: "force", type: "boolean" }],
+    async run() {},
+  });
+
+  const result = await parseCommand(command, []);
+
+  expect(result).toEqual({
+    ok: true,
+    value: {
+      args: {},
+      options: { force: false },
+      rawArgs: [],
+    },
+  });
+});
+
 test("parseCommand fails on unknown options", async () => {
   const command = defineCommand({
     async run() {},
