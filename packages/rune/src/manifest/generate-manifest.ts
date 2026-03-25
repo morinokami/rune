@@ -210,6 +210,12 @@ export async function generateCommandManifest(
   const extractDescription = options.extractDescription ?? extractDescriptionFromSourceFile;
   const walkResult = await walkCommandsDirectory(options.commandsDirectory, [], extractDescription);
 
+  if (walkResult.nodes.length === 0) {
+    throw new Error(
+      "No commands found in src/commands/. Create a command file like src/commands/hello/index.ts",
+    );
+  }
+
   return {
     nodes: [...walkResult.nodes].sort((left, right) =>
       comparePathSegments(left.pathSegments, right.pathSegments),

@@ -188,6 +188,14 @@ test("generateCommandManifest skips empty directories and serializes to stable J
   expect(serializeCommandManifest(manifest)).toBe(JSON.stringify(manifest, null, 2));
 });
 
+test("generateCommandManifest throws a descriptive error for an empty commands directory", async () => {
+  const commandsDirectory = await createCommandsFixture({});
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    "No commands found in src/commands/. Create a command file like src/commands/hello/index.ts",
+  );
+});
+
 test("generateCommandManifest extracts literal descriptions from source files by default", async () => {
   const commandsDirectory = await createCommandsFixture({
     "hello/index.ts": [
