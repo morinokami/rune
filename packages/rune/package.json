@@ -1,6 +1,6 @@
 {
   "name": "@rune-cli/rune",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Rune is a CLI framework built around the concept of file-based command routing.",
   "homepage": "https://github.com/morinokami/rune#readme",
   "bugs": {

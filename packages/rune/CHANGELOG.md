@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.9
+
+### Patch Changes
+
+- [#28](https://github.com/morinokami/rune/pull/28) [`d2c5ef1`](https://github.com/morinokami/rune/commit/d2c5ef1efe6024af561ce438b701e751f023624b) Thanks [@morinokami](https://github.com/morinokami)! - fix(manifest): show actionable error when commands directory is empty
+
+- [#26](https://github.com/morinokami/rune/pull/26) [`91d7e63`](https://github.com/morinokami/rune/commit/91d7e6300a0beb6ee71695ba46a48b66bbdd1a29) Thanks [@morinokami](https://github.com/morinokami)! - fix(core): validate that defineCommand() receives a run function
+
 ## 0.0.8
 
 ### Patch Changes
