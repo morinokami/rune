@@ -4,42 +4,15 @@ import {
   type CommandOptionField,
   type DefinedCommand,
 } from "@rune-cli/core";
-import { pathToFileURL } from "node:url";
 
 import type {
   CommandManifest,
-  CommandManifestCommandNode,
   CommandManifestGroupNode,
   CommandManifestPath,
 } from "./manifest-types";
-import type { ResolveCommandPathResult, UnknownCommandRoute } from "./resolve-command-path";
+import type { UnknownCommandRoute } from "./resolve-command-path";
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "./manifest-map";
-
-// Loads only the matched command module so help/execution can inspect its definition.
-export async function loadCommandFromModule(
-  sourceFilePath: string,
-): Promise<DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>> {
-  // In `rune dev`, `sourceFilePath` points at source `.ts` command modules.
-  const moduleUrl = pathToFileURL(sourceFilePath).href;
-  const loadedModule = (await import(moduleUrl)) as {
-    default?: DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>;
-  };
-
-  if (loadedModule.default === undefined) {
-    throw new Error(`Command module did not export a default command: ${sourceFilePath}`);
-  }
-
-  return loadedModule.default;
-}
-
-export type LoadCommandFn = (
-  node: CommandManifestCommandNode,
-) => Promise<DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>>;
-
-// Default loader that imports the command module from its source file path.
-export const defaultLoadCommand: LoadCommandFn = (node) =>
-  loadCommandFromModule(node.sourceFilePath);
 
 function formatCommandName(cliName: string, pathSegments: CommandManifestPath): string {
   return pathSegments.length === 0 ? cliName : `${cliName} ${pathSegments.join(" ")}`;
@@ -189,32 +162,4 @@ export function renderUnknownCommandMessage(route: UnknownCommandRoute, cliName:
   }
 
   return `${parts.join("\n\n")}\n`;
-}
-
-export interface RenderResolvedHelpOptions {
-  readonly manifest: CommandManifest;
-  readonly route: ResolveCommandPathResult;
-  readonly cliName: string;
-  readonly version?: string | undefined;
-  readonly loadCommand?: LoadCommandFn | undefined;
-}
-
-// Renders group help, leaf help, or unknown-command output from a resolved route.
-export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Promise<string> {
-  if (options.route.kind === "unknown") {
-    return renderUnknownCommandMessage(options.route, options.cliName);
-  }
-
-  if (options.route.kind === "group") {
-    return renderGroupHelp({
-      manifest: options.manifest,
-      node: options.route.node,
-      cliName: options.cliName,
-      version: options.version,
-    });
-  }
-
-  const loadCommand = options.loadCommand ?? defaultLoadCommand;
-  const command = await loadCommand(options.route.node);
-  return renderCommandHelp(command, options.route.matchedPath, options.cliName);
 }

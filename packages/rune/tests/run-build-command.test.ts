@@ -19,8 +19,10 @@ import { runRuneCli } from "../src/cli/rune-cli";
 import { captureExitCode } from "./helpers";
 
 const fixtureRootDirectories = new Set<string>();
+const corePackageRoot = fileURLToPath(new URL("../../core", import.meta.url));
 const runePackageRoot = fileURLToPath(new URL("..", import.meta.url));
 const vpBinaryPath = fileURLToPath(new URL("../node_modules/.bin/vp", import.meta.url));
+let builtCorePackagePromise: Promise<void> | undefined;
 let builtRunePackagePromise: Promise<void> | undefined;
 
 afterEach(async () => {
@@ -86,8 +88,24 @@ async function runChildProcess(
   });
 }
 
+async function ensureBuiltCorePackage(): Promise<void> {
+  builtCorePackagePromise ??= runChildProcess(vpBinaryPath, ["pack"], corePackageRoot)
+    .then(({ exitCode, stderr }) => {
+      if (exitCode !== 0) {
+        throw new Error(stderr || "Failed to build the local core package");
+      }
+    })
+    .catch((error) => {
+      builtCorePackagePromise = undefined;
+      throw error;
+    });
+
+  await builtCorePackagePromise;
+}
+
 async function ensureBuiltRunePackage(): Promise<void> {
-  builtRunePackagePromise ??= runChildProcess(vpBinaryPath, ["pack"], runePackageRoot)
+  builtRunePackagePromise ??= ensureBuiltCorePackage()
+    .then(() => runChildProcess(vpBinaryPath, ["pack"], runePackageRoot))
     .then(({ exitCode, stderr }) => {
       if (exitCode !== 0) {
         throw new Error(stderr || "Failed to build the local rune package");
@@ -336,14 +354,16 @@ test("runRuneCli build does not apply the project tsconfig to the built CLI entr
       2,
     ),
     "src/commands/hello/index.ts": [
-      "export default {",
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
       '  description: "Say hello",',
       "  args: [],",
       "  options: [],",
       "  async run() {",
       '    console.log("hello");',
       "  },",
-      "};",
+      "});",
     ].join("\n"),
   });
   await installRuneFixturePackage(projectRoot);

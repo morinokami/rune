@@ -1,4 +1,4 @@
-export { defineCommand } from "./define-command";
+export { defineCommand, isDefinedCommand } from "./define-command";
 export { executeCommand } from "./execute-command";
 export { captureProcessOutput } from "./capture-output";
 export { parseCommand } from "./parse-command";
