@@ -20,7 +20,7 @@ test("defineCommand infers primitive arg and option shapes", () => {
   expectTypeOf<InferCommandArgs<typeof basicCommand>>().toEqualTypeOf<{ id: string }>();
   expectTypeOf<InferCommandOptions<typeof basicCommand>>().toEqualTypeOf<{
     name: string;
-    force?: boolean;
+    force: boolean;
   }>();
 });
 

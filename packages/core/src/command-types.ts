@@ -31,7 +31,8 @@ interface PrimitiveFieldBase<
   readonly type: TType;
   /**
    * When `true`, the field must be provided by the user.
-   * Omitted or `false` makes the field optional (absent fields are `undefined` in `ctx`).
+   * Omitted or `false` makes the field optional. Absent fields are `undefined`
+   * in `ctx`, except primitive boolean options, which default to `false`.
    */
   readonly required?: boolean | undefined;
   /** Value used when the user does not provide this field. Makes the field always present in `ctx`. */
@@ -148,15 +149,26 @@ type HasDefaultValue<TField> = TField extends { readonly default: infer TDefault
   : false;
 
 // Decides whether a field becomes required on `ctx.args` / `ctx.options`.
-type IsRequiredField<TField> = TField extends { readonly schema: infer TSchema }
+// When `TBooleanAlwaysPresent` is `true`, primitive boolean fields without an
+// explicit default are treated as required because they implicitly default to
+// `false`. This is only enabled for option fields, not positional args.
+type IsRequiredField<TField, TBooleanAlwaysPresent extends boolean = false> = TField extends {
+  readonly schema: infer TSchema;
+}
   ? IsOptionalSchemaOutput<InferSchemaOutput<TSchema>> extends true
     ? false
     : true
   : HasDefaultValue<TField> extends true
     ? true
-    : TField extends { readonly required: true }
-      ? true
-      : false;
+    : TBooleanAlwaysPresent extends true
+      ? TField extends { readonly type: "boolean" }
+        ? true
+        : TField extends { readonly required: true }
+          ? true
+          : false
+      : TField extends { readonly required: true }
+        ? true
+        : false;
 
 // Determines whether a positional arg field can be omitted by the user.
 // Schema fields are checked via InferSchemaInput: if the schema accepts
@@ -200,13 +212,18 @@ export type ValidateArgOrder<TArgs> = TArgs extends readonly CommandArgField[]
 type Simplify<TValue> = { [TKey in keyof TValue]: TValue[TKey] };
 
 // Converts declared field arrays into the object shape exposed to command code.
-export type InferNamedFields<TFields extends readonly NamedField[]> = Simplify<
+// Pass `TBooleanAlwaysPresent = true` for option fields so that primitive
+// boolean options without an explicit default are inferred as required.
+export type InferNamedFields<
+  TFields extends readonly NamedField[],
+  TBooleanAlwaysPresent extends boolean = false,
+> = Simplify<
   {
-    [TField in TFields[number] as IsRequiredField<TField> extends true
+    [TField in TFields[number] as IsRequiredField<TField, TBooleanAlwaysPresent> extends true
       ? FieldName<TField>
       : never]: FieldValue<TField>;
   } & {
-    [TField in TFields[number] as IsRequiredField<TField> extends true
+    [TField in TFields[number] as IsRequiredField<TField, TBooleanAlwaysPresent> extends true
       ? never
       : FieldName<TField>]?: FieldValue<TField>;
   }
@@ -263,7 +280,7 @@ export interface DefineCommandInput<
    */
   readonly run: (
     ctx: CommandContext<
-      InferNamedFields<NormalizeFields<TOptionsFields, CommandOptionField>>,
+      InferNamedFields<NormalizeFields<TOptionsFields, CommandOptionField>, true>,
       InferNamedFields<NormalizeFields<TArgsFields, CommandArgField>>
     >,
   ) => void | Promise<void>;
@@ -278,14 +295,14 @@ export interface DefinedCommand<
   readonly args: TArgsFields;
   readonly options: TOptionsFields;
   readonly run: (
-    ctx: CommandContext<InferNamedFields<TOptionsFields>, InferNamedFields<TArgsFields>>,
+    ctx: CommandContext<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>,
   ) => void | Promise<void>;
 }
 
 // Extracts the inferred options object from a defined command.
 export type InferCommandOptions<TCommand> =
   TCommand extends DefinedCommand<any, infer TOptionsFields>
-    ? InferNamedFields<TOptionsFields>
+    ? InferNamedFields<TOptionsFields, true>
     : never;
 
 // Extracts the inferred args object from a defined command.

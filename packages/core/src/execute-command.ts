@@ -6,6 +6,8 @@ import type {
   InferNamedFields,
 } from "./command-types";
 
+import { isSchemaField } from "./schema-field";
+
 // Input accepted by the low-level direct executor before validation exists.
 export interface ExecuteCommandInput<TOptions, TArgs> {
   readonly options?: TOptions | undefined;
@@ -44,8 +46,16 @@ export async function executeCommand<
   > = {},
 ): Promise<ExecuteCommandResult> {
   try {
+    const options: Record<string, unknown> = { ...input.options };
+
+    for (const field of command.options) {
+      if (options[field.name] === undefined && !isSchemaField(field) && field.type === "boolean") {
+        options[field.name] = false;
+      }
+    }
+
     await command.run({
-      options: (input.options ?? {}) as InferNamedFields<TOptionsFields>,
+      options: options as InferNamedFields<TOptionsFields, true>,
       args: (input.args ?? {}) as InferNamedFields<TArgsFields>,
       cwd: input.cwd ?? process.cwd(),
       rawArgs: input.rawArgs ?? [],
