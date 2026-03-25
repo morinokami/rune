@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.7
+
+### Patch Changes
+
+- [#19](https://github.com/morinokami/rune/pull/19) [`ba95ed3`](https://github.com/morinokami/rune/commit/ba95ed331f48ef0ad5a8c45933c0643b24f8c62b) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): validate that command modules export a defineCommand() value
+
 ## 0.0.6
 
 ### Patch Changes
