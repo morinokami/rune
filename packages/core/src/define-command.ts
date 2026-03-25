@@ -174,6 +174,10 @@ export function defineCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>
 > {
+  if (typeof input.run !== "function") {
+    throw new Error('defineCommand() requires a "run" function.');
+  }
+
   if (input.args) {
     validateFieldShape(input.args, "argument");
     validateUniqueFieldNames(input.args, "argument");
