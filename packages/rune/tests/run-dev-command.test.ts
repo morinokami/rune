@@ -8,7 +8,17 @@ import { runRuneCli } from "../src/cli/rune-cli";
 import { captureExitCode } from "./helpers";
 
 const fixtureRootDirectories = new Set<string>();
-const runeEntryPath = fileURLToPath(new URL("../src/index.ts", import.meta.url));
+const coreEntryPath = fileURLToPath(new URL("../../core/src/index.ts", import.meta.url));
+
+function createDevCommandModule(lines: readonly string[]): string {
+  return [
+    `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
+    "",
+    "export default defineCommand({",
+    ...lines,
+    "});",
+  ].join("\n");
+}
 
 afterEach(async () => {
   await Promise.all(
@@ -41,16 +51,14 @@ async function captureRuneCli(argv: readonly string[], cwd?: string) {
 test("runRuneCli executes a simple command through `rune dev`", async () => {
   const projectRoot = await createDevProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-    "src/commands/hello/index.ts": [
-      "export default {",
+    "src/commands/hello/index.ts": createDevCommandModule([
       '  description: "Say hello",',
       "  args: [],",
       '  options: [{ name: "name", type: "string", required: true }],',
       "  async run(ctx) {",
       "    console.log(`hello ${ctx.options.name}`);",
       "  },",
-      "};",
-    ].join("\n"),
+    ]),
   });
 
   const captured = await captureRuneCli(["dev", "hello", "--name", "rune"], projectRoot);
@@ -67,7 +75,7 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
   const projectRoot = await createDevProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
     "src/commands/hello/index.ts": [
-      `import { defineCommand } from ${JSON.stringify(runeEntryPath)};`,
+      `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
       "",
       "export default defineCommand({",
       '  description: "Say hello",',
@@ -85,7 +93,7 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
   await writeFile(
     path.join(projectRoot, "src", "commands", "hello", "index.ts"),
     [
-      `import { defineCommand } from ${JSON.stringify(runeEntryPath)};`,
+      `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
       "",
       "export default defineCommand({",
       '  description: "Say hi",',
@@ -128,15 +136,13 @@ test("runRuneCli reports unknown top-level subcommands", async () => {
 test("runRuneCli only parses rune dev options before the command path", async () => {
   const projectRoot = await createDevProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-    "src/commands/create/index.ts": [
-      "export default {",
+    "src/commands/create/index.ts": createDevCommandModule([
       "  args: [],",
       '  options: [{ name: "project", type: "string", required: true }],',
       "  async run(ctx) {",
       "    console.log(`create ${ctx.options.project}`);",
       "  },",
-      "};",
-    ].join("\n"),
+    ]),
   });
 
   const captured = await captureRuneCli(["dev", "create", "--project", "myapp"], projectRoot);
@@ -158,16 +164,14 @@ test("runRuneCli supports forwarding commands after `--` with an explicit projec
   );
   await writeFile(
     path.join(projectRoot, "src", "commands", "hello", "index.ts"),
-    [
-      "export default {",
+    createDevCommandModule([
       '  description: "Say hello",',
       "  args: [],",
       "  options: [],",
       "  async run() {",
       '    console.log("hello");',
       "  },",
-      "};",
-    ].join("\n"),
+    ]),
   );
 
   const captured = await captureRuneCli(
@@ -193,7 +197,7 @@ test("runRuneCli preserves the caller cwd when using `--project` in dev mode", a
   await writeFile(
     path.join(projectRoot, "src", "commands", "show-cwd", "index.ts"),
     [
-      `import { defineCommand } from ${JSON.stringify(runeEntryPath)};`,
+      `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
       "",
       "export default defineCommand({",
       "  async run(ctx) {",
@@ -228,15 +232,13 @@ test("runRuneCli supports `--project=<path>` before the command path", async () 
   );
   await writeFile(
     path.join(projectRoot, "src", "commands", "hello", "index.ts"),
-    [
-      "export default {",
+    createDevCommandModule([
       "  args: [],",
       "  options: [],",
       "  async run() {",
       '    console.log("hello");',
       "  },",
-      "};",
-    ].join("\n"),
+    ]),
   );
 
   const captured = await captureRuneCli(["dev", "--project=./fixture", "hello"], workspaceRoot);
@@ -259,7 +261,7 @@ test("runRuneCli uses the package bin name for help output", async () => {
       2,
     ),
     "src/commands/hello/index.ts": [
-      `import { defineCommand } from ${JSON.stringify(runeEntryPath)};`,
+      `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
       "",
       "export default defineCommand({",
       '  description: "Say hello",',
@@ -279,7 +281,7 @@ test("runRuneCli falls back to the unscoped package name when no bin field exist
   const projectRoot = await createDevProject({
     "package.json": JSON.stringify({ name: "@scope/mycli" }, null, 2),
     "src/commands/hello/index.ts": [
-      `import { defineCommand } from ${JSON.stringify(runeEntryPath)};`,
+      `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
       "",
       "export default defineCommand({",
       '  description: "Say hello",',
@@ -298,7 +300,7 @@ test("runRuneCli falls back to the unscoped package name when no bin field exist
 test("runRuneCli falls back to the project directory name when package.json is missing", async () => {
   const projectRoot = await createDevProject({
     "src/commands/hello/index.ts": [
-      `import { defineCommand } from ${JSON.stringify(runeEntryPath)};`,
+      `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
       "",
       "export default defineCommand({",
       '  description: "Say hello",',
@@ -324,4 +326,26 @@ test("runRuneCli reports missing src/commands directories", async () => {
   expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toContain("Commands directory not found at src/commands");
+});
+
+test("runRuneCli reports plain object default exports with a clear error", async () => {
+  const projectRoot = await createDevProject({
+    "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+    "src/commands/plain/index.ts": [
+      "export default {",
+      '  description: "plain",',
+      "  async run() {",
+      '    console.log("hi");',
+      "  },",
+      "};",
+    ].join("\n"),
+  });
+
+  const captured = await captureRuneCli(["dev", "plain"], projectRoot);
+
+  expect(captured.exitCode).toBe(1);
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toBe(
+    "Command module must export a value created with defineCommand(). Got a plain object.\n",
+  );
 });

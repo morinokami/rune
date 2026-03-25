@@ -9,6 +9,8 @@ import type {
 
 import { isSchemaField } from "./schema-field";
 
+const DEFINED_COMMAND_BRAND = Symbol.for("@rune-cli/defined-command");
+
 function isOptionalArg(field: CommandArgField): boolean | undefined {
   if (isSchemaField(field)) {
     // Standard Schema exposes no optionality metadata and validate() can be
@@ -105,10 +107,27 @@ export function defineCommand<
     validateArgOrdering(input.args);
   }
 
-  return {
+  const command = {
     description: input.description,
     args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,
     options: (input.options ?? []) as NormalizeFields<TOptionsFields, CommandOptionField>,
     run: input.run,
   };
+
+  Object.defineProperty(command, DEFINED_COMMAND_BRAND, {
+    value: true,
+    enumerable: false,
+  });
+
+  return command;
+}
+
+export function isDefinedCommand(
+  value: unknown,
+): value is DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { [DEFINED_COMMAND_BRAND]?: unknown })[DEFINED_COMMAND_BRAND] === true
+  );
 }
