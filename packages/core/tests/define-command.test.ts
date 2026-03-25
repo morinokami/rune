@@ -5,6 +5,10 @@ import { z } from "zod";
 
 import { defineCommand } from "../src";
 
+test("defineCommand rejects missing run function", () => {
+  expect(() => defineCommand({} as any)).toThrow('defineCommand() requires a "run" function.');
+});
+
 test("defineCommand normalizes empty args and options", () => {
   const command = defineCommand({
     async run() {},
