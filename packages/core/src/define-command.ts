@@ -11,6 +11,60 @@ import { isSchemaField } from "./schema-field";
 
 const DEFINED_COMMAND_BRAND = Symbol.for("@rune-cli/defined-command");
 
+const OPTION_NAME_RE = /^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$/;
+const ALIAS_RE = /^[a-zA-Z]$/;
+
+function validateUniqueFieldNames(
+  fields: readonly (CommandArgField | CommandOptionField)[],
+  kind: "argument" | "option",
+): void {
+  const seen = new Set<string>();
+
+  for (const field of fields) {
+    if (field.name.length === 0) {
+      throw new Error(`Invalid ${kind} name "${field.name}". Names must be non-empty.`);
+    }
+
+    if (seen.has(field.name)) {
+      throw new Error(`Duplicate ${kind} name "${field.name}".`);
+    }
+
+    seen.add(field.name);
+  }
+}
+
+function validateOptionNames(options: readonly CommandOptionField[]): void {
+  for (const field of options) {
+    if (!OPTION_NAME_RE.test(field.name)) {
+      throw new Error(
+        `Invalid option name "${field.name}". Option names must start with a letter and contain only letters, numbers, and internal hyphens.`,
+      );
+    }
+  }
+}
+
+function validateOptionAliases(options: readonly CommandOptionField[]): void {
+  const seen = new Set<string>();
+
+  for (const field of options) {
+    if (field.alias === undefined) {
+      continue;
+    }
+
+    if (!ALIAS_RE.test(field.alias)) {
+      throw new Error(
+        `Invalid alias "${field.alias}" for option "${field.name}". Alias must be a single letter.`,
+      );
+    }
+
+    if (seen.has(field.alias)) {
+      throw new Error(`Duplicate alias "${field.alias}" for option "${field.name}".`);
+    }
+
+    seen.add(field.alias);
+  }
+}
+
 function isOptionalArg(field: CommandArgField): boolean | undefined {
   if (isSchemaField(field)) {
     // Standard Schema exposes no optionality metadata and validate() can be
@@ -104,7 +158,14 @@ export function defineCommand<
   NormalizeFields<TOptionsFields, CommandOptionField>
 > {
   if (input.args) {
+    validateUniqueFieldNames(input.args, "argument");
     validateArgOrdering(input.args);
+  }
+
+  if (input.options) {
+    validateUniqueFieldNames(input.options, "option");
+    validateOptionNames(input.options);
+    validateOptionAliases(input.options);
   }
 
   const command = {

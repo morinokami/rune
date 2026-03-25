@@ -58,12 +58,24 @@ test("defineCommand preserves schema-backed and default-backed field definitions
 test("defineCommand accepts explicit flag hints for schema-backed options", () => {
   const forceSchema = z.boolean();
   const command = defineCommand({
-    options: [{ name: "force", schema: forceSchema, flag: true, description: "Force execution" }],
+    options: [
+      {
+        name: "force",
+        schema: forceSchema,
+        flag: true,
+        description: "Force execution",
+      },
+    ],
     async run() {},
   });
 
   expect(command.options).toEqual([
-    { name: "force", schema: forceSchema, flag: true, description: "Force execution" },
+    {
+      name: "force",
+      schema: forceSchema,
+      flag: true,
+      description: "Force execution",
+    },
   ]);
 });
 
@@ -133,6 +145,110 @@ test("defineCommand skips schema args in runtime ordering check", () => {
       async run() {},
     }),
   ).not.toThrow();
+});
+
+test("defineCommand rejects option name with spaces", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "my option", type: "string" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid option name "my option"');
+});
+
+test("defineCommand rejects empty field name", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "", type: "string" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid option name ""');
+});
+
+test("defineCommand rejects option name starting with a hyphen", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "-verbose", type: "boolean" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid option name "-verbose"');
+});
+
+test("defineCommand accepts valid kebab-case names", () => {
+  expect(() =>
+    defineCommand({
+      args: [{ name: "file-path", type: "string", required: true }],
+      options: [
+        { name: "dry-run", type: "boolean" },
+        { name: "output", type: "string", alias: "o" },
+      ],
+      async run() {},
+    }),
+  ).not.toThrow();
+});
+
+test("defineCommand accepts camelCase names for args and options", () => {
+  expect(() =>
+    defineCommand({
+      args: [{ name: "projectName", type: "string", required: true }],
+      options: [{ name: "dryRun", type: "boolean" }],
+      async run() {},
+    }),
+  ).not.toThrow();
+});
+
+test("defineCommand rejects invalid alias", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "verbose", type: "boolean", alias: "vv" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid alias "vv" for option "verbose"');
+});
+
+test("defineCommand rejects numeric alias", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "verbose", type: "boolean", alias: "1" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid alias "1" for option "verbose"');
+});
+
+test("defineCommand rejects duplicate option names", () => {
+  expect(() =>
+    defineCommand({
+      options: [
+        { name: "force", type: "boolean" },
+        { name: "force", type: "boolean" },
+      ],
+      async run() {},
+    }),
+  ).toThrow('Duplicate option name "force"');
+});
+
+test("defineCommand rejects duplicate option aliases", () => {
+  expect(() =>
+    defineCommand({
+      options: [
+        { name: "force", type: "boolean", alias: "f" },
+        { name: "file", type: "string", alias: "f" },
+      ],
+      async run() {},
+    }),
+  ).toThrow('Duplicate alias "f" for option "file"');
+});
+
+test("defineCommand rejects duplicate argument names", () => {
+  expect(() =>
+    defineCommand({
+      args: [
+        { name: "source", type: "string", required: true },
+        { name: "source", type: "string" },
+      ],
+      async run() {},
+    }),
+  ).toThrow('Duplicate argument name "source"');
 });
 
 test("defineCommand accepts widened schema args without false positive", () => {
