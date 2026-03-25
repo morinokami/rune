@@ -5,9 +5,9 @@ import { z } from "zod";
 
 import { defineCommand } from "../src";
 
-test("defineCommand rejects missing run function", () => {
-  expect(() => defineCommand({} as any)).toThrow('defineCommand() requires a "run" function.');
-});
+// ---------------------------------------------------------------------------
+// Basic structure
+// ---------------------------------------------------------------------------
 
 test("defineCommand normalizes empty args and options", () => {
   const command = defineCommand({
@@ -83,18 +83,13 @@ test("defineCommand accepts explicit flag hints for schema-backed options", () =
   ]);
 });
 
-test("defineCommand rejects required arg after optional arg", () => {
-  expect(() =>
-    defineCommand({
-      // @ts-expect-error required arg after optional arg is a type error
-      args: [
-        { name: "source", type: "string" },
-        { name: "target", type: "string", required: true },
-      ],
-      async run() {},
-    }),
-  ).toThrow('Required argument "target" cannot follow optional argument "source"');
+test("defineCommand rejects missing run function", () => {
+  expect(() => defineCommand({} as any)).toThrow('defineCommand() requires a "run" function.');
 });
+
+// ---------------------------------------------------------------------------
+// Argument ordering
+// ---------------------------------------------------------------------------
 
 test("defineCommand allows optional args after required args", () => {
   expect(() =>
@@ -120,19 +115,6 @@ test("defineCommand allows args with defaults before optional args", () => {
   ).not.toThrow();
 });
 
-test("defineCommand rejects required arg after arg with default", () => {
-  expect(() =>
-    defineCommand({
-      // @ts-expect-error required arg after arg with default is a type error
-      args: [
-        { name: "source", type: "string", default: "." },
-        { name: "target", type: "string", required: true },
-      ],
-      async run() {},
-    }),
-  ).toThrow('Required argument "target" cannot follow optional argument "source"');
-});
-
 test("defineCommand skips schema args in runtime ordering check", () => {
   // Schema fields lack optionality metadata at runtime, so defineCommand
   // skips them during ordering validation. The type-level check
@@ -151,32 +133,49 @@ test("defineCommand skips schema args in runtime ordering check", () => {
   ).not.toThrow();
 });
 
-test("defineCommand rejects option name with spaces", () => {
+test("defineCommand accepts widened schema args without false positive", () => {
+  const requiredSchema: StandardSchemaV1 = z.string();
+
   expect(() =>
     defineCommand({
-      options: [{ name: "my option", type: "string" }],
+      args: [
+        { name: "id", schema: requiredSchema },
+        { name: "target", type: "string", required: true },
+      ],
       async run() {},
     }),
-  ).toThrow('Invalid option name "my option"');
+  ).not.toThrow();
 });
 
-test("defineCommand rejects empty field name", () => {
+test("defineCommand rejects required arg after optional arg", () => {
   expect(() =>
     defineCommand({
-      options: [{ name: "", type: "string" }],
+      // @ts-expect-error required arg after optional arg is a type error
+      args: [
+        { name: "source", type: "string" },
+        { name: "target", type: "string", required: true },
+      ],
       async run() {},
     }),
-  ).toThrow('Invalid option name ""');
+  ).toThrow('Required argument "target" cannot follow optional argument "source"');
 });
 
-test("defineCommand rejects option name starting with a hyphen", () => {
+test("defineCommand rejects required arg after arg with default", () => {
   expect(() =>
     defineCommand({
-      options: [{ name: "-verbose", type: "boolean" }],
+      // @ts-expect-error required arg after arg with default is a type error
+      args: [
+        { name: "source", type: "string", default: "." },
+        { name: "target", type: "string", required: true },
+      ],
       async run() {},
     }),
-  ).toThrow('Invalid option name "-verbose"');
+  ).toThrow('Required argument "target" cannot follow optional argument "source"');
 });
+
+// ---------------------------------------------------------------------------
+// Name & alias validation
+// ---------------------------------------------------------------------------
 
 test("defineCommand accepts valid kebab-case names", () => {
   expect(() =>
@@ -201,6 +200,42 @@ test("defineCommand accepts camelCase names for args and options", () => {
   ).not.toThrow();
 });
 
+test("defineCommand rejects option name with spaces", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "my option", type: "string" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid option name "my option"');
+});
+
+test("defineCommand rejects empty option name", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "", type: "string" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid option name ""');
+});
+
+test("defineCommand rejects empty argument name", () => {
+  expect(() =>
+    defineCommand({
+      args: [{ name: "", type: "string" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid argument name ""');
+});
+
+test("defineCommand rejects option name starting with a hyphen", () => {
+  expect(() =>
+    defineCommand({
+      options: [{ name: "-verbose", type: "boolean" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid option name "-verbose"');
+});
+
 test("defineCommand rejects invalid alias", () => {
   expect(() =>
     defineCommand({
@@ -218,6 +253,10 @@ test("defineCommand rejects numeric alias", () => {
     }),
   ).toThrow('Invalid alias "1" for option "verbose"');
 });
+
+// ---------------------------------------------------------------------------
+// Uniqueness & field shape validation
+// ---------------------------------------------------------------------------
 
 test("defineCommand rejects duplicate option names", () => {
   expect(() =>
@@ -273,18 +312,4 @@ test("defineCommand rejects option with no type or schema", () => {
       async run() {},
     }),
   ).toThrow('Option "verbose" must have either a "type" or "schema" property.');
-});
-
-test("defineCommand accepts widened schema args without false positive", () => {
-  const requiredSchema: StandardSchemaV1 = z.string();
-
-  expect(() =>
-    defineCommand({
-      args: [
-        { name: "id", schema: requiredSchema },
-        { name: "target", type: "string", required: true },
-      ],
-      async run() {},
-    }),
-  ).not.toThrow();
 });

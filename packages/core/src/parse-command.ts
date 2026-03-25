@@ -66,6 +66,10 @@ type TokenizedParseArgsResult = ReturnType<typeof parseArgs<TokenizedParseArgsCo
 
 type ParseArgsToken = NonNullable<TokenizedParseArgsResult["tokens"]>[number];
 
+// ---------------------------------------------------------------------------
+// Error constructors
+// ---------------------------------------------------------------------------
+
 function formatTypeHint(field: CommandOptionField): string {
   return isSchemaField(field) ? "" : ` <${field.type}>`;
 }
@@ -78,7 +82,7 @@ function formatArgumentLabel(field: CommandArgField): string {
   return field.name;
 }
 
-function missingRequiredOption(field: CommandOptionField): FailedFieldParse {
+function createMissingOptionError(field: CommandOptionField): FailedFieldParse {
   return {
     ok: false,
     error: {
@@ -87,7 +91,7 @@ function missingRequiredOption(field: CommandOptionField): FailedFieldParse {
   };
 }
 
-function missingRequiredArgument(field: CommandArgField): FailedFieldParse {
+function createMissingArgumentError(field: CommandArgField): FailedFieldParse {
   return {
     ok: false,
     error: {
@@ -96,7 +100,7 @@ function missingRequiredArgument(field: CommandArgField): FailedFieldParse {
   };
 }
 
-function invalidOptionValue(
+function createInvalidOptionError(
   field: CommandOptionField,
   messages: readonly string[],
 ): FailedFieldParse {
@@ -108,7 +112,7 @@ function invalidOptionValue(
   };
 }
 
-function invalidArgumentValue(
+function createInvalidArgumentError(
   field: CommandArgField,
   messages: readonly string[],
 ): FailedFieldParse {
@@ -120,7 +124,7 @@ function invalidArgumentValue(
   };
 }
 
-function unknownOption(token: string): FailedFieldParse {
+function createUnknownOptionError(token: string): FailedFieldParse {
   return {
     ok: false,
     error: {
@@ -129,7 +133,7 @@ function unknownOption(token: string): FailedFieldParse {
   };
 }
 
-function duplicateOption(field: CommandOptionField): FailedFieldParse {
+function createDuplicateOptionError(field: CommandOptionField): FailedFieldParse {
   return {
     ok: false,
     error: {
@@ -138,7 +142,7 @@ function duplicateOption(field: CommandOptionField): FailedFieldParse {
   };
 }
 
-function unexpectedArgument(token: string): FailedFieldParse {
+function createUnexpectedArgumentError(token: string): FailedFieldParse {
   return {
     ok: false,
     error: {
@@ -147,31 +151,9 @@ function unexpectedArgument(token: string): FailedFieldParse {
   };
 }
 
-function normalizeParseArgsError(error: unknown): FailedFieldParse {
-  if (!(error instanceof Error)) {
-    return {
-      ok: false,
-      error: {
-        message: "Argument parsing failed",
-      },
-    };
-  }
-
-  // `parseArgs` does not currently expose structured unknown-option metadata,
-  // so this normalization depends on Node's current error wording.
-  const unknownMatch = error.message.match(/Unknown option '([^']+)'/);
-
-  if (unknownMatch) {
-    return unknownOption(unknownMatch[1]);
-  }
-
-  return {
-    ok: false,
-    error: {
-      message: error.message,
-    },
-  };
-}
+// ---------------------------------------------------------------------------
+// Field parsing & validation
+// ---------------------------------------------------------------------------
 
 function parsePrimitiveValue(
   field: CommandArgField | CommandOptionField,
@@ -334,13 +316,13 @@ async function parseArgumentField(
   rawValue: string | undefined,
 ): Promise<FieldParseResult> {
   if (rawValue === undefined) {
-    return resolveMissingField(field, () => missingRequiredArgument(field));
+    return resolveMissingField(field, () => createMissingArgumentError(field));
   }
 
   const result = await parseProvidedField(field, rawValue);
 
   if (!result.ok) {
-    return invalidArgumentValue(field, result.error.message.split("\n"));
+    return createInvalidArgumentError(field, result.error.message.split("\n"));
   }
 
   return {
@@ -357,13 +339,43 @@ async function parseOptionField(
   const result = await parseProvidedField(field, rawValue);
 
   if (!result.ok) {
-    return invalidOptionValue(field, result.error.message.split("\n"));
+    return createInvalidOptionError(field, result.error.message.split("\n"));
   }
 
   return {
     ok: true,
     present: true,
     value: result.value,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// node:util parseArgs adapter
+// ---------------------------------------------------------------------------
+
+function normalizeParseArgsError(error: unknown): FailedFieldParse {
+  if (!(error instanceof Error)) {
+    return {
+      ok: false,
+      error: {
+        message: "Argument parsing failed",
+      },
+    };
+  }
+
+  // `parseArgs` does not currently expose structured unknown-option metadata,
+  // so this normalization depends on Node's current error wording.
+  const unknownMatch = error.message.match(/Unknown option '([^']+)'/);
+
+  if (unknownMatch) {
+    return createUnknownOptionError(unknownMatch[1]);
+  }
+
+  return {
+    ok: false,
+    error: {
+      message: error.message,
+    },
   };
 }
 
@@ -414,7 +426,7 @@ function detectDuplicateOption(
       const field = options.find((option) => option.name === token.name);
 
       if (field) {
-        return duplicateOption(field);
+        return createDuplicateOptionError(field);
       }
     }
   }
@@ -422,7 +434,10 @@ function detectDuplicateOption(
   return undefined;
 }
 
-// Parses raw CLI tokens for a single resolved command and validates field values.
+// ---------------------------------------------------------------------------
+// Orchestration
+// ---------------------------------------------------------------------------
+
 export async function parseCommand<
   TArgsFields extends readonly CommandArgField[],
   TOptionsFields extends readonly CommandOptionField[],
@@ -469,7 +484,7 @@ export async function parseCommand<
   }
 
   if (parsed.positionals.length > command.args.length) {
-    return unexpectedArgument(parsed.positionals[command.args.length]);
+    return createUnexpectedArgumentError(parsed.positionals[command.args.length]);
   }
 
   for (const field of command.options) {
@@ -490,7 +505,7 @@ export async function parseCommand<
       continue;
     }
 
-    const result = await resolveMissingField(field, () => missingRequiredOption(field));
+    const result = await resolveMissingField(field, () => createMissingOptionError(field));
 
     if (!result.ok) {
       return result;
