@@ -251,6 +251,26 @@ test("defineCommand rejects duplicate argument names", () => {
   ).toThrow('Duplicate argument name "source"');
 });
 
+test("defineCommand rejects arg with no type or schema", () => {
+  expect(() =>
+    defineCommand({
+      // @ts-expect-error missing type and schema
+      args: [{ name: "x" }],
+      async run() {},
+    }),
+  ).toThrow('Argument "x" must have either a "type" or "schema" property.');
+});
+
+test("defineCommand rejects option with no type or schema", () => {
+  expect(() =>
+    defineCommand({
+      // @ts-expect-error missing type and schema
+      options: [{ name: "verbose" }],
+      async run() {},
+    }),
+  ).toThrow('Option "verbose" must have either a "type" or "schema" property.');
+});
+
 test("defineCommand accepts widened schema args without false positive", () => {
   const requiredSchema: StandardSchemaV1 = z.string();
 
