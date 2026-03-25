@@ -11,7 +11,13 @@ export type PrimitiveFieldValue<TType extends PrimitiveFieldType> = TType extend
     : boolean;
 
 interface NamedField<TName extends string = string> {
-  /** Identifier used as the key in `ctx.args` / `ctx.options` and as the CLI flag name for options. */
+  /**
+   * Identifier used as the key in `ctx.args` / `ctx.options`.
+   *
+   * For args, any non-empty name is allowed.
+   * For options, names must start with a letter and may contain only letters,
+   * numbers, and internal hyphens (for example: `dry-run`, `dryRun`, `v2`).
+   */
   readonly name: TName;
   /** One-line help text shown in `--help` output. */
   readonly description?: string | undefined;
@@ -236,6 +242,7 @@ export interface DefineCommandInput<
   /**
    * Positional arguments declared in the order they appear on the command line.
    * Required arguments must come before optional ones.
+   * Argument names must be non-empty and unique within the command.
    *
    * Each entry is either a primitive field (`{ name, type }`) or a schema
    * field (`{ name, schema }`).
@@ -243,6 +250,8 @@ export interface DefineCommandInput<
   readonly args?: TArgsFields;
   /**
    * Options declared as `--name` flags, with optional single-character aliases.
+   * Option names must be unique within the command, start with a letter, and
+   * contain only letters, numbers, and internal hyphens.
    *
    * Each entry is either a primitive field (`{ name, type }`) or a schema
    * field (`{ name, schema }`).
