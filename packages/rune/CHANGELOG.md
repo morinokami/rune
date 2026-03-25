@@ -1,5 +1,15 @@
 # @rune-cli/rune
 
+## 0.0.8
+
+### Patch Changes
+
+- [#21](https://github.com/morinokami/rune/pull/21) [`aaf328a`](https://github.com/morinokami/rune/commit/aaf328a9ea61c53ae737225c62f486c84228e169) Thanks [@morinokami](https://github.com/morinokami)! - fix(core): validate option names and aliases
+
+- [#24](https://github.com/morinokami/rune/pull/24) [`162acd1`](https://github.com/morinokami/rune/commit/162acd1180bf9995a1feb30f4b434bffd52569a5) Thanks [@morinokami](https://github.com/morinokami)! - fix(core): validate that arg and option fields have a type or schema
+
+- [#23](https://github.com/morinokami/rune/pull/23) [`54a657d`](https://github.com/morinokami/rune/commit/54a657de047344e037df256c458eefcfce3a7e33) Thanks [@morinokami](https://github.com/morinokami)! - fix(core): default omitted primitive boolean options to false
+
 ## 0.0.7
 
 ### Patch Changes
