@@ -316,6 +316,25 @@ test("runRuneCli falls back to the project directory name when package.json is m
   expect(captured.stderr).toBe("");
 });
 
+test("runRuneCli executes a bare file command through `rune dev`", async () => {
+  const projectRoot = await createDevProject({
+    "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+    "src/commands/hello.ts": createDevCommandModule([
+      '  description: "Say hello",',
+      '  options: [{ name: "name", type: "string", required: true }],',
+      "  async run(ctx) {",
+      "    console.log(`hello ${ctx.options.name}`);",
+      "  },",
+    ]),
+  });
+
+  const captured = await captureRuneCli(["dev", "hello", "--name", "rune"], projectRoot);
+
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toBe("hello rune\n");
+  expect(captured.stderr).toBe("");
+});
+
 test("runRuneCli reports missing src/commands directories", async () => {
   const projectRoot = await createDevProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),

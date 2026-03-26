@@ -8,7 +8,7 @@
   },
   "type": "module",
   "scripts": {
-    "ready": "vp fmt && vp lint && ls-lint && knip && sherif && vp run test --filter './packages/*' && vp run build -r",
+    "ready": "vp fmt && vp lint && ls-lint && knip && sherif && vp run test --filter './packages/*' && vp run build --filter './packages/*'",
     "prepare": "vp config"
   },
   "devDependencies": {

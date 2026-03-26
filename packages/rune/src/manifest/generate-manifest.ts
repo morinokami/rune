@@ -7,6 +7,8 @@ import type { CommandManifest, CommandManifestNode, CommandManifestPath } from "
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "./manifest-map";
 
 const COMMAND_ENTRY_FILE = "index.ts";
+const BARE_COMMAND_EXTENSION = ".ts";
+const DECLARATION_FILE_SUFFIXES = [".d.ts", ".d.mts", ".d.cts"];
 
 export interface GenerateCommandManifestOptions {
   readonly commandsDirectory: string;
@@ -162,10 +164,50 @@ async function walkCommandsDirectory(
     }),
   );
 
+  const bareCommandFiles = entries
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        entry.name.endsWith(BARE_COMMAND_EXTENSION) &&
+        entry.name !== COMMAND_ENTRY_FILE &&
+        !DECLARATION_FILE_SUFFIXES.some((suffix) => entry.name.endsWith(suffix)),
+    )
+    .map((entry) => entry.name)
+    .sort((left, right) => left.localeCompare(right));
+
+  const childDirectoriesWithNodes = new Set(
+    childResults.filter(({ result }) => result.hasNode).map(({ directoryName }) => directoryName),
+  );
+
+  const bareCommandNodes = await Promise.all(
+    bareCommandFiles.map(async (fileName) => {
+      const commandName = fileName.slice(0, -BARE_COMMAND_EXTENSION.length);
+
+      if (childDirectoriesWithNodes.has(commandName)) {
+        throw new Error(
+          `Conflicting command definitions: both "${commandName}${BARE_COMMAND_EXTENSION}" and "${commandName}/" exist. A bare command file cannot coexist with a command directory.`,
+        );
+      }
+
+      const sourceFilePath = path.join(absoluteDirectoryPath, fileName);
+
+      return {
+        pathSegments: [...pathSegments, commandName],
+        kind: "command" as const,
+        sourceFilePath,
+        childNames: [] as string[],
+        description: await extractDescription(sourceFilePath),
+      };
+    }),
+  );
+
   const childNodes = childResults.flatMap(({ result }) => result.nodes);
-  const childNames = childResults
-    .filter(({ result }) => result.hasNode)
-    .map(({ directoryName }) => directoryName);
+  const childNames = [
+    ...childResults
+      .filter(({ result }) => result.hasNode)
+      .map(({ directoryName }) => directoryName),
+    ...bareCommandFiles.map((fileName) => fileName.slice(0, -BARE_COMMAND_EXTENSION.length)),
+  ].sort((left, right) => left.localeCompare(right));
 
   const hasCommandEntry = entries.some(
     (entry) => entry.isFile() && entry.name === COMMAND_ENTRY_FILE,
@@ -173,7 +215,7 @@ async function walkCommandsDirectory(
 
   if (!hasCommandEntry && childNames.length === 0) {
     return {
-      nodes: childNodes,
+      nodes: [...childNodes, ...bareCommandNodes],
       hasNode: false,
     };
   }
@@ -199,7 +241,7 @@ async function walkCommandsDirectory(
   }
 
   return {
-    nodes: [node, ...childNodes],
+    nodes: [node, ...childNodes, ...bareCommandNodes],
     hasNode: true,
   };
 }
@@ -212,7 +254,7 @@ export async function generateCommandManifest(
 
   if (walkResult.nodes.length === 0) {
     throw new Error(
-      "No commands found in src/commands/. Create a command file like src/commands/hello/index.ts",
+      "No commands found in src/commands/. Create a command file like src/commands/hello.ts or src/commands/hello/index.ts",
     );
   }
 
