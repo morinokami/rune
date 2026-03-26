@@ -10,7 +10,7 @@ TypeScript-first, file-based CLI framework. Directory structure maps directly to
   - `vp check`
   - `vp test`
   - `vp run test --filter './packages/*'`
-  - `vp run build -r`
+  - `vp run build --filter './packages/*'`
   - `vp run ready`
   - `vp add <pkg>` / `vp remove <pkg>`
   - `vp dlx <cmd>` and `vpx <cmd>`

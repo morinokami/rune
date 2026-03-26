@@ -27,7 +27,7 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Build packages
-        run: vp run build -r
+        run: vp run build --filter './packages/*'
 
       - name: Run Vite+ check
         run: vp check
@@ -57,7 +57,7 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Build packages
-        run: vp run build -r
+        run: vp run build --filter './packages/*'
 
       - name: Run tests
         run: vp run test --filter './packages/*'
@@ -81,7 +81,7 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Build packages
-        run: vp run build -r
+        run: vp run build --filter './packages/*'
 
       - name: Run publint
         run: vpx publint ./packages/rune
