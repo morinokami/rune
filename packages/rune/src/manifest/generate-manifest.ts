@@ -7,6 +7,7 @@ import type { CommandManifest, CommandManifestNode, CommandManifestPath } from "
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "./manifest-map";
 
 const COMMAND_ENTRY_FILE = "index.ts";
+const GROUP_META_FILE = "_group.ts";
 const BARE_COMMAND_EXTENSION = ".ts";
 const DECLARATION_FILE_SUFFIXES = [".d.ts", ".d.mts", ".d.cts"];
 
@@ -53,15 +54,31 @@ function getStaticDescriptionValue(expression: ts.Expression): string | undefine
 }
 
 function isDefineCommandExpression(expression: ts.Expression): boolean {
+  return isNamedCallExpression(expression, "defineCommand");
+}
+
+function isDefineGroupExpression(expression: ts.Expression): boolean {
+  return isNamedCallExpression(expression, "defineGroup");
+}
+
+function isNamedCallExpression(expression: ts.Expression, name: string): boolean {
   if (ts.isIdentifier(expression)) {
-    return expression.text === "defineCommand";
+    return expression.text === name;
   }
 
   if (ts.isPropertyAccessExpression(expression)) {
-    return expression.name.text === "defineCommand";
+    return expression.name.text === name;
   }
 
   return false;
+}
+
+function isDefineCallExpression(expression: ts.Expression): boolean {
+  return (
+    ts.isCallExpression(expression) &&
+    (isDefineCommandExpression(expression.expression) ||
+      isDefineGroupExpression(expression.expression))
+  );
 }
 
 function extractDescriptionFromCommandDefinition(
@@ -72,7 +89,7 @@ function extractDescriptionFromCommandDefinition(
     return knownDescriptions.get(expression.text);
   }
 
-  if (!ts.isCallExpression(expression) || !isDefineCommandExpression(expression.expression)) {
+  if (!ts.isCallExpression(expression) || !isDefineCallExpression(expression)) {
     return undefined;
   }
 
@@ -136,6 +153,70 @@ export async function extractDescriptionFromSourceFile(
   return undefined;
 }
 
+async function validateGroupMetaFile(sourceFilePath: string): Promise<void> {
+  const sourceText = await readFile(sourceFilePath, "utf8");
+  const sourceFile = ts.createSourceFile(
+    sourceFilePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  for (const statement of sourceFile.statements) {
+    if (ts.isVariableStatement(statement)) {
+      continue;
+    }
+
+    if (ts.isImportDeclaration(statement)) {
+      continue;
+    }
+
+    if (ts.isExportAssignment(statement)) {
+      const expression = ts.isIdentifier(statement.expression)
+        ? findVariableInitializer(sourceFile, statement.expression.text)
+        : statement.expression;
+
+      if (
+        expression &&
+        ts.isCallExpression(expression) &&
+        isDefineGroupExpression(expression.expression)
+      ) {
+        return;
+      }
+
+      throw new Error(
+        `${sourceFilePath}: _group.ts must use "export default defineGroup(...)". Found a default export that is not a defineGroup() call.`,
+      );
+    }
+  }
+
+  throw new Error(`${sourceFilePath}: _group.ts must have a default export using defineGroup().`);
+}
+
+function findVariableInitializer(
+  sourceFile: ts.SourceFile,
+  name: string,
+): ts.Expression | undefined {
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) {
+      continue;
+    }
+
+    for (const declaration of statement.declarationList.declarations) {
+      if (
+        ts.isIdentifier(declaration.name) &&
+        declaration.name.text === name &&
+        declaration.initializer
+      ) {
+        return declaration.initializer;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 async function walkCommandsDirectory(
   absoluteDirectoryPath: string,
   pathSegments: readonly string[],
@@ -170,6 +251,7 @@ async function walkCommandsDirectory(
         entry.isFile() &&
         entry.name.endsWith(BARE_COMMAND_EXTENSION) &&
         entry.name !== COMMAND_ENTRY_FILE &&
+        entry.name !== GROUP_META_FILE &&
         !DECLARATION_FILE_SUFFIXES.some((suffix) => entry.name.endsWith(suffix)),
     )
     .map((entry) => entry.name)
@@ -213,7 +295,21 @@ async function walkCommandsDirectory(
     (entry) => entry.isFile() && entry.name === COMMAND_ENTRY_FILE,
   );
 
-  if (!hasCommandEntry && childNames.length === 0) {
+  const hasGroupMeta = entries.some((entry) => entry.isFile() && entry.name === GROUP_META_FILE);
+
+  if (hasGroupMeta && hasCommandEntry) {
+    throw new Error(
+      `Conflicting definitions: both "${GROUP_META_FILE}" and "${COMMAND_ENTRY_FILE}" exist in the same directory. A directory is either a group (_group.ts) or an executable command (index.ts), not both.`,
+    );
+  }
+
+  if (hasGroupMeta && childNames.length === 0) {
+    throw new Error(
+      `${path.join(absoluteDirectoryPath, GROUP_META_FILE)}: _group.ts exists but the directory has no subcommands.`,
+    );
+  }
+
+  if (!hasCommandEntry && !hasGroupMeta && childNames.length === 0) {
     return {
       nodes: [...childNodes, ...bareCommandNodes],
       hasNode: false,
@@ -233,10 +329,25 @@ async function walkCommandsDirectory(
       description: await extractDescription(sourceFilePath),
     };
   } else {
+    const groupMetaPath = path.join(absoluteDirectoryPath, GROUP_META_FILE);
+
+    if (hasGroupMeta) {
+      await validateGroupMetaFile(groupMetaPath);
+    }
+
+    const description = hasGroupMeta ? await extractDescription(groupMetaPath) : undefined;
+
+    if (hasGroupMeta && !description) {
+      throw new Error(
+        `${groupMetaPath}: _group.ts must export a defineGroup() call with a non-empty "description" string.`,
+      );
+    }
+
     node = {
       pathSegments,
       kind: "group",
       childNames,
+      ...(description !== undefined ? { description } : {}),
     };
   }
 

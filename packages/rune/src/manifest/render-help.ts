@@ -89,7 +89,13 @@ export function renderGroupHelp(options: RenderGroupHelpOptions): string {
     };
   });
   const commandName = formatCommandName(cliName, node.pathSegments);
-  const parts = [`Usage: ${commandName} <command>`];
+  const parts: string[] = [];
+
+  if (node.description) {
+    parts.push(node.description);
+  }
+
+  parts.push(`Usage: ${commandName} <command>`);
 
   if (entries.length > 0) {
     parts.push(`Subcommands:\n${formatSectionEntries(entries)}`);

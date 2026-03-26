@@ -461,6 +461,212 @@ test("generateCommandManifest extracts descriptions from bare command files", as
   ]);
 });
 
+test("generateCommandManifest extracts group description from _group.ts with defineGroup", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      "",
+      "export default defineGroup({",
+      '  description: "Manage projects",',
+      "});",
+    ].join("\n"),
+    "project/create.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Create a project",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+
+  expect(manifest.nodes).toEqual([
+    {
+      pathSegments: [],
+      kind: "group",
+      childNames: ["project"],
+    },
+    {
+      pathSegments: ["project"],
+      kind: "group",
+      childNames: ["create"],
+      description: "Manage projects",
+    },
+    {
+      pathSegments: ["project", "create"],
+      kind: "command",
+      sourceFilePath: path.join(commandsDirectory, "project", "create.ts"),
+      childNames: [],
+      description: "Create a project",
+    },
+  ]);
+});
+
+test("generateCommandManifest extracts root group description from _group.ts", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      "",
+      "export default defineGroup({",
+      '  description: "My awesome CLI",',
+      "});",
+    ].join("\n"),
+    "hello.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Say hello",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+
+  expect(manifest.nodes).toEqual([
+    {
+      pathSegments: [],
+      kind: "group",
+      childNames: ["hello"],
+      description: "My awesome CLI",
+    },
+    {
+      pathSegments: ["hello"],
+      kind: "command",
+      sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+      childNames: [],
+      description: "Say hello",
+    },
+  ]);
+});
+
+test("generateCommandManifest extracts group description from variable export", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      "",
+      "const group = defineGroup({",
+      '  description: "Manage projects",',
+      "});",
+      "",
+      "export default group;",
+    ].join("\n"),
+    "project/create.ts": "export default {};",
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+  const projectNode = manifest.nodes.find(
+    (n) => n.pathSegments.length === 1 && n.pathSegments[0] === "project",
+  );
+
+  expect(projectNode).toEqual({
+    pathSegments: ["project"],
+    kind: "group",
+    childNames: ["create"],
+    description: "Manage projects",
+  });
+});
+
+test("generateCommandManifest throws when _group.ts and index.ts coexist", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      'export default defineGroup({ description: "Manage projects" });',
+    ].join("\n"),
+    "project/index.ts": "export default {};",
+    "project/create.ts": "export default {};",
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    'Conflicting definitions: both "_group.ts" and "index.ts" exist in the same directory.',
+  );
+});
+
+test("generateCommandManifest throws when _group.ts exists in directory with no subcommands", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      'export default defineGroup({ description: "Manage projects" });',
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    "_group.ts exists but the directory has no subcommands",
+  );
+});
+
+test("generateCommandManifest throws when _group.ts uses defineCommand instead of defineGroup", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "export default defineCommand({",
+      '  description: "Wrong",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+    "project/create.ts": "export default {};",
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    '_group.ts must use "export default defineGroup(...)"',
+  );
+});
+
+test("generateCommandManifest throws when _group.ts has no default export", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": 'export const description = "Manage projects";',
+    "project/create.ts": "export default {};",
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    "_group.ts must have a default export using defineGroup()",
+  );
+});
+
+test("generateCommandManifest throws when _group.ts has an empty description", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      'export default defineGroup({ description: "" });',
+    ].join("\n"),
+    "project/create.ts": "export default {};",
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    'non-empty "description"',
+  );
+});
+
+test("generateCommandManifest does not treat _group.ts as a bare command", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      'export default defineGroup({ description: "Root" });',
+    ].join("\n"),
+    "hello.ts": "export default {};",
+  });
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription(sourceFilePath) {
+      if (sourceFilePath.endsWith("_group.ts")) {
+        return "Root";
+      }
+
+      return undefined;
+    },
+  });
+
+  const commandNames = manifest.nodes
+    .filter((n) => n.kind === "command")
+    .map((n) => n.pathSegments[0]);
+
+  expect(commandNames).toEqual(["hello"]);
+  expect(commandNames).not.toContain("_group");
+});
+
 test("generateCommandManifest extracts descriptions from exported command variables", async () => {
   const commandsDirectory = await createCommandsFixture({
     "hello/index.ts": [
