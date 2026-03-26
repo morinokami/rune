@@ -374,6 +374,41 @@ test("the built CLI shows help without invoking rune dev", async () => {
   expect(commandHelpResult.stdout).toContain("Description:\n  Say hello");
 });
 
+test("runRuneCli builds a bare file command and emits the correct dist path", async () => {
+  const projectRoot = await createBuildProject({
+    "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+    "src/commands/hello.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Say hello",',
+      '  options: [{ name: "name", type: "string", required: true }],',
+      "  async run(ctx) {",
+      "    console.log(`hello ${ctx.options.name}`);",
+      "  },",
+      "});",
+    ].join("\n"),
+  });
+  await installRuneFixturePackage(projectRoot);
+
+  const buildResult = await captureRuneCli(["build"], projectRoot);
+
+  expect(buildResult.exitCode).toBe(0);
+  expect(buildResult.stderr).toBe("");
+
+  const manifestContents = await readFile(path.join(projectRoot, "dist", "manifest.json"), "utf8");
+  expect(manifestContents).toContain('"sourceFilePath": "commands/hello.mjs"');
+  expect(await pathExists(path.join(projectRoot, "dist", "commands", "hello.mjs"))).toBe(true);
+
+  const builtCommandResult = await runBuiltCli(projectRoot, ["hello", "--name", "rune"]);
+
+  expect(builtCommandResult).toEqual({
+    exitCode: 0,
+    stdout: "hello rune\n",
+    stderr: "",
+  });
+});
+
 test("runRuneCli build copies non-TypeScript files and skips declaration files", async () => {
   const projectRoot = await createBuildProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),

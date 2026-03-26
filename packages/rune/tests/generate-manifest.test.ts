@@ -192,7 +192,7 @@ test("generateCommandManifest throws a descriptive error for an empty commands d
   const commandsDirectory = await createCommandsFixture({});
 
   await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
-    "No commands found in src/commands/. Create a command file like src/commands/hello/index.ts",
+    "No commands found in src/commands/. Create a command file like src/commands/hello.ts or src/commands/hello/index.ts",
   );
 });
 
@@ -220,6 +220,241 @@ test("generateCommandManifest extracts literal descriptions from source files by
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+      childNames: [],
+      description: "Say hello",
+    },
+  ]);
+});
+
+test("generateCommandManifest discovers bare .ts command files", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello.ts": "export default {};",
+    "greet.ts": "export default {};",
+  });
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription() {
+      return undefined;
+    },
+  });
+
+  expect(manifest).toEqual({
+    nodes: [
+      {
+        pathSegments: [],
+        kind: "group",
+        childNames: ["greet", "hello"],
+      },
+      {
+        pathSegments: ["greet"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "greet.ts"),
+        childNames: [],
+        description: undefined,
+      },
+      {
+        pathSegments: ["hello"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+        childNames: [],
+        description: undefined,
+      },
+    ],
+  });
+});
+
+test("generateCommandManifest mixes bare files and directory commands", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello.ts": "export default {};",
+    "project/index.ts": "export default {};",
+    "project/create/index.ts": "export default {};",
+  });
+
+  const descriptions: Record<string, string> = {
+    "hello.ts": "Say hello",
+    "project/index.ts": "Project commands",
+    "project/create/index.ts": "Create a project",
+  };
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription(sourceFilePath) {
+      const relativePath = path.relative(commandsDirectory, sourceFilePath);
+      return descriptions[relativePath];
+    },
+  });
+
+  expect(manifest).toEqual({
+    nodes: [
+      {
+        pathSegments: [],
+        kind: "group",
+        childNames: ["hello", "project"],
+      },
+      {
+        pathSegments: ["hello"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+        childNames: [],
+        description: "Say hello",
+      },
+      {
+        pathSegments: ["project"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "project", "index.ts"),
+        childNames: ["create"],
+        description: "Project commands",
+      },
+      {
+        pathSegments: ["project", "create"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "project", "create", "index.ts"),
+        childNames: [],
+        description: "Create a project",
+      },
+    ],
+  });
+});
+
+test("generateCommandManifest supports bare files in nested directories", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/create.ts": "export default {};",
+    "project/list.ts": "export default {};",
+  });
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription() {
+      return undefined;
+    },
+  });
+
+  expect(manifest).toEqual({
+    nodes: [
+      {
+        pathSegments: [],
+        kind: "group",
+        childNames: ["project"],
+      },
+      {
+        pathSegments: ["project"],
+        kind: "group",
+        childNames: ["create", "list"],
+      },
+      {
+        pathSegments: ["project", "create"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "project", "create.ts"),
+        childNames: [],
+        description: undefined,
+      },
+      {
+        pathSegments: ["project", "list"],
+        kind: "command",
+        sourceFilePath: path.join(commandsDirectory, "project", "list.ts"),
+        childNames: [],
+        description: undefined,
+      },
+    ],
+  });
+});
+
+test("generateCommandManifest throws when bare file conflicts with command directory", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello.ts": "export default {};",
+    "hello/index.ts": "export default {};",
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    'Conflicting command definitions: both "hello.ts" and "hello/" exist.',
+  );
+});
+
+test("generateCommandManifest ignores bare file next to empty same-name directory", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello.ts": "export default {};",
+    "hello/.gitkeep": "",
+  });
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription() {
+      return undefined;
+    },
+  });
+
+  expect(manifest.nodes).toEqual([
+    {
+      pathSegments: [],
+      kind: "group",
+      childNames: ["hello"],
+    },
+    {
+      pathSegments: ["hello"],
+      kind: "command",
+      sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+      childNames: [],
+      description: undefined,
+    },
+  ]);
+});
+
+test("generateCommandManifest ignores .d.ts declaration files", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello.ts": "export default {};",
+    "types.d.ts": "export interface Message { readonly text: string; }",
+    "utils.d.mts": "export declare function helper(): void;",
+    "constants.d.cts": "export declare const VALUE: string;",
+  });
+
+  const manifest = await generateCommandManifest({
+    commandsDirectory,
+    async extractDescription() {
+      return undefined;
+    },
+  });
+
+  expect(manifest.nodes).toEqual([
+    {
+      pathSegments: [],
+      kind: "group",
+      childNames: ["hello"],
+    },
+    {
+      pathSegments: ["hello"],
+      kind: "command",
+      sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+      childNames: [],
+      description: undefined,
+    },
+  ]);
+});
+
+test("generateCommandManifest extracts descriptions from bare command files", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Say hello",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+
+  expect(manifest.nodes).toEqual([
+    {
+      pathSegments: [],
+      kind: "group",
+      childNames: ["hello"],
+    },
+    {
+      pathSegments: ["hello"],
+      kind: "command",
+      sourceFilePath: path.join(commandsDirectory, "hello.ts"),
       childNames: [],
       description: "Say hello",
     },

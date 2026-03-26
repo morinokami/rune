@@ -46,12 +46,14 @@ Commands are TypeScript files under `src/commands/`. The directory structure map
 
 ```
 src/commands/
-  hello/index.ts          → my-cli hello
+  hello.ts                → my-cli hello
   project/
     index.ts              → my-cli project
-    create/index.ts       → my-cli project create
-    list/index.ts         → my-cli project list
+    create.ts             → my-cli project create
+    list.ts               → my-cli project list
 ```
+
+Simple leaf commands can be bare files (`hello.ts`), while commands that need subcommands use a directory with `index.ts`.
 
 Each command file exports a default `defineCommand()` call:
 
