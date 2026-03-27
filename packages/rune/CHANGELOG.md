@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.10
+
+### Patch Changes
+
+- [#29](https://github.com/morinokami/rune/pull/29) [`0628f15`](https://github.com/morinokami/rune/commit/0628f15a0f46eab53e5c664c33cd62b9fe8da0d4) Thanks [@morinokami](https://github.com/morinokami)! - feat(manifest): support bare command files
+
+- [#31](https://github.com/morinokami/rune/pull/31) [`520b5b1`](https://github.com/morinokami/rune/commit/520b5b1f7e1b7af7573c8c2e4053326283e58134) Thanks [@morinokami](https://github.com/morinokami)! - feat(manifest): support group descriptions via `_group.ts`
+
 ## 0.0.9
 
 ### Patch Changes
