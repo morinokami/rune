@@ -98,6 +98,67 @@ test("renderGroupHelp does not show --version for the root group when version is
   expect(help).toContain("-h, --help");
 });
 
+test("renderGroupHelp shows description above usage when present", () => {
+  const manifestWithGroupDescription: CommandManifest = {
+    nodes: [
+      {
+        pathSegments: ["project"],
+        kind: "group",
+        childNames: ["create", "list"],
+        description: "Manage projects",
+      },
+      {
+        pathSegments: ["project", "create"],
+        kind: "command",
+        sourceFilePath: "/commands/project/create/index.ts",
+        childNames: [],
+        description: "Create a project",
+      },
+      {
+        pathSegments: ["project", "list"],
+        kind: "command",
+        sourceFilePath: "/commands/project/list/index.ts",
+        childNames: [],
+        description: "List projects",
+      },
+    ],
+  };
+
+  const groupNode = manifestWithGroupDescription.nodes[0];
+
+  if (groupNode.kind !== "group") {
+    throw new Error("Expected group node");
+  }
+
+  const help = renderGroupHelp({
+    manifest: manifestWithGroupDescription,
+    node: groupNode,
+    cliName: "mycli",
+  });
+
+  const lines = help.split("\n");
+  const descriptionIndex = lines.findIndex((line) => line === "Manage projects");
+  const usageIndex = lines.findIndex((line) => line.startsWith("Usage:"));
+
+  expect(descriptionIndex).toBeGreaterThanOrEqual(0);
+  expect(usageIndex).toBeGreaterThan(descriptionIndex);
+  expect(help).toContain("create  Create a project");
+  expect(help).toContain("list  List projects");
+});
+
+test("renderGroupHelp omits description section when not present", () => {
+  const userGroup = manifest.nodes[5];
+
+  if (userGroup.kind !== "group") {
+    throw new Error("Expected user node to be a group");
+  }
+
+  const help = renderGroupHelp({ manifest, node: userGroup, cliName: "mycli" });
+
+  const lines = help.split("\n");
+  expect(lines[0]).toBe("Usage: mycli user <command>");
+});
+
 test("renderCommandHelp includes usage, description, args, and options", async () => {
   const command = defineCommand({
     description: "Create a project",
