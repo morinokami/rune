@@ -28,6 +28,7 @@
       "entry": [
         "src/index.ts",
         "src/runtime.ts",
+        "src/test.ts",
         "src/cli.ts",
         "tests/**/*.test.ts",
         "vite.config.ts"
