@@ -1,7 +1,6 @@
 export { defineCommand, isDefinedCommand } from "./define-command";
 export { defineGroup, isDefinedGroup } from "./define-group";
 export { executeCommand } from "./execute-command";
-export { captureProcessOutput } from "./capture-output";
 export { parseCommand } from "./parse-command";
 export { isSchemaField } from "./schema-field";
 
@@ -21,5 +20,4 @@ export type {
 export type { DefineGroupInput, DefinedGroup } from "./define-group";
 export type { ExecuteCommandInput, ExecuteCommandResult } from "./execute-command";
 export type { ParseCommandError, ParseCommandResult, ParsedCommandInput } from "./parse-command";
-export type { CapturedOutput } from "./capture-output";
 export type { SchemaField } from "./schema-field";

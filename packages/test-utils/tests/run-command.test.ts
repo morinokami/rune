@@ -1,8 +1,8 @@
+import { defineCommand } from "@rune-cli/core";
 import path from "node:path";
 import { expect, test } from "vite-plus/test";
 
-import { defineCommand } from "../src";
-import { runCommand } from "../src/test";
+import { runCommand } from "../src";
 
 test("runCommand returns a successful command result", async () => {
   const command = defineCommand({

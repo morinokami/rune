@@ -161,6 +161,27 @@ importers:
       '@rune-cli/core':
         specifier: workspace:*
         version: link:../core
+      '@rune-cli/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.12.0
+      '@typescript/native-preview':
+        specifier: 'catalog:'
+        version: 7.0.0-dev.20260322.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.1.13(@arethetypeswrong/core@0.18.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
+
+  packages/test-utils:
+    devDependencies:
+      '@rune-cli/core':
+        specifier: workspace:*
+        version: link:../core
       '@types/node':
         specifier: 'catalog:'
         version: 24.12.0
