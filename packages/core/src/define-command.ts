@@ -9,10 +9,18 @@ import type {
 
 import { isSchemaField } from "./schema-field";
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const DEFINED_COMMAND_BRAND = Symbol.for("@rune-cli/defined-command");
 
 const OPTION_NAME_RE = /^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$/;
 const ALIAS_RE = /^[a-zA-Z]$/;
+
+// ---------------------------------------------------------------------------
+// Field validation
+// ---------------------------------------------------------------------------
 
 function validateFieldShape(
   fields: readonly (CommandArgField | CommandOptionField)[],
@@ -113,6 +121,10 @@ function validateArgOrdering(args: readonly CommandArgField[]): void {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
  * Defines a CLI command with a description, positional arguments, options,

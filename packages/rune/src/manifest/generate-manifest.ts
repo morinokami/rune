@@ -6,6 +6,10 @@ import type { CommandManifest, CommandManifestNode, CommandManifestPath } from "
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "./manifest-map";
 
+// ---------------------------------------------------------------------------
+// Constants & types
+// ---------------------------------------------------------------------------
+
 const COMMAND_ENTRY_FILE = "index.ts";
 const GROUP_META_FILE = "_group.ts";
 const BARE_COMMAND_EXTENSION = ".ts";
@@ -22,6 +26,10 @@ interface WalkDirectoryResult {
   readonly nodes: readonly CommandManifestNode[];
   readonly hasNode: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
 
 function comparePathSegments(left: CommandManifestPath, right: CommandManifestPath): number {
   const length = Math.min(left.length, right.length);
@@ -52,6 +60,10 @@ function getStaticDescriptionValue(expression: ts.Expression): string | undefine
 
   return undefined;
 }
+
+// ---------------------------------------------------------------------------
+// Description extraction
+// ---------------------------------------------------------------------------
 
 function isDefineCommandExpression(expression: ts.Expression): boolean {
   return isNamedCallExpression(expression, "defineCommand");
@@ -153,6 +165,10 @@ export async function extractDescriptionFromSourceFile(
   return undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Group metadata validation
+// ---------------------------------------------------------------------------
+
 async function validateGroupMetaFile(sourceFilePath: string): Promise<void> {
   const sourceText = await readFile(sourceFilePath, "utf8");
   const sourceFile = ts.createSourceFile(
@@ -216,6 +232,10 @@ function findVariableInitializer(
 
   return undefined;
 }
+
+// ---------------------------------------------------------------------------
+// Manifest tree walking
+// ---------------------------------------------------------------------------
 
 async function walkCommandsDirectory(
   absoluteDirectoryPath: string,
@@ -356,6 +376,10 @@ async function walkCommandsDirectory(
     hasNode: true,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export async function generateCommandManifest(
   options: GenerateCommandManifestOptions,

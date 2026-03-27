@@ -8,6 +8,10 @@ import type {
 
 import { isSchemaField } from "./schema-field";
 
+// ---------------------------------------------------------------------------
+// Public types
+// ---------------------------------------------------------------------------
+
 // Input accepted by the low-level direct executor before validation exists.
 export interface ExecuteCommandInput<TOptions, TArgs> {
   readonly options?: TOptions | undefined;
@@ -22,6 +26,10 @@ export interface ExecuteCommandResult {
   readonly errorMessage?: string | undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Execution helpers
+// ---------------------------------------------------------------------------
+
 function formatExecutionError(error: unknown): string {
   if (error instanceof Error) {
     return error.message === "" ? "" : error.message || error.name || "Unknown error";
@@ -33,6 +41,25 @@ function formatExecutionError(error: unknown): string {
 
   return "Unknown error";
 }
+
+function createExecutionOptions<TOptionsFields extends readonly CommandOptionField[]>(
+  command: DefinedCommand<readonly CommandArgField[], TOptionsFields>,
+  input: ExecuteCommandInput<InferExecutionFields<TOptionsFields>, unknown>,
+): InferNamedFields<TOptionsFields, true> {
+  const options: Record<string, unknown> = { ...input.options };
+
+  for (const field of command.options) {
+    if (options[field.name] === undefined && !isSchemaField(field) && field.type === "boolean") {
+      options[field.name] = false;
+    }
+  }
+
+  return options as InferNamedFields<TOptionsFields, true>;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 // This is a low-level executor intended to sit below future validation helpers.
 export async function executeCommand<
@@ -46,16 +73,8 @@ export async function executeCommand<
   > = {},
 ): Promise<ExecuteCommandResult> {
   try {
-    const options: Record<string, unknown> = { ...input.options };
-
-    for (const field of command.options) {
-      if (options[field.name] === undefined && !isSchemaField(field) && field.type === "boolean") {
-        options[field.name] = false;
-      }
-    }
-
     await command.run({
-      options: options as InferNamedFields<TOptionsFields, true>,
+      options: createExecutionOptions(command, input),
       args: (input.args ?? {}) as InferNamedFields<TArgsFields>,
       cwd: input.cwd ?? process.cwd(),
       rawArgs: input.rawArgs ?? [],

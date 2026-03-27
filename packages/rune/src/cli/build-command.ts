@@ -16,6 +16,10 @@ import {
 } from "../project/project-files";
 import { writeStderrLine, writeStdout } from "./write-result";
 
+// ---------------------------------------------------------------------------
+// Constants & types
+// ---------------------------------------------------------------------------
+
 const BUILD_CLI_FILENAME = "cli.mjs";
 const BUILD_MANIFEST_FILENAME = "manifest.json";
 const RUNE_PACKAGE_NAME = "@rune-cli/rune";
@@ -36,6 +40,14 @@ const CODE_SOURCE_EXTENSIONS = new Set([
   ".cjs",
 ]);
 const BUILD_TARGET = "node24";
+
+interface RunePackageJson {
+  readonly name?: string | undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Manifest & path helpers
+// ---------------------------------------------------------------------------
 
 function isCodeSourceFile(filePath: string): boolean {
   return CODE_SOURCE_EXTENSIONS.has(path.extname(filePath));
@@ -98,6 +110,10 @@ function formatBuildFailure(projectRoot: string, error: BuildFailure): string {
   return `Failed to compile ${filePath}:${firstError.location.line}:${firstError.location.column + 1}: ${firstError.text}`;
 }
 
+// ---------------------------------------------------------------------------
+// Dist asset copying
+// ---------------------------------------------------------------------------
+
 async function copyBuiltAssets(sourceDirectory: string, distDirectory: string): Promise<void> {
   const entries = await readdir(sourceDirectory, { withFileTypes: true });
 
@@ -124,6 +140,10 @@ async function copyBuiltAssets(sourceDirectory: string, distDirectory: string): 
     }),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Built CLI entry generation
+// ---------------------------------------------------------------------------
 
 function renderBuiltCliEntry(
   cliName: string,
@@ -166,9 +186,9 @@ function collectCommandEntryPoints(manifest: CommandManifest): readonly string[]
   return manifest.nodes.flatMap((node) => (node.kind === "command" ? [node.sourceFilePath] : []));
 }
 
-interface RunePackageJson {
-  readonly name?: string | undefined;
-}
+// ---------------------------------------------------------------------------
+// Runtime helper resolution
+// ---------------------------------------------------------------------------
 
 async function pathExists(filePath: string): Promise<boolean> {
   try {
@@ -233,6 +253,10 @@ async function resolveRuntimeHelperEntryPath(): Promise<string> {
 
   throw new Error("Could not locate Rune runtime helper entry");
 }
+
+// ---------------------------------------------------------------------------
+// Build steps
+// ---------------------------------------------------------------------------
 
 async function buildCommandEntries(
   projectRoot: string,
@@ -309,6 +333,10 @@ async function writeBuiltRuntimeFiles(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Help rendering
+// ---------------------------------------------------------------------------
+
 export function renderRuneBuildHelp(): string {
   return `\
 Build a Rune project into a distributable CLI.
@@ -324,6 +352,10 @@ Examples:
   rune build --project ./my-app
 `;
 }
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export async function runBuildCommand(options: RunBuildCommandOptions): Promise<number> {
   let projectRoot = "";

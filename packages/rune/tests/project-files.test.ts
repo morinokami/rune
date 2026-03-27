@@ -3,9 +3,20 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, expect, test } from "vite-plus/test";
 
-import { readProjectCliInfo } from "../src/project/project-files";
+import {
+  assertCommandsDirectoryExists,
+  readProjectCliInfo,
+  resolveCommandsDirectory,
+  resolveDistDirectory,
+  resolveProjectPath,
+  resolveSourceDirectory,
+} from "../src/project/project-files";
 
 const fixtureRootDirectories = new Set<string>();
+
+// ---------------------------------------------------------------------------
+// Test setup
+// ---------------------------------------------------------------------------
 
 afterEach(async () => {
   await Promise.all(
@@ -15,6 +26,10 @@ afterEach(async () => {
   );
   fixtureRootDirectories.clear();
 });
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
 
 async function createProjectFixture(files: Readonly<Record<string, string>>): Promise<string> {
   const projectRoot = await mkdtemp(path.join(os.tmpdir(), "rune-project-files-"));
@@ -30,6 +45,30 @@ async function createProjectFixture(files: Readonly<Record<string, string>>): Pr
 
   return projectRoot;
 }
+
+// ---------------------------------------------------------------------------
+// Path resolution
+// ---------------------------------------------------------------------------
+
+test("project file helpers resolve project-relative directories", () => {
+  const projectRoot = resolveProjectPath({
+    cwd: "/tmp/workspace",
+    projectPath: "./fixtures/app",
+  });
+
+  expect(projectRoot).toBe(path.resolve("/tmp/workspace", "./fixtures/app"));
+  expect(resolveSourceDirectory(projectRoot)).toBe(path.join(projectRoot, "src"));
+  expect(resolveCommandsDirectory(projectRoot)).toBe(path.join(projectRoot, "src", "commands"));
+  expect(resolveDistDirectory(projectRoot)).toBe(path.join(projectRoot, "dist"));
+});
+
+test("resolveProjectPath falls back to the current working directory", () => {
+  expect(resolveProjectPath({})).toBe(path.resolve(process.cwd(), "."));
+});
+
+// ---------------------------------------------------------------------------
+// CLI metadata
+// ---------------------------------------------------------------------------
 
 test("readProjectCliInfo prefers the sorted bin object key", async () => {
   const projectRoot = await createProjectFixture({
@@ -101,4 +140,26 @@ test("readProjectCliInfo falls back to the project directory name when package.j
     name: path.basename(projectRoot),
     version: undefined,
   });
+});
+
+// ---------------------------------------------------------------------------
+// Commands directory validation
+// ---------------------------------------------------------------------------
+
+test("assertCommandsDirectoryExists accepts an existing commands directory", async () => {
+  const projectRoot = await createProjectFixture({
+    "src/commands/.gitkeep": "",
+  });
+
+  await expect(assertCommandsDirectoryExists(resolveCommandsDirectory(projectRoot))).resolves.toBe(
+    undefined,
+  );
+});
+
+test("assertCommandsDirectoryExists rejects a missing commands directory", async () => {
+  const projectRoot = await createProjectFixture({});
+
+  await expect(
+    assertCommandsDirectoryExists(resolveCommandsDirectory(projectRoot)),
+  ).rejects.toThrow("Commands directory not found at src/commands");
 });

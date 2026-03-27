@@ -31,6 +31,10 @@ let builtPackageEnvironmentPromise:
 
 const PACKAGED_ENTRIES = ["package.json", "src", "tsconfig.json", "vite.config.ts"];
 
+// ---------------------------------------------------------------------------
+// Test setup
+// ---------------------------------------------------------------------------
+
 afterEach(async () => {
   await Promise.all(
     [...fixtureRootDirectories].map((rootDirectory) =>
@@ -48,6 +52,10 @@ afterAll(async () => {
   );
   packagedWorkspaceDirectories.clear();
 });
+
+// ---------------------------------------------------------------------------
+// Fixtures & process helpers
+// ---------------------------------------------------------------------------
 
 async function createBuildProject(files: Readonly<Record<string, string>>): Promise<string> {
   const projectRoot = await mkdtemp(path.join(os.tmpdir(), "rune-build-project-"));
@@ -115,6 +123,10 @@ async function entryExists(entryPath: string): Promise<boolean> {
     throw error;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Packaging helpers
+// ---------------------------------------------------------------------------
 
 interface TestPackageJson {
   readonly dependencies?: Readonly<Record<string, string>> | undefined;
@@ -289,6 +301,10 @@ async function captureRuneCli(argv: readonly string[], cwd?: string) {
   return captureExitCode(() => runRuneCli({ argv, cwd }));
 }
 
+// ---------------------------------------------------------------------------
+// Build subcommand parsing
+// ---------------------------------------------------------------------------
+
 test("runRuneCli shows help for `rune build --help`", async () => {
   const captured = await captureRuneCli(["build", "--help"]);
 
@@ -297,7 +313,56 @@ test("runRuneCli shows help for `rune build --help`", async () => {
   expect(captured.stderr).toBe("");
 });
 
-// Core runnable build behavior.
+test("runRuneCli supports `rune build --project=<path>`", async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-build-workspace-"));
+  fixtureRootDirectories.add(workspaceRoot);
+  const projectRoot = path.join(workspaceRoot, "fixture");
+
+  await mkdir(path.join(projectRoot, "src", "commands", "hello"), { recursive: true });
+  await writeFile(
+    path.join(projectRoot, "package.json"),
+    JSON.stringify({ name: "mycli" }, null, 2),
+  );
+  await writeFile(
+    path.join(projectRoot, "src", "commands", "hello", "index.ts"),
+    [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Say hello",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  );
+  await installRuneFixturePackage(projectRoot);
+
+  const captured = await captureRuneCli(["build", "--project=./fixture"], workspaceRoot);
+
+  expect(captured.exitCode).toBe(0);
+  expect(captured.stdout).toContain(path.join(projectRoot, "dist", "cli.mjs"));
+  expect(captured.stderr).toBe("");
+});
+
+test("runRuneCli reports missing values for `rune build --project`", async () => {
+  const captured = await captureRuneCli(["build", "--project"]);
+
+  expect(captured.exitCode).toBe(1);
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toBe("Missing value for --project. Usage: --project <path>\n");
+});
+
+test("runRuneCli rejects unexpected positional arguments for `rune build`", async () => {
+  const captured = await captureRuneCli(["build", "extra"]);
+
+  expect(captured.exitCode).toBe(1);
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toBe("Unexpected argument for rune build: extra\n");
+});
+
+// ---------------------------------------------------------------------------
+// Build output
+// ---------------------------------------------------------------------------
+
 test("runRuneCli builds a fixture project and emits a runnable dist CLI", async () => {
   const projectRoot = await createBuildProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
@@ -435,7 +500,10 @@ test("runRuneCli build copies non-TypeScript files and skips declaration files",
   expect(await pathExists(path.join(projectRoot, "dist", "types.d.ts"))).toBe(false);
 });
 
-// Production build isolation and optimization behavior.
+// ---------------------------------------------------------------------------
+// Build isolation & optimization
+// ---------------------------------------------------------------------------
+
 test("runRuneCli build emits shared chunks for command dependencies", async () => {
   const projectRoot = await createBuildProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
@@ -518,7 +586,10 @@ test("runRuneCli build does not apply the project tsconfig to the built CLI entr
   });
 });
 
-// Failure reporting.
+// ---------------------------------------------------------------------------
+// Failure reporting
+// ---------------------------------------------------------------------------
+
 test("runRuneCli build reports transpile failures", async () => {
   const projectRoot = await createBuildProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),

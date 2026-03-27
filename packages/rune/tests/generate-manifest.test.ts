@@ -12,6 +12,10 @@ import {
 
 const fixtureRootDirectories = new Set<string>();
 
+// ---------------------------------------------------------------------------
+// Test setup
+// ---------------------------------------------------------------------------
+
 afterEach(async () => {
   await Promise.all(
     [...fixtureRootDirectories].map((rootDirectory) =>
@@ -20,6 +24,10 @@ afterEach(async () => {
   );
   fixtureRootDirectories.clear();
 });
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
 
 async function createCommandsFixture(files: Readonly<Record<string, string>>): Promise<string> {
   const rootDirectory = await mkdtemp(path.join(os.tmpdir(), "rune-manifest-"));
@@ -38,6 +46,10 @@ async function createCommandsFixture(files: Readonly<Record<string, string>>): P
 
   return commandsDirectory;
 }
+
+// ---------------------------------------------------------------------------
+// Manifest structure
+// ---------------------------------------------------------------------------
 
 test("generateCommandManifest discovers nested commands and groups deterministically", async () => {
   const commandsDirectory = await createCommandsFixture({
@@ -196,6 +208,10 @@ test("generateCommandManifest throws a descriptive error for an empty commands d
   );
 });
 
+// ---------------------------------------------------------------------------
+// Description extraction
+// ---------------------------------------------------------------------------
+
 test("generateCommandManifest extracts literal descriptions from source files by default", async () => {
   const commandsDirectory = await createCommandsFixture({
     "hello/index.ts": [
@@ -225,6 +241,10 @@ test("generateCommandManifest extracts literal descriptions from source files by
     },
   ]);
 });
+
+// ---------------------------------------------------------------------------
+// Bare command files
+// ---------------------------------------------------------------------------
 
 test("generateCommandManifest discovers bare .ts command files", async () => {
   const commandsDirectory = await createCommandsFixture({
@@ -461,6 +481,10 @@ test("generateCommandManifest extracts descriptions from bare command files", as
   ]);
 });
 
+// ---------------------------------------------------------------------------
+// Group metadata
+// ---------------------------------------------------------------------------
+
 test("generateCommandManifest extracts group description from _group.ts with defineGroup", async () => {
   const commandsDirectory = await createCommandsFixture({
     "project/_group.ts": [
@@ -666,6 +690,10 @@ test("generateCommandManifest does not treat _group.ts as a bare command", async
   expect(commandNames).toEqual(["hello"]);
   expect(commandNames).not.toContain("_group");
 });
+
+// ---------------------------------------------------------------------------
+// Description extraction from exported variables
+// ---------------------------------------------------------------------------
 
 test("generateCommandManifest extracts descriptions from exported command variables", async () => {
   const commandsDirectory = await createCommandsFixture({

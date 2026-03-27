@@ -54,6 +54,10 @@ const manifest: CommandManifest = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// Command and group resolution
+// ---------------------------------------------------------------------------
+
 test("resolveCommandPath resolves executable commands and preserves remaining argv", () => {
   const result = resolveCommandPath(manifest, ["project", "create", "--help"]);
 
@@ -131,6 +135,10 @@ test("resolveCommandPath resolves group nodes without importing subcommands", ()
   });
 });
 
+// ---------------------------------------------------------------------------
+// Suggestions
+// ---------------------------------------------------------------------------
+
 test("resolveCommandPath suggests adjacent transposition typos", () => {
   const result = resolveCommandPath(manifest, ["project", "cerate"]);
 
@@ -169,6 +177,10 @@ test("resolveCommandPath does not suggest unrelated root commands", () => {
     suggestions: [],
   });
 });
+
+// ---------------------------------------------------------------------------
+// Argument passthrough
+// ---------------------------------------------------------------------------
 
 test("resolveCommandPath treats unmatched tokens after a command as command argv", () => {
   const result = resolveCommandPath(manifest, ["project", "123"]);

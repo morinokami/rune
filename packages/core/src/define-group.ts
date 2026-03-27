@@ -1,3 +1,7 @@
+// ---------------------------------------------------------------------------
+// Constants & types
+// ---------------------------------------------------------------------------
+
 const DEFINED_GROUP_BRAND = Symbol.for("@rune-cli/defined-group");
 
 /** The group definition object accepted by {@link defineGroup}. */
@@ -10,6 +14,10 @@ export interface DefineGroupInput {
 export interface DefinedGroup {
   readonly description: string;
 }
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
  * Defines metadata for a command group (a directory that only groups

@@ -1,6 +1,10 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
+// ---------------------------------------------------------------------------
+// Constants & types
+// ---------------------------------------------------------------------------
+
 const SOURCE_DIRECTORY_NAME = "src";
 const COMMANDS_DIRECTORY_NAME = path.join(SOURCE_DIRECTORY_NAME, "commands");
 const DIST_DIRECTORY_NAME = "dist";
@@ -21,6 +25,10 @@ export interface ResolveProjectPathOptions {
   readonly projectPath?: string | undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Path resolution
+// ---------------------------------------------------------------------------
+
 export function resolveProjectPath(options: ResolveProjectPathOptions): string {
   const baseDirectory = options.cwd ?? process.cwd();
   return path.resolve(baseDirectory, options.projectPath ?? ".");
@@ -38,29 +46,38 @@ export function resolveDistDirectory(projectRoot: string): string {
   return path.join(projectRoot, DIST_DIRECTORY_NAME);
 }
 
+// ---------------------------------------------------------------------------
+// Project metadata helpers
+// ---------------------------------------------------------------------------
+
+function resolveCliNameFromPackageJson(packageJson: ProjectPackageJson): string | undefined {
+  if (packageJson.bin && typeof packageJson.bin === "object") {
+    const binNames = Object.keys(packageJson.bin).sort((left, right) => left.localeCompare(right));
+
+    if (binNames.length > 0) {
+      return binNames[0];
+    }
+  }
+
+  if (packageJson.name && packageJson.name.length > 0) {
+    const packageNameSegments = packageJson.name.split("/");
+    return packageNameSegments.at(-1) ?? packageJson.name;
+  }
+
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCliInfo> {
   const packageJsonPath = path.join(projectRoot, "package.json");
 
   try {
     const packageJsonContents = await readFile(packageJsonPath, "utf8");
     const packageJson = JSON.parse(packageJsonContents) as ProjectPackageJson;
-
-    let name: string | undefined;
-
-    if (packageJson.bin && typeof packageJson.bin === "object") {
-      const binNames = Object.keys(packageJson.bin).sort((left, right) =>
-        left.localeCompare(right),
-      );
-
-      if (binNames.length > 0) {
-        name = binNames[0];
-      }
-    }
-
-    if (!name && packageJson.name && packageJson.name.length > 0) {
-      const packageNameSegments = packageJson.name.split("/");
-      name = packageNameSegments.at(-1) ?? packageJson.name;
-    }
+    const name = resolveCliNameFromPackageJson(packageJson);
 
     return {
       name: name ?? path.basename(projectRoot),

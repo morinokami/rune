@@ -10,6 +10,10 @@ import { captureExitCode } from "./helpers";
 const fixtureRootDirectories = new Set<string>();
 const coreEntryPath = fileURLToPath(new URL("../../core/src/index.ts", import.meta.url));
 
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
 function createDevCommandModule(lines: readonly string[]): string {
   return [
     `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
@@ -44,9 +48,17 @@ async function createDevProject(files: Readonly<Record<string, string>>): Promis
   return projectRoot;
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 async function captureRuneCli(argv: readonly string[], cwd?: string) {
   return captureExitCode(() => runRuneCli({ argv, cwd }));
 }
+
+// ---------------------------------------------------------------------------
+// Development execution
+// ---------------------------------------------------------------------------
 
 test("runRuneCli executes a simple command through `rune dev`", async () => {
   const projectRoot = await createDevProject({
@@ -109,6 +121,10 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
   expect(secondResult.stderr).toBe("");
 });
 
+// ---------------------------------------------------------------------------
+// Top-level CLI behavior
+// ---------------------------------------------------------------------------
+
 test("runRuneCli shows top-level help with no args", async () => {
   const captured = await captureRuneCli([]);
 
@@ -132,6 +148,10 @@ test("runRuneCli reports unknown top-level subcommands", async () => {
   expect(captured.stdout).toBe("");
   expect(captured.stderr).toBe("Unknown command: unknown. Available commands: build, dev\n");
 });
+
+// ---------------------------------------------------------------------------
+// Dev subcommand parsing
+// ---------------------------------------------------------------------------
 
 test("runRuneCli only parses rune dev options before the command path", async () => {
   const projectRoot = await createDevProject({
@@ -248,6 +268,18 @@ test("runRuneCli supports `--project=<path>` before the command path", async () 
   expect(captured.stderr).toBe("");
 });
 
+test("runRuneCli reports missing values for `rune dev --project`", async () => {
+  const captured = await captureRuneCli(["dev", "--project"]);
+
+  expect(captured.exitCode).toBe(1);
+  expect(captured.stdout).toBe("");
+  expect(captured.stderr).toBe("Missing value for --project. Usage: --project <path>\n");
+});
+
+// ---------------------------------------------------------------------------
+// CLI name resolution
+// ---------------------------------------------------------------------------
+
 test("runRuneCli uses the package bin name for help output", async () => {
   const projectRoot = await createDevProject({
     "package.json": JSON.stringify(
@@ -315,6 +347,10 @@ test("runRuneCli falls back to the project directory name when package.json is m
   expect(captured.stdout).toContain(`Usage: ${path.basename(projectRoot)} <command>\n`);
   expect(captured.stderr).toBe("");
 });
+
+// ---------------------------------------------------------------------------
+// Alternate command layouts & runtime errors
+// ---------------------------------------------------------------------------
 
 test("runRuneCli executes a bare file command through `rune dev`", async () => {
   const projectRoot = await createDevProject({

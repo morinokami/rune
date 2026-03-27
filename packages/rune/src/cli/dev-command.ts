@@ -12,6 +12,10 @@ import {
 import { isVersionFlag } from "./flags";
 import { writeStderrLine, writeStdout } from "./write-result";
 
+// ---------------------------------------------------------------------------
+// Constants & types
+// ---------------------------------------------------------------------------
+
 const DEV_MANIFEST_DIRECTORY_PATH = ".rune";
 const DEV_MANIFEST_FILENAME = "manifest.json";
 
@@ -21,6 +25,10 @@ export interface RunDevCommandOptions {
   readonly projectPath?: string | undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Manifest helpers
+// ---------------------------------------------------------------------------
+
 async function writeDevManifest(projectRoot: string, manifestContents: string): Promise<void> {
   const manifestDirectory = path.join(projectRoot, DEV_MANIFEST_DIRECTORY_PATH);
   const manifestPath = path.join(manifestDirectory, DEV_MANIFEST_FILENAME);
@@ -28,6 +36,10 @@ async function writeDevManifest(projectRoot: string, manifestContents: string): 
   await mkdir(manifestDirectory, { recursive: true });
   await writeFile(manifestPath, manifestContents);
 }
+
+// ---------------------------------------------------------------------------
+// Help rendering
+// ---------------------------------------------------------------------------
 
 export function renderRuneDevHelp(): string {
   return `\
@@ -44,6 +56,10 @@ Examples:
   rune dev --project ./my-app hello
 `;
 }
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 // Generates a fresh manifest and executes commands directly from source.
 // `rune dev` imports command `.ts` modules without an extra loader, so it relies

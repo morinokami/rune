@@ -57,6 +57,10 @@ const manifest: CommandManifest = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// Group help
+// ---------------------------------------------------------------------------
+
 test("renderGroupHelp lists child commands using manifest metadata only", () => {
   const userGroup = manifest.nodes[5];
 
@@ -159,6 +163,10 @@ test("renderGroupHelp omits description section when not present", () => {
   expect(lines[0]).toBe("Usage: mycli user <command>");
 });
 
+// ---------------------------------------------------------------------------
+// Command help
+// ---------------------------------------------------------------------------
+
 test("renderCommandHelp includes usage, description, args, and options", async () => {
   const command = defineCommand({
     description: "Create a project",
@@ -179,6 +187,10 @@ test("renderCommandHelp includes usage, description, args, and options", async (
   expect(help).toContain("-f, --force <boolean>  Overwrite existing state");
   expect(help).toContain("-h, --help  Show help");
 });
+
+// ---------------------------------------------------------------------------
+// Resolved help routing
+// ---------------------------------------------------------------------------
 
 test("renderResolvedHelp does not load child commands for group help", async () => {
   const route = resolveCommandPath(manifest, ["user"]);

@@ -12,6 +12,10 @@ import { captureExitCode } from "./helpers";
 const fixtureRootDirectories = new Set<string>();
 const coreEntryPath = fileURLToPath(new URL("../../core/src/index.ts", import.meta.url));
 
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
 function createDefinedCommandModule(
   bodyLines: readonly string[],
   preludeLines: readonly string[] = [],
@@ -35,6 +39,10 @@ afterEach(async () => {
   fixtureRootDirectories.clear();
   delete (globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules;
 });
+
+// ---------------------------------------------------------------------------
+// Runtime fixture construction
+// ---------------------------------------------------------------------------
 
 async function createRuntimeFixture(files: Readonly<Record<string, string>>): Promise<{
   readonly rootDirectory: string;
@@ -90,6 +98,10 @@ async function createRuntimeFixture(files: Readonly<Record<string, string>>): Pr
 async function captureRunManifestCommand(options: Parameters<typeof runManifestCommand>[0]) {
   return captureExitCode(() => runManifestCommand(options));
 }
+
+// ---------------------------------------------------------------------------
+// Routed execution
+// ---------------------------------------------------------------------------
 
 test("runManifestCommand executes the matched leaf command through the router", async () => {
   const { manifest } = await createRuntimeFixture({
@@ -200,6 +212,10 @@ test("runManifestCommand returns help output without loading child commands for 
   expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
 });
 
+// ---------------------------------------------------------------------------
+// Help & parse failures
+// ---------------------------------------------------------------------------
+
 test("runManifestCommand returns parse failures as non-zero stderr results", async () => {
   const { manifest } = await createRuntimeFixture({
     "commands/project/create/index.mjs": createDefinedCommandModule(
@@ -300,6 +316,10 @@ test("runManifestCommand reports plain object default exports instead of crashin
     "Command module must export a value created with defineCommand(). Got a plain object.\n",
   );
 });
+
+// ---------------------------------------------------------------------------
+// Unknown commands & version output
+// ---------------------------------------------------------------------------
 
 test("runManifestCommand returns unknown command failures with suggestions", async () => {
   const { manifest } = await createRuntimeFixture({

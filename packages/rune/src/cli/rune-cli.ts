@@ -4,6 +4,10 @@ import { renderRuneDevHelp, runDevCommand } from "./dev-command";
 import { isHelpFlag, isVersionFlag } from "./flags";
 import { writeStderrLine, writeStdout } from "./write-result";
 
+// ---------------------------------------------------------------------------
+// Shared parsing types
+// ---------------------------------------------------------------------------
+
 interface ParsedProjectOption {
   readonly ok: true;
   readonly projectPath: string;
@@ -16,6 +20,26 @@ interface EarlyExit {
   readonly output: string;
   readonly stream: "stdout" | "stderr";
 }
+
+interface ParsedDevArgs {
+  readonly ok: true;
+  readonly projectPath?: string | undefined;
+  readonly commandArgs: readonly string[];
+}
+
+interface ParsedBuildArgs {
+  readonly ok: true;
+  readonly projectPath?: string | undefined;
+}
+
+export interface RunRuneCliOptions {
+  readonly argv: readonly string[];
+  readonly cwd?: string | undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Shared parsing helpers
+// ---------------------------------------------------------------------------
 
 async function writeEarlyExit(exit: EarlyExit): Promise<number> {
   if (exit.stream === "stdout") {
@@ -59,11 +83,27 @@ function getRuneVersion(): string {
   return runePackageJson.version;
 }
 
-interface ParsedDevArgs {
-  readonly ok: true;
-  readonly projectPath?: string | undefined;
-  readonly commandArgs: readonly string[];
+// ---------------------------------------------------------------------------
+// Help rendering
+// ---------------------------------------------------------------------------
+
+function renderRuneCliHelp(): string {
+  return `\
+Usage: rune <command>
+
+Commands:
+  build  Build a Rune project into a distributable CLI
+  dev    Run a Rune project in development mode
+
+Options:
+  -h, --help     Show this help message
+  -V, --version  Show the version number
+`;
 }
+
+// ---------------------------------------------------------------------------
+// Subcommand argument parsing
+// ---------------------------------------------------------------------------
 
 function parseDevArgs(argv: readonly string[]): ParsedDevArgs | EarlyExit {
   const commandArgs: string[] = [];
@@ -100,11 +140,6 @@ function parseDevArgs(argv: readonly string[]): ParsedDevArgs | EarlyExit {
   return { ok: true, projectPath, commandArgs };
 }
 
-interface ParsedBuildArgs {
-  readonly ok: true;
-  readonly projectPath?: string | undefined;
-}
-
 function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
   let projectPath: string | undefined;
 
@@ -138,24 +173,46 @@ function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
   return { ok: true, projectPath };
 }
 
-export interface RunRuneCliOptions {
-  readonly argv: readonly string[];
-  readonly cwd?: string | undefined;
+// ---------------------------------------------------------------------------
+// Subcommand dispatch
+// ---------------------------------------------------------------------------
+
+async function runDevSubcommand(
+  options: RunRuneCliOptions,
+  restArgs: readonly string[],
+): Promise<number> {
+  const parsedDevArgs = parseDevArgs(restArgs);
+
+  if (!parsedDevArgs.ok) {
+    return writeEarlyExit(parsedDevArgs);
+  }
+
+  return runDevCommand({
+    rawArgs: parsedDevArgs.commandArgs,
+    projectPath: parsedDevArgs.projectPath,
+    cwd: options.cwd,
+  });
 }
 
-function renderRuneCliHelp(): string {
-  return `\
-Usage: rune <command>
+async function runBuildSubcommand(
+  options: RunRuneCliOptions,
+  restArgs: readonly string[],
+): Promise<number> {
+  const parsedBuildArgs = parseBuildArgs(restArgs);
 
-Commands:
-  build  Build a Rune project into a distributable CLI
-  dev    Run a Rune project in development mode
+  if (!parsedBuildArgs.ok) {
+    return writeEarlyExit(parsedBuildArgs);
+  }
 
-Options:
-  -h, --help     Show this help message
-  -V, --version  Show the version number
-`;
+  return runBuildCommand({
+    projectPath: parsedBuildArgs.projectPath,
+    cwd: options.cwd,
+  });
 }
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 // Parses Rune's own CLI arguments and dispatches to subcommands such as `rune dev`.
 export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
@@ -172,30 +229,11 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   }
 
   if (subcommand === "dev") {
-    const parsedDevArgs = parseDevArgs(restArgs);
-
-    if (!parsedDevArgs.ok) {
-      return writeEarlyExit(parsedDevArgs);
-    }
-
-    return runDevCommand({
-      rawArgs: parsedDevArgs.commandArgs,
-      projectPath: parsedDevArgs.projectPath,
-      cwd: options.cwd,
-    });
+    return runDevSubcommand(options, restArgs);
   }
 
   if (subcommand === "build") {
-    const parsedBuildArgs = parseBuildArgs(restArgs);
-
-    if (!parsedBuildArgs.ok) {
-      return writeEarlyExit(parsedBuildArgs);
-    }
-
-    return runBuildCommand({
-      projectPath: parsedBuildArgs.projectPath,
-      cwd: options.cwd,
-    });
+    return runBuildSubcommand(options, restArgs);
   }
 
   await writeStderrLine(`Unknown command: ${subcommand}. Available commands: build, dev`);
