@@ -19,6 +19,11 @@
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["@typescript/native-preview"]
     },
+    "packages/test-utils": {
+      "entry": ["src/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignoreDependencies": ["@typescript/native-preview"]
+    },
     "packages/rune": {
       "entry": [
         "src/index.ts",

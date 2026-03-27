@@ -1,6 +1,5 @@
 import { format } from "node:util";
 
-// Result of capturing process output around an in-process command execution.
 export type CapturedOutput<TValue> =
   | { readonly ok: true; readonly value: TValue; readonly stdout: string; readonly stderr: string }
   | {
@@ -10,8 +9,6 @@ export type CapturedOutput<TValue> =
       readonly stderr: string;
     };
 
-// Captures process output by temporarily patching stdout, stderr, and console.
-// Used by test helpers (`runCommand`) to assert on command output.
 // TODO: Not concurrency-safe because it patches global process and console state.
 export async function captureProcessOutput<TValue>(
   action: () => Promise<TValue>,

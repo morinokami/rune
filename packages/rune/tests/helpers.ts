@@ -1,4 +1,4 @@
-import { captureProcessOutput } from "@rune-cli/core";
+import { captureProcessOutput } from "@rune-cli/test-utils";
 
 export interface CapturedExitCode {
   readonly exitCode: number;
