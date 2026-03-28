@@ -4,11 +4,13 @@ import path from "node:path";
 import { afterEach, expect, test } from "vite-plus/test";
 
 import {
-  commandManifestPathToKey,
-  createCommandManifestNodeMap,
   generateCommandManifest,
   serializeCommandManifest,
 } from "../src/manifest/generate/generate-manifest";
+import {
+  commandManifestPathToKey,
+  createCommandManifestNodeMap,
+} from "../src/manifest/manifest-map";
 
 const fixtureRootDirectories = new Set<string>();
 

@@ -1,6 +1,5 @@
 import type { CommandManifest } from "../manifest-types";
 
-import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 import { extractDescriptionFromSourceFile } from "./extract-description";
 import {
   comparePathSegments,
@@ -35,5 +34,3 @@ export async function generateCommandManifest(
 export function serializeCommandManifest(manifest: CommandManifest): string {
   return JSON.stringify(manifest, null, 2);
 }
-
-export { commandManifestPathToKey, createCommandManifestNodeMap };
