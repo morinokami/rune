@@ -19,19 +19,19 @@ export interface ParsedCommandInput<TOptions, TArgs> {
 }
 
 // Parse failure shape used before command execution begins.
-export interface ParseCommandError {
+export interface ParseCommandArgsError {
   readonly message: string;
 }
 
 // Result of parsing and validating raw CLI tokens for a single command.
-export type ParseCommandResult<TOptions, TArgs> =
+export type ParseCommandArgsResult<TOptions, TArgs> =
   | {
       readonly ok: true;
       readonly value: ParsedCommandInput<TOptions, TArgs>;
     }
   | {
       readonly ok: false;
-      readonly error: ParseCommandError;
+      readonly error: ParseCommandArgsError;
     };
 
 type SuccessfulFieldParse =
@@ -40,7 +40,7 @@ type SuccessfulFieldParse =
 
 type FailedFieldParse = {
   readonly ok: false;
-  readonly error: ParseCommandError;
+  readonly error: ParseCommandArgsError;
 };
 
 type FieldParseResult = SuccessfulFieldParse | FailedFieldParse;
@@ -438,14 +438,14 @@ function detectDuplicateOption(
 // Orchestration
 // ---------------------------------------------------------------------------
 
-export async function parseCommand<
+export async function parseCommandArgs<
   TArgsFields extends readonly CommandArgField[],
   TOptionsFields extends readonly CommandOptionField[],
 >(
   command: DefinedCommand<TArgsFields, TOptionsFields>,
   rawArgs: readonly string[],
 ): Promise<
-  ParseCommandResult<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>
+  ParseCommandArgsResult<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>
 > {
   let parsed: TokenizedParseArgsResult | undefined;
 

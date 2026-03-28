@@ -1,4 +1,4 @@
-import { executeCommand, parseCommand } from "@rune-cli/core";
+import { executeCommand, parseCommandArgs } from "@rune-cli/core";
 
 import type { CommandManifest } from "../manifest-types";
 
@@ -63,18 +63,18 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
 
     const loadCommand = options.loadCommand ?? defaultLoadCommand;
     const command = await loadCommand(route.node);
-    const parsed = await parseCommand(command, route.remainingArgs);
+    const commandInput = await parseCommandArgs(command, route.remainingArgs);
 
-    if (!parsed.ok) {
-      process.stderr.write(ensureTrailingNewline(parsed.error.message));
+    if (!commandInput.ok) {
+      process.stderr.write(ensureTrailingNewline(commandInput.error.message));
       return 1;
     }
 
     const result = await executeCommand(command, {
-      options: parsed.value.options,
-      args: parsed.value.args,
+      options: commandInput.value.options,
+      args: commandInput.value.args,
       cwd: options.cwd,
-      rawArgs: parsed.value.rawArgs,
+      rawArgs: commandInput.value.rawArgs,
     });
 
     if (result.errorMessage) {
