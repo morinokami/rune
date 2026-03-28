@@ -10,8 +10,8 @@ import { isHelpFlag } from "../../cli/flags";
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 import { damerauLevenshteinDistance } from "./damerau-levenshtein";
 
-// Shared routing data returned after resolving command path segments.
-interface ResolvedCommandPathBase {
+// Shared routing data returned after resolving command route segments.
+interface ResolvedCommandRouteBase {
   // Command path resolved from manifest nodes before parser/executor handling.
   readonly matchedPath: CommandManifestPath;
   // Tokens left after command path resolution for later help or execution logic.
@@ -21,13 +21,13 @@ interface ResolvedCommandPathBase {
 }
 
 // Successful route result for an executable command.
-export interface ResolvedCommandRoute extends ResolvedCommandPathBase {
+export interface ResolvedCommandRoute extends ResolvedCommandRouteBase {
   readonly kind: "command";
   readonly node: CommandManifestCommandNode;
 }
 
 // Successful route result for a help-only command group.
-export interface ResolvedCommandGroupRoute extends ResolvedCommandPathBase {
+export interface ResolvedCommandGroupRoute extends ResolvedCommandRouteBase {
   readonly kind: "group";
   readonly node: CommandManifestGroupNode;
 }
@@ -47,8 +47,8 @@ export interface UnknownCommandRoute {
   readonly suggestions: readonly string[];
 }
 
-// Any result produced by manifest-only command path resolution.
-export type ResolveCommandPathResult =
+// Any result produced by manifest-only command route resolution.
+export type ResolveCommandRouteResult =
   | ResolvedCommandRoute
   | ResolvedCommandGroupRoute
   | UnknownCommandRoute;
@@ -84,10 +84,10 @@ function getSuggestedChildNames(
 }
 
 // Resolves CLI argv tokens against the manifest without importing command modules.
-export function resolveCommandPath(
+export function resolveCommandRoute(
   manifest: CommandManifest,
   rawArgs: readonly string[],
-): ResolveCommandPathResult {
+): ResolveCommandRouteResult {
   const nodeMap = createCommandManifestNodeMap(manifest);
   const rootNode = nodeMap[""];
 

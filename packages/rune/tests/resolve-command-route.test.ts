@@ -2,7 +2,7 @@ import { expect, test } from "vite-plus/test";
 
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
-import { resolveCommandPath } from "../src/manifest/runtime/resolve-command-path";
+import { resolveCommandRoute } from "../src/manifest/runtime/resolve-command-route";
 
 const manifest: CommandManifest = {
   nodes: [
@@ -58,8 +58,8 @@ const manifest: CommandManifest = {
 // Command and group resolution
 // ---------------------------------------------------------------------------
 
-test("resolveCommandPath resolves executable commands and preserves remaining argv", () => {
-  const result = resolveCommandPath(manifest, ["project", "create", "--help"]);
+test("resolveCommandRoute resolves executable commands and preserves remaining argv", () => {
+  const result = resolveCommandRoute(manifest, ["project", "create", "--help"]);
 
   expect(result).toEqual({
     kind: "command",
@@ -70,8 +70,8 @@ test("resolveCommandPath resolves executable commands and preserves remaining ar
   });
 });
 
-test("resolveCommandPath returns the root group for empty argv", () => {
-  const result = resolveCommandPath(manifest, []);
+test("resolveCommandRoute returns the root group for empty argv", () => {
+  const result = resolveCommandRoute(manifest, []);
 
   expect(result).toEqual({
     kind: "group",
@@ -82,7 +82,7 @@ test("resolveCommandPath returns the root group for empty argv", () => {
   });
 });
 
-test("resolveCommandPath treats unmatched root tokens as command args when the root is executable", () => {
+test("resolveCommandRoute treats unmatched root tokens as command args when the root is executable", () => {
   const manifest: CommandManifest = {
     nodes: [
       {
@@ -102,7 +102,7 @@ test("resolveCommandPath treats unmatched root tokens as command args when the r
     ],
   };
 
-  expect(resolveCommandPath(manifest, ["mycli"])).toEqual({
+  expect(resolveCommandRoute(manifest, ["mycli"])).toEqual({
     kind: "command",
     node: manifest.nodes[0],
     matchedPath: [],
@@ -111,8 +111,8 @@ test("resolveCommandPath treats unmatched root tokens as command args when the r
   });
 });
 
-test("resolveCommandPath treats root help as a group-help request", () => {
-  const result = resolveCommandPath(manifest, ["--help"]);
+test("resolveCommandRoute treats root help as a group-help request", () => {
+  const result = resolveCommandRoute(manifest, ["--help"]);
 
   expect(result).toEqual({
     kind: "group",
@@ -123,8 +123,8 @@ test("resolveCommandPath treats root help as a group-help request", () => {
   });
 });
 
-test("resolveCommandPath resolves group nodes without importing subcommands", () => {
-  const result = resolveCommandPath(manifest, ["user"]);
+test("resolveCommandRoute resolves group nodes without importing subcommands", () => {
+  const result = resolveCommandRoute(manifest, ["user"]);
 
   expect(result).toEqual({
     kind: "group",
@@ -139,8 +139,8 @@ test("resolveCommandPath resolves group nodes without importing subcommands", ()
 // Suggestions
 // ---------------------------------------------------------------------------
 
-test("resolveCommandPath suggests adjacent transposition typos", () => {
-  const result = resolveCommandPath(manifest, ["project", "cerate"]);
+test("resolveCommandRoute suggests adjacent transposition typos", () => {
+  const result = resolveCommandRoute(manifest, ["project", "cerate"]);
 
   expect(result).toEqual({
     kind: "unknown",
@@ -152,8 +152,8 @@ test("resolveCommandPath suggests adjacent transposition typos", () => {
   });
 });
 
-test("resolveCommandPath scopes suggestions to sibling commands only", () => {
-  const result = resolveCommandPath(manifest, ["project", "cretae"]);
+test("resolveCommandRoute scopes suggestions to sibling commands only", () => {
+  const result = resolveCommandRoute(manifest, ["project", "cretae"]);
 
   expect(result).toEqual({
     kind: "unknown",
@@ -165,8 +165,8 @@ test("resolveCommandPath scopes suggestions to sibling commands only", () => {
   });
 });
 
-test("resolveCommandPath does not suggest unrelated root commands", () => {
-  const result = resolveCommandPath(manifest, ["zzzzz"]);
+test("resolveCommandRoute does not suggest unrelated root commands", () => {
+  const result = resolveCommandRoute(manifest, ["zzzzz"]);
 
   expect(result).toEqual({
     kind: "unknown",
@@ -182,8 +182,8 @@ test("resolveCommandPath does not suggest unrelated root commands", () => {
 // Argument passthrough
 // ---------------------------------------------------------------------------
 
-test("resolveCommandPath treats unmatched tokens after a command as command argv", () => {
-  const result = resolveCommandPath(manifest, ["project", "123"]);
+test("resolveCommandRoute treats unmatched tokens after a command as command argv", () => {
+  const result = resolveCommandRoute(manifest, ["project", "123"]);
 
   expect(result).toEqual({
     kind: "command",

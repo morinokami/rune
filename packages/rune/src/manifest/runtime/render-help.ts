@@ -10,7 +10,7 @@ import type {
   CommandManifestGroupNode,
   CommandManifestPath,
 } from "../manifest-types";
-import type { UnknownCommandRoute } from "./resolve-command-path";
+import type { UnknownCommandRoute } from "./resolve-command-route";
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 
