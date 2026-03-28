@@ -8,12 +8,12 @@ import { parseCommandArgs } from "../src/parse-command-args";
 // Primitive fields
 // ---------------------------------------------------------------------------
 
-test("parseCommandArgs parses args, options, aliases, booleans, and defaults", async () => {
+test("parseCommandArgs parses args, options, short flags, booleans, and defaults", async () => {
   const command = defineCommand({
     args: [{ name: "id", type: "string", required: true }],
     options: [
       { name: "name", type: "string", required: true },
-      { name: "force", type: "boolean", alias: "f" },
+      { name: "force", type: "boolean", short: "f" },
       { name: "count", type: "number", default: 1 },
     ],
     async run() {},
@@ -374,9 +374,9 @@ test("parseCommandArgs rejects duplicate options", async () => {
   });
 });
 
-test("parseCommandArgs rejects duplicate options across long and alias forms", async () => {
+test("parseCommandArgs rejects duplicate options across long and short forms", async () => {
   const command = defineCommand({
-    options: [{ name: "name", type: "string", alias: "n" }],
+    options: [{ name: "name", type: "string", short: "n" }],
     async run() {},
   });
 

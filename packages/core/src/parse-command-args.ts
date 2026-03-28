@@ -395,10 +395,10 @@ function buildParseArgsOptions<TOptionsFields extends readonly CommandOptionFiel
   const config: Record<string, ParseArgsOptionConfig> = {};
 
   for (const field of options) {
-    config[field.name] = field.alias
+    config[field.name] = field.short
       ? {
           type: getOptionParseType(field),
-          short: field.alias,
+          short: field.short,
         }
       : {
           type: getOptionParseType(field),

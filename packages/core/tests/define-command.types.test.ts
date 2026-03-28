@@ -12,7 +12,7 @@ test("defineCommand infers primitive arg and option shapes", () => {
     args: [{ name: "id", type: "string", required: true }],
     options: [
       { name: "name", type: "string", required: true },
-      { name: "force", type: "boolean", alias: "f" },
+      { name: "force", type: "boolean", short: "f" },
     ],
     async run() {},
   });

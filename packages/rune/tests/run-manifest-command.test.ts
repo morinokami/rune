@@ -264,7 +264,7 @@ test("runManifestCommand returns leaf help through the routed command path", asy
       [
         '  description: "Create a project",',
         '  args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],',
-        '  options: [{ name: "force", type: "boolean", alias: "f", description: "Overwrite existing state" }],',
+        '  options: [{ name: "force", type: "boolean", short: "f", description: "Overwrite existing state" }],',
         "  async run() {},",
       ],
       ["globalThis.__runeLoadedModules ??= [];", 'globalThis.__runeLoadedModules.push("create");'],

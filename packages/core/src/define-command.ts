@@ -16,7 +16,7 @@ import { isSchemaField } from "./schema-field";
 const DEFINED_COMMAND_BRAND = Symbol.for("@rune-cli/defined-command");
 
 const OPTION_NAME_RE = /^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$/;
-const ALIAS_RE = /^[a-zA-Z]$/;
+const OPTION_SHORT_RE = /^[a-zA-Z]$/;
 const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // ---------------------------------------------------------------------------
@@ -69,25 +69,25 @@ function validateOptionNames(options: readonly CommandOptionField[]): void {
   }
 }
 
-function validateOptionAliases(options: readonly CommandOptionField[]): void {
+function validateOptionShortNames(options: readonly CommandOptionField[]): void {
   const seen = new Set<string>();
 
   for (const field of options) {
-    if (field.alias === undefined) {
+    if (field.short === undefined) {
       continue;
     }
 
-    if (!ALIAS_RE.test(field.alias)) {
+    if (!OPTION_SHORT_RE.test(field.short)) {
       throw new Error(
-        `Invalid alias "${field.alias}" for option "${field.name}". Alias must be a single letter.`,
+        `Invalid short name "${field.short}" for option "${field.name}". Short flag must be a single letter.`,
       );
     }
 
-    if (seen.has(field.alias)) {
-      throw new Error(`Duplicate alias "${field.alias}" for option "${field.name}".`);
+    if (seen.has(field.short)) {
+      throw new Error(`Duplicate short name "${field.short}" for option "${field.name}".`);
     }
 
-    seen.add(field.alias);
+    seen.add(field.short);
   }
 }
 
@@ -159,7 +159,7 @@ function validateArgOrdering(args: readonly CommandArgField[]): void {
  *     { name: "name", type: "string", required: true },
  *   ],
  *   options: [
- *     { name: "loud", type: "boolean", alias: "l" },
+ *     { name: "loud", type: "boolean", short: "l" },
  *   ],
  *   run(ctx) {
  *     const greeting = `Hello, ${ctx.args.name}!`;
@@ -223,7 +223,7 @@ export function defineCommand<
     validateFieldShape(input.options, "option");
     validateUniqueFieldNames(input.options, "option");
     validateOptionNames(input.options);
-    validateOptionAliases(input.options);
+    validateOptionShortNames(input.options);
   }
 
   const command = {
