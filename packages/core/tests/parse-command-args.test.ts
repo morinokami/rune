@@ -8,7 +8,7 @@ import { parseCommandArgs } from "../src/parse-command-args";
 // Primitive fields
 // ---------------------------------------------------------------------------
 
-test("parseCommandArgs parses args, options, short flags, booleans, and defaults", async () => {
+test("parseCommandArgs parses args, options, short names, booleans, and defaults", async () => {
   const command = defineCommand({
     args: [{ name: "id", type: "string", required: true }],
     options: [

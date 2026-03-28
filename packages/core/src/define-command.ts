@@ -79,7 +79,7 @@ function validateOptionShortNames(options: readonly CommandOptionField[]): void 
 
     if (!OPTION_SHORT_RE.test(field.short)) {
       throw new Error(
-        `Invalid short name "${field.short}" for option "${field.name}". Short flag must be a single letter.`,
+        `Invalid short name "${field.short}" for option "${field.name}". Short name must be a single letter.`,
       );
     }
 
