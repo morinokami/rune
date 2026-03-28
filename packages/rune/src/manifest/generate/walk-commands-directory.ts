@@ -36,6 +36,10 @@ export async function walkCommandsDirectory(
   pathSegments: readonly string[],
   extractDescription: ExtractDescriptionFn,
 ): Promise<WalkDirectoryResult> {
+  // ---------------------------------------------------------------------------
+  // Scan directory & recurse into subdirectories
+  // ---------------------------------------------------------------------------
+
   const entries = await readdir(absoluteDirectoryPath, { withFileTypes: true });
 
   const childDirectoryNames = entries
@@ -59,6 +63,10 @@ export async function walkCommandsDirectory(
     }),
   );
 
+  // ---------------------------------------------------------------------------
+  // Collect bare command files (e.g. "status.ts", excluding index.ts / _group.ts)
+  // ---------------------------------------------------------------------------
+
   const bareCommandFiles = entries
     .filter(
       (entry) =>
@@ -70,6 +78,10 @@ export async function walkCommandsDirectory(
     )
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
+
+  // ---------------------------------------------------------------------------
+  // Build bare command nodes (with conflict detection against subdirectories)
+  // ---------------------------------------------------------------------------
 
   const childDirectoriesWithNodes = new Set(
     childResults.filter(({ result }) => result.hasNode).map(({ directoryName }) => directoryName),
@@ -97,7 +109,14 @@ export async function walkCommandsDirectory(
     }),
   );
 
-  const childNodes = childResults.flatMap(({ result }) => result.nodes);
+  // ---------------------------------------------------------------------------
+  // Aggregate children & validate directory structure
+  // ---------------------------------------------------------------------------
+
+  // All nodes collected from recursive walks (includes grandchildren and deeper).
+  const descendantNodes = childResults.flatMap(({ result }) => result.nodes);
+
+  // Direct child names only (used to populate this node's `childNames`).
   const childNames = [
     ...childResults
       .filter(({ result }) => result.hasNode)
@@ -122,12 +141,17 @@ export async function walkCommandsDirectory(
     );
   }
 
+  // No index.ts, no _group.ts, no children — this directory is not a node itself.
   if (!hasCommandEntry && !hasGroupMeta && childNames.length === 0) {
     return {
-      nodes: [...childNodes, ...bareCommandNodes],
+      nodes: [...descendantNodes, ...bareCommandNodes],
       hasNode: false,
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Build this directory's node
+  // ---------------------------------------------------------------------------
 
   let node: CommandManifestNode;
 
@@ -165,7 +189,7 @@ export async function walkCommandsDirectory(
   }
 
   return {
-    nodes: [node, ...childNodes, ...bareCommandNodes],
+    nodes: [node, ...descendantNodes, ...bareCommandNodes],
     hasNode: true,
   };
 }
