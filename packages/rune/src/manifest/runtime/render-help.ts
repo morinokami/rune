@@ -82,9 +82,11 @@ export function renderGroupHelp(options: RenderGroupHelpOptions): string {
   const entries = node.childNames.map((childName) => {
     const childNode =
       nodeMap[commandManifestPathToKey([...node.pathSegments, childName] as CommandManifestPath)];
+    const aliasSuffix =
+      childNode && childNode.aliases.length > 0 ? ` (${childNode.aliases.join(", ")})` : "";
 
     return {
-      label: childName,
+      label: `${childName}${aliasSuffix}`,
       description: childNode?.description,
     };
   });

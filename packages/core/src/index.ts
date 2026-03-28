@@ -1,4 +1,4 @@
-export { defineCommand, isDefinedCommand } from "./define-command";
+export { defineCommand, isDefinedCommand, validateCommandAliases } from "./define-command";
 export { defineGroup, isDefinedGroup } from "./define-group";
 export { executeCommand } from "./execute-command";
 export { parseCommandArgs } from "./parse-command-args";

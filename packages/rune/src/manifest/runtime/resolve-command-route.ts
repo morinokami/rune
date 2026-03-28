@@ -65,22 +65,60 @@ function getSuggestionThreshold(candidate: string): number {
   return Math.max(2, Math.floor(candidate.length / 3));
 }
 
+interface SiblingCandidate {
+  readonly canonicalName: string;
+  readonly matchName: string;
+}
+
 function getSuggestedChildNames(
   unknownSegment: string,
-  childNames: readonly string[],
+  candidates: readonly SiblingCandidate[],
 ): readonly string[] {
-  return [...childNames]
-    .map((childName) => ({
-      childName,
-      distance: damerauLevenshteinDistance(unknownSegment, childName),
+  const scored = candidates
+    .map((candidate) => ({
+      canonicalName: candidate.canonicalName,
+      distance: damerauLevenshteinDistance(unknownSegment, candidate.matchName),
+      threshold: getSuggestionThreshold(candidate.matchName),
     }))
-    .filter(({ childName, distance }) => distance <= getSuggestionThreshold(childName))
-    .sort(
-      (left, right) =>
-        left.distance - right.distance || left.childName.localeCompare(right.childName),
-    )
+    .filter(({ distance, threshold }) => distance <= threshold);
+
+  // Deduplicate by canonical name, keeping the best (lowest) distance.
+  const bestByCanonical = new Map<string, number>();
+
+  for (const entry of scored) {
+    const existing = bestByCanonical.get(entry.canonicalName);
+
+    if (existing === undefined || entry.distance < existing) {
+      bestByCanonical.set(entry.canonicalName, entry.distance);
+    }
+  }
+
+  return [...bestByCanonical.entries()]
+    .sort(([nameA, distA], [nameB, distB]) => distA - distB || nameA.localeCompare(nameB))
     .slice(0, 3)
-    .map(({ childName }) => childName);
+    .map(([name]) => name);
+}
+
+function collectSiblingCandidates(
+  currentNode: CommandManifestNode,
+  nodeMap: Readonly<Record<string, CommandManifestNode>>,
+): readonly SiblingCandidate[] {
+  const candidates: SiblingCandidate[] = [];
+
+  for (const childName of currentNode.childNames) {
+    candidates.push({ canonicalName: childName, matchName: childName });
+
+    const childKey = commandManifestPathToKey([...currentNode.pathSegments, childName]);
+    const childNode = nodeMap[childKey];
+
+    if (childNode) {
+      for (const alias of childNode.aliases) {
+        candidates.push({ canonicalName: childName, matchName: alias });
+      }
+    }
+  }
+
+  return candidates;
 }
 
 // Resolves CLI argv tokens against the manifest without importing command modules.
@@ -109,7 +147,8 @@ export function resolveCommandRoute(
     const childNode: CommandManifestNode | undefined = nodeMap[commandManifestPathToKey(childPath)];
 
     if (childNode === undefined) {
-      const suggestions = getSuggestedChildNames(token, currentNode.childNames);
+      const candidates = collectSiblingCandidates(currentNode, nodeMap);
+      const suggestions = getSuggestedChildNames(token, candidates);
 
       if (currentNode.kind === "group" || suggestions.length > 0) {
         return {

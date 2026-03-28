@@ -72,9 +72,9 @@ test("generateCommandManifest discovers nested commands and groups deterministic
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription(sourceFilePath) {
+    async extractMetadata(sourceFilePath) {
       const relativePath = path.relative(commandsDirectory, sourceFilePath);
-      return descriptions[relativePath];
+      return { description: descriptions[relativePath], aliases: [] };
     },
   });
 
@@ -83,12 +83,14 @@ test("generateCommandManifest discovers nested commands and groups deterministic
       {
         pathSegments: [],
         kind: "group",
+        aliases: [],
         childNames: ["hello", "project", "user"],
       },
       {
         pathSegments: ["hello"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+        aliases: [],
         childNames: [],
         description: "Say hello",
       },
@@ -96,6 +98,7 @@ test("generateCommandManifest discovers nested commands and groups deterministic
         pathSegments: ["project"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "project", "index.ts"),
+        aliases: [],
         childNames: ["create", "list"],
         description: "Project commands",
       },
@@ -103,6 +106,7 @@ test("generateCommandManifest discovers nested commands and groups deterministic
         pathSegments: ["project", "create"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "project", "create", "index.ts"),
+        aliases: [],
         childNames: [],
         description: "Create a project",
       },
@@ -110,18 +114,21 @@ test("generateCommandManifest discovers nested commands and groups deterministic
         pathSegments: ["project", "list"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "project", "list", "index.ts"),
+        aliases: [],
         childNames: [],
         description: "List projects",
       },
       {
         pathSegments: ["user"],
         kind: "group",
+        aliases: [],
         childNames: ["delete"],
       },
       {
         pathSegments: ["user", "delete"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "user", "delete", "index.ts"),
+        aliases: [],
         childNames: [],
         description: "Delete a user",
       },
@@ -137,9 +144,12 @@ test("generateCommandManifest supports a root command at `src/commands/index.ts`
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription(sourceFilePath) {
+    async extractMetadata(sourceFilePath) {
       const relativePath = path.relative(commandsDirectory, sourceFilePath);
-      return relativePath === "index.ts" ? "Create a project" : "Say hello";
+      return {
+        description: relativePath === "index.ts" ? "Create a project" : "Say hello",
+        aliases: [],
+      };
     },
   });
 
@@ -149,6 +159,7 @@ test("generateCommandManifest supports a root command at `src/commands/index.ts`
         pathSegments: [],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "index.ts"),
+        aliases: [],
         childNames: ["hello"],
         description: "Create a project",
       },
@@ -156,6 +167,7 @@ test("generateCommandManifest supports a root command at `src/commands/index.ts`
         pathSegments: ["hello"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+        aliases: [],
         childNames: [],
         description: "Say hello",
       },
@@ -170,7 +182,7 @@ test("generateCommandManifest skips empty directories and serializes to stable J
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription() {
+    async extractMetadata() {
       return undefined;
     },
   });
@@ -180,17 +192,20 @@ test("generateCommandManifest skips empty directories and serializes to stable J
       {
         pathSegments: [],
         kind: "group",
+        aliases: [],
         childNames: ["admin"],
       },
       {
         pathSegments: ["admin"],
         kind: "group",
+        aliases: [],
         childNames: ["users"],
       },
       {
         pathSegments: ["admin", "users"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "admin", "users", "index.ts"),
+        aliases: [],
         childNames: [],
         description: undefined,
       },
@@ -232,12 +247,14 @@ test("generateCommandManifest extracts literal descriptions from source files by
     {
       pathSegments: [],
       kind: "group",
+      aliases: [],
       childNames: ["hello"],
     },
     {
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+      aliases: [],
       childNames: [],
       description: "Say hello",
     },
@@ -256,7 +273,7 @@ test("generateCommandManifest discovers bare .ts command files", async () => {
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription() {
+    async extractMetadata() {
       return undefined;
     },
   });
@@ -266,12 +283,14 @@ test("generateCommandManifest discovers bare .ts command files", async () => {
       {
         pathSegments: [],
         kind: "group",
+        aliases: [],
         childNames: ["greet", "hello"],
       },
       {
         pathSegments: ["greet"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "greet.ts"),
+        aliases: [],
         childNames: [],
         description: undefined,
       },
@@ -279,6 +298,7 @@ test("generateCommandManifest discovers bare .ts command files", async () => {
         pathSegments: ["hello"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+        aliases: [],
         childNames: [],
         description: undefined,
       },
@@ -301,9 +321,9 @@ test("generateCommandManifest mixes bare files and directory commands", async ()
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription(sourceFilePath) {
+    async extractMetadata(sourceFilePath) {
       const relativePath = path.relative(commandsDirectory, sourceFilePath);
-      return descriptions[relativePath];
+      return { description: descriptions[relativePath], aliases: [] };
     },
   });
 
@@ -312,12 +332,14 @@ test("generateCommandManifest mixes bare files and directory commands", async ()
       {
         pathSegments: [],
         kind: "group",
+        aliases: [],
         childNames: ["hello", "project"],
       },
       {
         pathSegments: ["hello"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+        aliases: [],
         childNames: [],
         description: "Say hello",
       },
@@ -325,6 +347,7 @@ test("generateCommandManifest mixes bare files and directory commands", async ()
         pathSegments: ["project"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "project", "index.ts"),
+        aliases: [],
         childNames: ["create"],
         description: "Project commands",
       },
@@ -332,6 +355,7 @@ test("generateCommandManifest mixes bare files and directory commands", async ()
         pathSegments: ["project", "create"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "project", "create", "index.ts"),
+        aliases: [],
         childNames: [],
         description: "Create a project",
       },
@@ -347,7 +371,7 @@ test("generateCommandManifest supports bare files in nested directories", async 
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription() {
+    async extractMetadata() {
       return undefined;
     },
   });
@@ -357,17 +381,20 @@ test("generateCommandManifest supports bare files in nested directories", async 
       {
         pathSegments: [],
         kind: "group",
+        aliases: [],
         childNames: ["project"],
       },
       {
         pathSegments: ["project"],
         kind: "group",
+        aliases: [],
         childNames: ["create", "list"],
       },
       {
         pathSegments: ["project", "create"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "project", "create.ts"),
+        aliases: [],
         childNames: [],
         description: undefined,
       },
@@ -375,6 +402,7 @@ test("generateCommandManifest supports bare files in nested directories", async 
         pathSegments: ["project", "list"],
         kind: "command",
         sourceFilePath: path.join(commandsDirectory, "project", "list.ts"),
+        aliases: [],
         childNames: [],
         description: undefined,
       },
@@ -401,7 +429,7 @@ test("generateCommandManifest ignores bare file next to empty same-name director
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription() {
+    async extractMetadata() {
       return undefined;
     },
   });
@@ -410,12 +438,14 @@ test("generateCommandManifest ignores bare file next to empty same-name director
     {
       pathSegments: [],
       kind: "group",
+      aliases: [],
       childNames: ["hello"],
     },
     {
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+      aliases: [],
       childNames: [],
       description: undefined,
     },
@@ -432,7 +462,7 @@ test("generateCommandManifest ignores .d.ts declaration files", async () => {
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription() {
+    async extractMetadata() {
       return undefined;
     },
   });
@@ -441,12 +471,14 @@ test("generateCommandManifest ignores .d.ts declaration files", async () => {
     {
       pathSegments: [],
       kind: "group",
+      aliases: [],
       childNames: ["hello"],
     },
     {
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+      aliases: [],
       childNames: [],
       description: undefined,
     },
@@ -471,12 +503,14 @@ test("generateCommandManifest extracts descriptions from bare command files", as
     {
       pathSegments: [],
       kind: "group",
+      aliases: [],
       childNames: ["hello"],
     },
     {
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+      aliases: [],
       childNames: [],
       description: "Say hello",
     },
@@ -512,11 +546,13 @@ test("generateCommandManifest extracts group description from _group.ts with def
     {
       pathSegments: [],
       kind: "group",
+      aliases: [],
       childNames: ["project"],
     },
     {
       pathSegments: ["project"],
       kind: "group",
+      aliases: [],
       childNames: ["create"],
       description: "Manage projects",
     },
@@ -524,6 +560,7 @@ test("generateCommandManifest extracts group description from _group.ts with def
       pathSegments: ["project", "create"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "project", "create.ts"),
+      aliases: [],
       childNames: [],
       description: "Create a project",
     },
@@ -555,6 +592,7 @@ test("generateCommandManifest extracts root group description from _group.ts", a
     {
       pathSegments: [],
       kind: "group",
+      aliases: [],
       childNames: ["hello"],
       description: "My awesome CLI",
     },
@@ -562,6 +600,7 @@ test("generateCommandManifest extracts root group description from _group.ts", a
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "hello.ts"),
+      aliases: [],
       childNames: [],
       description: "Say hello",
     },
@@ -590,6 +629,7 @@ test("generateCommandManifest extracts group description from variable export", 
   expect(projectNode).toEqual({
     pathSegments: ["project"],
     kind: "group",
+    aliases: [],
     childNames: ["create"],
     description: "Manage projects",
   });
@@ -676,9 +716,9 @@ test("generateCommandManifest does not treat _group.ts as a bare command", async
 
   const manifest = await generateCommandManifest({
     commandsDirectory,
-    async extractDescription(sourceFilePath) {
+    async extractMetadata(sourceFilePath) {
       if (sourceFilePath.endsWith("_group.ts")) {
-        return "Root";
+        return { description: "Root", aliases: [] };
       }
 
       return undefined;
@@ -717,14 +757,257 @@ test("generateCommandManifest extracts descriptions from exported command variab
     {
       pathSegments: [],
       kind: "group",
+      aliases: [],
       childNames: ["hello"],
     },
     {
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: path.join(commandsDirectory, "hello", "index.ts"),
+      aliases: [],
       childNames: [],
       description: "Say hello",
     },
   ]);
+});
+
+// ---------------------------------------------------------------------------
+// Alias extraction
+// ---------------------------------------------------------------------------
+
+test("generateCommandManifest extracts inline aliases from defineCommand", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "deploy.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Deploy the app",',
+      '  aliases: ["d", "dep"],',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+  const deployNode = manifest.nodes.find(
+    (n) => n.pathSegments.length === 1 && n.pathSegments[0] === "deploy",
+  );
+
+  expect(deployNode?.aliases).toEqual(["d", "dep"]);
+});
+
+test("generateCommandManifest extracts aliases from variable references", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "deploy.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      'const aliases = ["d"];',
+      "",
+      "export default defineCommand({",
+      '  description: "Deploy the app",',
+      "  aliases: aliases,",
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+  const deployNode = manifest.nodes.find(
+    (n) => n.pathSegments.length === 1 && n.pathSegments[0] === "deploy",
+  );
+
+  expect(deployNode?.aliases).toEqual(["d"]);
+});
+
+test("generateCommandManifest extracts aliases from shorthand properties", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "deploy.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      'const aliases = ["d"];',
+      "",
+      "export default defineCommand({",
+      '  description: "Deploy the app",',
+      "  aliases,",
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+  const deployNode = manifest.nodes.find(
+    (n) => n.pathSegments.length === 1 && n.pathSegments[0] === "deploy",
+  );
+
+  expect(deployNode?.aliases).toEqual(["d"]);
+});
+
+test("generateCommandManifest extracts description from variable references", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "hello.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      'const description = "Say hello";',
+      "",
+      "export default defineCommand({",
+      "  description,",
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+  const helloNode = manifest.nodes.find(
+    (n) => n.pathSegments.length === 1 && n.pathSegments[0] === "hello",
+  );
+
+  expect(helloNode?.description).toBe("Say hello");
+});
+
+test("generateCommandManifest extracts group aliases from _group.ts", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      "",
+      "export default defineGroup({",
+      '  description: "Manage projects",',
+      '  aliases: ["p"],',
+      "});",
+    ].join("\n"),
+    "project/create.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Create a project",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+  const projectNode = manifest.nodes.find(
+    (n) => n.pathSegments.length === 1 && n.pathSegments[0] === "project",
+  );
+
+  expect(projectNode?.aliases).toEqual(["p"]);
+});
+
+// ---------------------------------------------------------------------------
+// Alias validation
+// ---------------------------------------------------------------------------
+
+test("generateCommandManifest throws when sibling aliases conflict", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "deploy.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Deploy the app",',
+      '  aliases: ["d"],',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+    "dev.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Start dev server",',
+      '  aliases: ["d"],',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    'Command alias conflict: alias "d"',
+  );
+});
+
+test("generateCommandManifest throws when alias conflicts with sibling canonical name", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "deploy.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Deploy the app",',
+      '  aliases: ["dev"],',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+    "dev.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Start dev server",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    '"dev" is already used by "deploy"',
+  );
+});
+
+test("generateCommandManifest throws when root command has aliases", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "index.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Root command",',
+      '  aliases: ["r"],',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    "Aliases on the root command are not supported",
+  );
+});
+
+test("generateCommandManifest throws when root group has aliases", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      "",
+      "export default defineGroup({",
+      '  description: "Root group",',
+      '  aliases: ["r"],',
+      "});",
+    ].join("\n"),
+    "hello.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Say hello",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    "Aliases on the root group are not supported",
+  );
+});
+
+test("generateCommandManifest throws when aliases cannot be statically analyzed", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "deploy.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "function getAliases() { return ['d']; }",
+      "",
+      "export default defineCommand({",
+      '  description: "Deploy the app",',
+      "  aliases: getAliases(),",
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    "Could not statically analyze aliases",
+  );
 });

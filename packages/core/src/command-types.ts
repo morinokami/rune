@@ -257,6 +257,12 @@ export interface DefineCommandInput<
   /** One-line summary shown in `--help` output. */
   readonly description?: string | undefined;
   /**
+   * Alternative names for this command. Each alias is an additional path
+   * segment that routes to this command. Aliases must follow kebab-case
+   * rules (lowercase letters, digits, and internal hyphens).
+   */
+  readonly aliases?: readonly string[] | undefined;
+  /**
    * Positional arguments declared in the order they appear on the command line.
    * Required arguments must come before optional ones.
    * Argument names must be non-empty and unique within the command.
@@ -292,6 +298,7 @@ export interface DefinedCommand<
   TOptionsFields extends readonly CommandOptionField[] = readonly [],
 > {
   readonly description?: string | undefined;
+  readonly aliases: readonly string[];
   readonly args: TArgsFields;
   readonly options: TOptionsFields;
   readonly run: (

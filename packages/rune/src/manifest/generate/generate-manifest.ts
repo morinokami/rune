@@ -1,22 +1,22 @@
 import type { CommandManifest } from "../manifest-types";
 
-import { extractDescriptionFromSourceFile } from "./extract-description";
+import { extractMetadataFromSourceFile } from "./extract-description";
 import {
   comparePathSegments,
-  type ExtractDescriptionFn,
+  type ExtractMetadataFn,
   walkCommandsDirectory,
 } from "./walk-commands-directory";
 
 export interface GenerateCommandManifestOptions {
   readonly commandsDirectory: string;
-  readonly extractDescription?: ExtractDescriptionFn | undefined;
+  readonly extractMetadata?: ExtractMetadataFn | undefined;
 }
 
 export async function generateCommandManifest(
   options: GenerateCommandManifestOptions,
 ): Promise<CommandManifest> {
-  const extractDescription = options.extractDescription ?? extractDescriptionFromSourceFile;
-  const walkResult = await walkCommandsDirectory(options.commandsDirectory, [], extractDescription);
+  const extractMetadata = options.extractMetadata ?? extractMetadataFromSourceFile;
+  const walkResult = await walkCommandsDirectory(options.commandsDirectory, [], extractMetadata);
 
   if (walkResult.nodes.length === 0) {
     throw new Error(

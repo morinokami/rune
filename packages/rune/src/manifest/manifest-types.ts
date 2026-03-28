@@ -13,6 +13,8 @@ interface CommandManifestNodeBase {
   readonly kind: CommandManifestNodeKind;
   // Immediate child command segment names in deterministic display order.
   readonly childNames: readonly string[];
+  // Alternative path segment names that route to this node.
+  readonly aliases: readonly string[];
   // One-line help text extracted during manifest generation when available.
   readonly description?: string | undefined;
 }

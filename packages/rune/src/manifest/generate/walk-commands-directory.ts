@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 
 import type { CommandManifestNode, CommandManifestPath } from "../manifest-types";
+import type { CommandMetadata } from "./extract-description";
 
 import { validateGroupMetaFile } from "./validate-group-meta";
 
@@ -15,7 +16,7 @@ export interface WalkDirectoryResult {
   readonly hasNode: boolean;
 }
 
-export type ExtractDescriptionFn = (sourceFilePath: string) => Promise<string | undefined>;
+export type ExtractMetadataFn = (sourceFilePath: string) => Promise<CommandMetadata | undefined>;
 
 export function comparePathSegments(left: CommandManifestPath, right: CommandManifestPath): number {
   const length = Math.min(left.length, right.length);
@@ -31,10 +32,45 @@ export function comparePathSegments(left: CommandManifestPath, right: CommandMan
   return left.length - right.length;
 }
 
+function validateSiblingAliases(
+  siblings: readonly { readonly name: string; readonly aliases: readonly string[] }[],
+): void {
+  // All canonical names and aliases that occupy the same namespace.
+  const seen = new Map<string, string>();
+
+  for (const sibling of siblings) {
+    const existing = seen.get(sibling.name);
+
+    if (existing !== undefined) {
+      throw new Error(`Command name conflict: "${sibling.name}" is already used by "${existing}".`);
+    }
+
+    seen.set(sibling.name, sibling.name);
+
+    for (const alias of sibling.aliases) {
+      if (alias === sibling.name) {
+        throw new Error(
+          `Command alias "${alias}" for "${sibling.name}" is the same as its canonical name.`,
+        );
+      }
+
+      const conflicting = seen.get(alias);
+
+      if (conflicting !== undefined) {
+        throw new Error(
+          `Command alias conflict: alias "${alias}" for "${sibling.name}" conflicts with "${conflicting}".`,
+        );
+      }
+
+      seen.set(alias, sibling.name);
+    }
+  }
+}
+
 export async function walkCommandsDirectory(
   absoluteDirectoryPath: string,
   pathSegments: readonly string[],
-  extractDescription: ExtractDescriptionFn,
+  extractMetadata: ExtractMetadataFn,
 ): Promise<WalkDirectoryResult> {
   // ---------------------------------------------------------------------------
   // Scan directory & recurse into subdirectories
@@ -53,7 +89,7 @@ export async function walkCommandsDirectory(
       const childResult = await walkCommandsDirectory(
         childDirectoryPath,
         [...pathSegments, directoryName],
-        extractDescription,
+        extractMetadata,
       );
 
       return {
@@ -98,13 +134,15 @@ export async function walkCommandsDirectory(
       }
 
       const sourceFilePath = path.join(absoluteDirectoryPath, fileName);
+      const metadata = await extractMetadata(sourceFilePath);
 
       return {
         pathSegments: [...pathSegments, commandName],
         kind: "command" as const,
         sourceFilePath,
         childNames: [] as string[],
-        description: await extractDescription(sourceFilePath),
+        aliases: metadata?.aliases ?? [],
+        description: metadata?.description,
       };
     }),
   );
@@ -157,13 +195,22 @@ export async function walkCommandsDirectory(
 
   if (hasCommandEntry) {
     const sourceFilePath = path.join(absoluteDirectoryPath, COMMAND_ENTRY_FILE);
+    const metadata = await extractMetadata(sourceFilePath);
+    const aliases = metadata?.aliases ?? [];
+
+    if (aliases.length > 0 && pathSegments.length === 0) {
+      throw new Error(
+        "Aliases on the root command are not supported. The root command has no parent to resolve aliases against.",
+      );
+    }
 
     node = {
       pathSegments,
       kind: "command",
       sourceFilePath,
       childNames,
-      description: await extractDescription(sourceFilePath),
+      aliases,
+      description: metadata?.description,
     };
   } else {
     const groupMetaPath = path.join(absoluteDirectoryPath, GROUP_META_FILE);
@@ -172,11 +219,19 @@ export async function walkCommandsDirectory(
       await validateGroupMetaFile(groupMetaPath);
     }
 
-    const description = hasGroupMeta ? await extractDescription(groupMetaPath) : undefined;
+    const metadata = hasGroupMeta ? await extractMetadata(groupMetaPath) : undefined;
 
-    if (hasGroupMeta && !description) {
+    if (hasGroupMeta && !metadata?.description) {
       throw new Error(
         `${groupMetaPath}: _group.ts must export a defineGroup() call with a non-empty "description" string.`,
+      );
+    }
+
+    const aliases = metadata?.aliases ?? [];
+
+    if (aliases.length > 0 && pathSegments.length === 0) {
+      throw new Error(
+        "Aliases on the root group are not supported. The root group has no parent to resolve aliases against.",
       );
     }
 
@@ -184,9 +239,47 @@ export async function walkCommandsDirectory(
       pathSegments,
       kind: "group",
       childNames,
-      ...(description !== undefined ? { description } : {}),
+      aliases,
+      ...(metadata?.description !== undefined ? { description: metadata.description } : {}),
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Validate sibling alias collisions
+  // ---------------------------------------------------------------------------
+
+  // Collect all direct children info (directory-based nodes + bare command nodes)
+  // for alias collision checking.
+  const siblingEntries: { name: string; aliases: readonly string[] }[] = [];
+
+  for (const childResult of childResults) {
+    if (!childResult.result.hasNode) {
+      continue;
+    }
+
+    // Find the direct child node (the one whose pathSegments matches this level).
+    const childNode = childResult.result.nodes.find(
+      (n) =>
+        n.pathSegments.length === pathSegments.length + 1 &&
+        n.pathSegments[pathSegments.length] === childResult.directoryName,
+    );
+
+    siblingEntries.push({
+      name: childResult.directoryName,
+      aliases: childNode?.aliases ?? [],
+    });
+  }
+
+  for (const bareNode of bareCommandNodes) {
+    const name = bareNode.pathSegments[bareNode.pathSegments.length - 1];
+
+    siblingEntries.push({
+      name,
+      aliases: bareNode.aliases,
+    });
+  }
+
+  validateSiblingAliases(siblingEntries);
 
   return {
     nodes: [node, ...descendantNodes, ...bareCommandNodes],
