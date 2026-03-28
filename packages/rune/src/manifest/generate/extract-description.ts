@@ -1,6 +1,11 @@
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
+export interface CommandMetadata {
+  readonly description?: string | undefined;
+  readonly aliases: readonly string[];
+}
+
 function getPropertyNameText(name: ts.PropertyName): string | undefined {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name)) {
     return name.text;
@@ -9,12 +14,40 @@ function getPropertyNameText(name: ts.PropertyName): string | undefined {
   return undefined;
 }
 
-function getStaticDescriptionValue(expression: ts.Expression): string | undefined {
+function getStaticStringValue(expression: ts.Expression): string | undefined {
   if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
     return expression.text;
   }
 
   return undefined;
+}
+
+function getStaticStringArrayValue(expression: ts.Expression): readonly string[] | undefined {
+  if (!ts.isArrayLiteralExpression(expression)) {
+    return undefined;
+  }
+
+  const values: string[] = [];
+
+  for (const element of expression.elements) {
+    const value = getStaticStringValue(element);
+
+    if (value === undefined) {
+      return undefined;
+    }
+
+    values.push(value);
+  }
+
+  return values;
+}
+
+function resolveExpression(expression: ts.Expression, sourceFile: ts.SourceFile): ts.Expression {
+  if (ts.isIdentifier(expression)) {
+    return findVariableInitializer(sourceFile, expression.text) ?? expression;
+  }
+
+  return expression;
 }
 
 function isDefineCommandExpression(expression: ts.Expression): boolean {
@@ -33,12 +66,13 @@ function isDefineCallExpression(expression: ts.Expression): boolean {
   );
 }
 
-function extractDescriptionFromCommandDefinition(
+function extractMetadataFromCommandDefinition(
   expression: ts.Expression,
-  knownDescriptions: ReadonlyMap<string, string | undefined>,
-): string | undefined {
+  sourceFile: ts.SourceFile,
+  knownMetadata: ReadonlyMap<string, CommandMetadata | undefined>,
+): CommandMetadata | undefined {
   if (ts.isIdentifier(expression)) {
-    return knownDescriptions.get(expression.text);
+    return knownMetadata.get(expression.text);
   }
 
   if (!ts.isCallExpression(expression) || !isDefineCallExpression(expression)) {
@@ -51,21 +85,55 @@ function extractDescriptionFromCommandDefinition(
     return undefined;
   }
 
+  let description: string | undefined;
+  let aliases: readonly string[] = [];
+
   for (const property of definition.properties) {
+    // Shorthand property: `{ aliases }` is equivalent to `{ aliases: aliases }`
+    if (ts.isShorthandPropertyAssignment(property)) {
+      const propertyName = property.name.text;
+      const resolved = resolveExpression(property.name, sourceFile);
+
+      if (propertyName === "description") {
+        description = getStaticStringValue(resolved);
+      } else if (propertyName === "aliases") {
+        const extracted = getStaticStringArrayValue(resolved);
+
+        if (extracted === undefined) {
+          throw new Error(
+            'Could not statically analyze aliases. Aliases must be an inline array of string literals (e.g. aliases: ["d"]).',
+          );
+        }
+
+        aliases = extracted;
+      }
+
+      continue;
+    }
+
     if (!ts.isPropertyAssignment(property)) {
       continue;
     }
 
     const propertyName = getPropertyNameText(property.name);
+    const resolved = resolveExpression(property.initializer, sourceFile);
 
-    if (propertyName !== "description") {
-      continue;
+    if (propertyName === "description") {
+      description = getStaticStringValue(resolved);
+    } else if (propertyName === "aliases") {
+      const extracted = getStaticStringArrayValue(resolved);
+
+      if (extracted === undefined) {
+        throw new Error(
+          'Could not statically analyze aliases. Aliases must be an inline array of string literals (e.g. aliases: ["d"]).',
+        );
+      }
+
+      aliases = extracted;
     }
-
-    return getStaticDescriptionValue(property.initializer);
   }
 
-  return undefined;
+  return { description, aliases };
 }
 
 export function findVariableInitializer(
@@ -103,9 +171,9 @@ function isNamedCallExpression(expression: ts.Expression, name: string): boolean
   return false;
 }
 
-export async function extractDescriptionFromSourceFile(
+export async function extractMetadataFromSourceFile(
   sourceFilePath: string,
-): Promise<string | undefined> {
+): Promise<CommandMetadata | undefined> {
   const sourceText = await readFile(sourceFilePath, "utf8");
   const sourceFile = ts.createSourceFile(
     sourceFilePath,
@@ -114,7 +182,7 @@ export async function extractDescriptionFromSourceFile(
     true,
     ts.ScriptKind.TS,
   );
-  const knownDescriptions = new Map<string, string | undefined>();
+  const knownMetadata = new Map<string, CommandMetadata | undefined>();
 
   for (const statement of sourceFile.statements) {
     if (ts.isVariableStatement(statement)) {
@@ -123,9 +191,9 @@ export async function extractDescriptionFromSourceFile(
           continue;
         }
 
-        knownDescriptions.set(
+        knownMetadata.set(
           declaration.name.text,
-          extractDescriptionFromCommandDefinition(declaration.initializer, knownDescriptions),
+          extractMetadataFromCommandDefinition(declaration.initializer, sourceFile, knownMetadata),
         );
       }
 
@@ -133,7 +201,7 @@ export async function extractDescriptionFromSourceFile(
     }
 
     if (ts.isExportAssignment(statement)) {
-      return extractDescriptionFromCommandDefinition(statement.expression, knownDescriptions);
+      return extractMetadataFromCommandDefinition(statement.expression, sourceFile, knownMetadata);
     }
   }
 

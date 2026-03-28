@@ -3,7 +3,7 @@ import { expect, test } from "vite-plus/test";
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
 import { defineCommand } from "../src";
-import { renderCommandHelp, renderGroupHelp } from "../src/manifest/runtime/render-help";
+import { renderGroupHelp, renderUnknownCommandMessage } from "../src/manifest/runtime/render-help";
 import { resolveCommandRoute } from "../src/manifest/runtime/resolve-command-route";
 import { renderResolvedHelp } from "../src/manifest/runtime/resolve-help";
 
@@ -13,12 +13,14 @@ const manifest: CommandManifest = {
       pathSegments: [],
       kind: "group",
       childNames: ["hello", "project", "user"],
+      aliases: [],
     },
     {
       pathSegments: ["hello"],
       kind: "command",
       sourceFilePath: "/commands/hello/index.ts",
       childNames: [],
+      aliases: [],
       description: "Say hello",
     },
     {
@@ -26,6 +28,7 @@ const manifest: CommandManifest = {
       kind: "command",
       sourceFilePath: "/commands/project/index.ts",
       childNames: ["create", "list"],
+      aliases: [],
       description: "Project commands",
     },
     {
@@ -33,6 +36,7 @@ const manifest: CommandManifest = {
       kind: "command",
       sourceFilePath: "/commands/project/create/index.ts",
       childNames: [],
+      aliases: [],
       description: "Create a project",
     },
     {
@@ -40,18 +44,21 @@ const manifest: CommandManifest = {
       kind: "command",
       sourceFilePath: "/commands/project/list/index.ts",
       childNames: [],
+      aliases: [],
       description: "List projects",
     },
     {
       pathSegments: ["user"],
       kind: "group",
       childNames: ["delete"],
+      aliases: [],
     },
     {
       pathSegments: ["user", "delete"],
       kind: "command",
       sourceFilePath: "/commands/user/delete/index.ts",
       childNames: [],
+      aliases: [],
       description: "Delete a user",
     },
   ],
@@ -109,6 +116,7 @@ test("renderGroupHelp shows description above usage when present", () => {
         pathSegments: ["project"],
         kind: "group",
         childNames: ["create", "list"],
+        aliases: [],
         description: "Manage projects",
       },
       {
@@ -116,6 +124,7 @@ test("renderGroupHelp shows description above usage when present", () => {
         kind: "command",
         sourceFilePath: "/commands/project/create/index.ts",
         childNames: [],
+        aliases: [],
         description: "Create a project",
       },
       {
@@ -123,6 +132,7 @@ test("renderGroupHelp shows description above usage when present", () => {
         kind: "command",
         sourceFilePath: "/commands/project/list/index.ts",
         childNames: [],
+        aliases: [],
         description: "List projects",
       },
     ],
@@ -163,6 +173,53 @@ test("renderGroupHelp omits description section when not present", () => {
   expect(lines[0]).toBe("Usage: mycli user <command>");
 });
 
+test("renderGroupHelp shows aliases next to child command names", () => {
+  const aliasManifest: CommandManifest = {
+    nodes: [
+      {
+        pathSegments: [],
+        kind: "group",
+        childNames: ["deploy", "project"],
+        aliases: [],
+      },
+      {
+        pathSegments: ["deploy"],
+        kind: "command",
+        sourceFilePath: "/commands/deploy.ts",
+        childNames: [],
+        aliases: ["d"],
+        description: "Deploy the app",
+      },
+      {
+        pathSegments: ["project"],
+        kind: "group",
+        childNames: ["create"],
+        aliases: ["p"],
+        description: "Manage projects",
+      },
+      {
+        pathSegments: ["project", "create"],
+        kind: "command",
+        sourceFilePath: "/commands/project/create.ts",
+        childNames: [],
+        aliases: ["c"],
+        description: "Create a project",
+      },
+    ],
+  };
+
+  const rootGroup = aliasManifest.nodes[0];
+
+  if (rootGroup.kind !== "group") {
+    throw new Error("Expected root node to be a group");
+  }
+
+  const help = renderGroupHelp({ manifest: aliasManifest, node: rootGroup, cliName: "mycli" });
+
+  expect(help).toContain("deploy (d)  Deploy the app");
+  expect(help).toContain("project (p)  Manage projects");
+});
+
 // ---------------------------------------------------------------------------
 // Command help
 // ---------------------------------------------------------------------------
@@ -178,6 +235,7 @@ test("renderCommandHelp includes usage, description, args, and options", async (
     async run() {},
   });
 
+  const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
   const help = await renderCommandHelp(command, ["project", "create"], "mycli");
 
   expect(help).toContain("Usage: mycli project create <id> [options]");
@@ -245,4 +303,41 @@ test("renderResolvedHelp renders scoped unknown-command suggestions", async () =
   expect(help).toContain("Unknown command: mycli project cretae");
   expect(help).toContain("create");
   expect(help).not.toContain("hello");
+});
+
+// ---------------------------------------------------------------------------
+// Unknown command message
+// ---------------------------------------------------------------------------
+
+test("renderUnknownCommandMessage shows canonical suggestions for alias-based matches", () => {
+  const route = resolveCommandRoute(
+    {
+      nodes: [
+        {
+          pathSegments: [],
+          kind: "group",
+          childNames: ["deploy"],
+          aliases: [],
+        },
+        {
+          pathSegments: ["deploy"],
+          kind: "command",
+          sourceFilePath: "/commands/deploy.ts",
+          childNames: [],
+          aliases: ["dep"],
+          description: "Deploy the app",
+        },
+      ],
+    },
+    ["depl"],
+  );
+
+  if (route.kind !== "unknown") {
+    throw new Error("Expected unknown route");
+  }
+
+  const message = renderUnknownCommandMessage(route, "mycli");
+
+  expect(message).toContain("Unknown command: mycli depl");
+  expect(message).toContain("deploy");
 });

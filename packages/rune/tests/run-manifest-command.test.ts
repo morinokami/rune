@@ -66,17 +66,20 @@ async function createRuntimeFixture(files: Readonly<Record<string, string>>): Pr
         pathSegments: [],
         kind: "group",
         childNames: ["project"],
+        aliases: [],
       },
       {
         pathSegments: ["project"],
         kind: "group",
         childNames: ["create", "list"],
+        aliases: [],
       },
       {
         pathSegments: ["project", "create"],
         kind: "command",
         sourceFilePath: path.join(rootDirectory, "commands", "project", "create", "index.mjs"),
         childNames: [],
+        aliases: [],
         description: "Create a project",
       },
       {
@@ -84,6 +87,7 @@ async function createRuntimeFixture(files: Readonly<Record<string, string>>): Pr
         kind: "command",
         sourceFilePath: path.join(rootDirectory, "commands", "project", "list", "index.mjs"),
         childNames: [],
+        aliases: [],
         description: "List projects",
       },
     ],

@@ -17,6 +17,7 @@ const DEFINED_COMMAND_BRAND = Symbol.for("@rune-cli/defined-command");
 
 const OPTION_NAME_RE = /^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$/;
 const ALIAS_RE = /^[a-zA-Z]$/;
+const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // ---------------------------------------------------------------------------
 // Field validation
@@ -87,6 +88,24 @@ function validateOptionAliases(options: readonly CommandOptionField[]): void {
     }
 
     seen.add(field.alias);
+  }
+}
+
+export function validateCommandAliases(aliases: readonly string[]): void {
+  const seen = new Set<string>();
+
+  for (const alias of aliases) {
+    if (!COMMAND_ALIAS_RE.test(alias)) {
+      throw new Error(
+        `Invalid command alias "${alias}". Aliases must be lowercase kebab-case (letters, digits, and internal hyphens).`,
+      );
+    }
+
+    if (seen.has(alias)) {
+      throw new Error(`Duplicate command alias "${alias}".`);
+    }
+
+    seen.add(alias);
   }
 }
 
@@ -190,6 +209,10 @@ export function defineCommand<
     throw new Error('defineCommand() requires a "run" function.');
   }
 
+  if (input.aliases) {
+    validateCommandAliases(input.aliases);
+  }
+
   if (input.args) {
     validateFieldShape(input.args, "argument");
     validateUniqueFieldNames(input.args, "argument");
@@ -205,6 +228,7 @@ export function defineCommand<
 
   const command = {
     description: input.description,
+    aliases: (input.aliases ?? []) as readonly string[],
     args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,
     options: (input.options ?? []) as NormalizeFields<TOptionsFields, CommandOptionField>,
     run: input.run,

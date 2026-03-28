@@ -2,17 +2,26 @@
 // Constants & types
 // ---------------------------------------------------------------------------
 
+import { validateCommandAliases } from "./define-command";
+
 const DEFINED_GROUP_BRAND = Symbol.for("@rune-cli/defined-group");
 
 /** The group definition object accepted by {@link defineGroup}. */
 export interface DefineGroupInput {
   /** One-line summary shown in `--help` output. */
   readonly description: string;
+  /**
+   * Alternative names for this command group. Each alias is an additional path
+   * segment that routes to this group. Aliases must follow kebab-case rules
+   * (lowercase letters, digits, and internal hyphens).
+   */
+  readonly aliases?: readonly string[] | undefined;
 }
 
 /** The normalized group object returned by `defineGroup`. */
 export interface DefinedGroup {
   readonly description: string;
+  readonly aliases: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -39,8 +48,13 @@ export function defineGroup(input: DefineGroupInput): DefinedGroup {
     throw new Error('defineGroup() requires a non-empty "description" string.');
   }
 
+  if (input.aliases) {
+    validateCommandAliases(input.aliases);
+  }
+
   const group: DefinedGroup = {
     description: input.description,
+    aliases: (input.aliases ?? []) as readonly string[],
   };
 
   Object.defineProperty(group, DEFINED_GROUP_BRAND, {
