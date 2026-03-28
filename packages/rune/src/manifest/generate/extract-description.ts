@@ -207,10 +207,3 @@ export async function extractMetadataFromSourceFile(
 
   return undefined;
 }
-
-export async function extractDescriptionFromSourceFile(
-  sourceFilePath: string,
-): Promise<string | undefined> {
-  const metadata = await extractMetadataFromSourceFile(sourceFilePath);
-  return metadata?.description;
-}
