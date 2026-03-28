@@ -6,7 +6,7 @@ import { afterEach, expect, test } from "vite-plus/test";
 
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
-import { runManifestCommand } from "../src/manifest/run-manifest-command";
+import { runManifestCommand } from "../src/manifest/runtime/run-manifest-command";
 import { captureExitCode } from "./helpers";
 
 const fixtureRootDirectories = new Set<string>();

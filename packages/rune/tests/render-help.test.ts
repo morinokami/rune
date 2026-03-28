@@ -3,9 +3,9 @@ import { expect, test } from "vite-plus/test";
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
 import { defineCommand } from "../src";
-import { renderCommandHelp, renderGroupHelp } from "../src/manifest/render-help";
-import { resolveCommandPath } from "../src/manifest/resolve-command-path";
-import { renderResolvedHelp } from "../src/manifest/resolve-help";
+import { renderCommandHelp, renderGroupHelp } from "../src/manifest/runtime/render-help";
+import { resolveCommandRoute } from "../src/manifest/runtime/resolve-command-route";
+import { renderResolvedHelp } from "../src/manifest/runtime/resolve-help";
 
 const manifest: CommandManifest = {
   nodes: [
@@ -193,7 +193,7 @@ test("renderCommandHelp includes usage, description, args, and options", async (
 // ---------------------------------------------------------------------------
 
 test("renderResolvedHelp does not load child commands for group help", async () => {
-  const route = resolveCommandPath(manifest, ["user"]);
+  const route = resolveCommandRoute(manifest, ["user"]);
   let loaderCalled = false;
 
   const help = await renderResolvedHelp({
@@ -211,7 +211,7 @@ test("renderResolvedHelp does not load child commands for group help", async () 
 });
 
 test("renderResolvedHelp loads only the matched command for leaf help", async () => {
-  const route = resolveCommandPath(manifest, ["project", "create", "--help"]);
+  const route = resolveCommandRoute(manifest, ["project", "create", "--help"]);
   const loadedSourceFilePaths: string[] = [];
 
   const help = await renderResolvedHelp({
@@ -235,7 +235,7 @@ test("renderResolvedHelp loads only the matched command for leaf help", async ()
 });
 
 test("renderResolvedHelp renders scoped unknown-command suggestions", async () => {
-  const route = resolveCommandPath(manifest, ["project", "cretae"]);
+  const route = resolveCommandRoute(manifest, ["project", "cretae"]);
   const help = await renderResolvedHelp({
     manifest,
     route,

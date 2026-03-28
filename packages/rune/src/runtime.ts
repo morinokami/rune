@@ -1,1 +1,1 @@
-export { runManifestCommand } from "./manifest/run-manifest-command";
+export { runManifestCommand } from "./manifest/runtime/run-manifest-command";

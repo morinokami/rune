@@ -1,12 +1,12 @@
-import type { CommandManifest } from "./manifest-types";
-import type { ResolveCommandPathResult } from "./resolve-command-path";
+import type { CommandManifest } from "../manifest-types";
+import type { ResolveCommandRouteResult } from "./resolve-command-route";
 
 import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
 import { renderCommandHelp, renderGroupHelp, renderUnknownCommandMessage } from "./render-help";
 
 export interface RenderResolvedHelpOptions {
   readonly manifest: CommandManifest;
-  readonly route: ResolveCommandPathResult;
+  readonly route: ResolveCommandRouteResult;
   readonly cliName: string;
   readonly version?: string | undefined;
   readonly loadCommand?: LoadCommandFn | undefined;

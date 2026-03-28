@@ -1,8 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { generateCommandManifest, serializeCommandManifest } from "../manifest/generate-manifest";
-import { runManifestCommand } from "../manifest/run-manifest-command";
+import {
+  generateCommandManifest,
+  serializeCommandManifest,
+} from "../manifest/generate/generate-manifest";
+import { runManifestCommand } from "../manifest/runtime/run-manifest-command";
 import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,

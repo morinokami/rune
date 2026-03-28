@@ -6,7 +6,7 @@ import {
 } from "@rune-cli/core";
 import { pathToFileURL } from "node:url";
 
-import type { CommandManifestCommandNode } from "./manifest-types";
+import type { CommandManifestCommandNode } from "../manifest-types";
 
 // Loads a command module and verifies that its default export was created with defineCommand().
 async function loadCommandFromModule(

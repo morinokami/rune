@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 
 import type { CommandManifest, CommandManifestCommandNode } from "../manifest/manifest-types";
 
-import { generateCommandManifest, serializeCommandManifest } from "../manifest/generate-manifest";
+import {
+  generateCommandManifest,
+  serializeCommandManifest,
+} from "../manifest/generate/generate-manifest";
 import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
