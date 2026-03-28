@@ -230,7 +230,7 @@ test("renderCommandHelp includes usage, description, args, and options", async (
     args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
     options: [
       { name: "name", type: "string", required: true, description: "Project name" },
-      { name: "force", type: "boolean", alias: "f", description: "Overwrite existing state" },
+      { name: "force", type: "boolean", short: "f", description: "Overwrite existing state" },
     ],
     async run() {},
   });
@@ -281,7 +281,7 @@ test("renderResolvedHelp loads only the matched command for leaf help", async ()
 
       return defineCommand({
         description: "Create a project",
-        options: [{ name: "force", type: "boolean", alias: "f" }],
+        options: [{ name: "force", type: "boolean", short: "f" }],
         async run() {},
       });
     },

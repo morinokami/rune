@@ -37,11 +37,11 @@ function formatArgumentLabel(field: CommandArgField): string {
 function formatOptionLabel(field: CommandOptionField): string {
   const longOptionLabel = `--${field.name}${formatTypeHint(field)}`;
 
-  if (!field.alias) {
+  if (!field.short) {
     return longOptionLabel;
   }
 
-  return `-${field.alias}, ${longOptionLabel}`;
+  return `-${field.short}, ${longOptionLabel}`;
 }
 
 async function isFieldRequired(field: CommandArgField | CommandOptionField): Promise<boolean> {

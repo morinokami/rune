@@ -24,7 +24,7 @@ test("defineCommand preserves description and field definitions", () => {
     args: [{ name: "id", type: "string", required: true }],
     options: [
       { name: "name", type: "string", required: true },
-      { name: "force", type: "boolean", alias: "f" },
+      { name: "force", type: "boolean", short: "f" },
     ],
     async run() {},
   });
@@ -174,7 +174,7 @@ test("defineCommand rejects required arg after arg with default", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Name & alias validation
+// Name & short name validation
 // ---------------------------------------------------------------------------
 
 test("defineCommand accepts valid kebab-case names", () => {
@@ -183,7 +183,7 @@ test("defineCommand accepts valid kebab-case names", () => {
       args: [{ name: "file-path", type: "string", required: true }],
       options: [
         { name: "dry-run", type: "boolean" },
-        { name: "output", type: "string", alias: "o" },
+        { name: "output", type: "string", short: "o" },
       ],
       async run() {},
     }),
@@ -236,22 +236,22 @@ test("defineCommand rejects option name starting with a hyphen", () => {
   ).toThrow('Invalid option name "-verbose"');
 });
 
-test("defineCommand rejects invalid alias", () => {
+test("defineCommand rejects invalid short name", () => {
   expect(() =>
     defineCommand({
-      options: [{ name: "verbose", type: "boolean", alias: "vv" }],
+      options: [{ name: "verbose", type: "boolean", short: "vv" }],
       async run() {},
     }),
-  ).toThrow('Invalid alias "vv" for option "verbose"');
+  ).toThrow('Invalid short name "vv" for option "verbose"');
 });
 
-test("defineCommand rejects numeric alias", () => {
+test("defineCommand rejects numeric short name", () => {
   expect(() =>
     defineCommand({
-      options: [{ name: "verbose", type: "boolean", alias: "1" }],
+      options: [{ name: "verbose", type: "boolean", short: "1" }],
       async run() {},
     }),
-  ).toThrow('Invalid alias "1" for option "verbose"');
+  ).toThrow('Invalid short name "1" for option "verbose"');
 });
 
 // ---------------------------------------------------------------------------
@@ -270,16 +270,16 @@ test("defineCommand rejects duplicate option names", () => {
   ).toThrow('Duplicate option name "force"');
 });
 
-test("defineCommand rejects duplicate option aliases", () => {
+test("defineCommand rejects duplicate option short names", () => {
   expect(() =>
     defineCommand({
       options: [
-        { name: "force", type: "boolean", alias: "f" },
-        { name: "file", type: "string", alias: "f" },
+        { name: "force", type: "boolean", short: "f" },
+        { name: "file", type: "string", short: "f" },
       ],
       async run() {},
     }),
-  ).toThrow('Duplicate alias "f" for option "file"');
+  ).toThrow('Duplicate short name "f" for option "file"');
 });
 
 test("defineCommand rejects duplicate argument names", () => {

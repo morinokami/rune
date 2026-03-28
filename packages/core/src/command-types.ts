@@ -60,7 +60,7 @@ export interface PrimitiveArgField<
   TName extends string = string,
   TType extends PrimitiveFieldType = PrimitiveFieldType,
 > extends PrimitiveFieldBase<TName, TType> {
-  readonly alias?: never;
+  readonly short?: never;
   readonly flag?: never;
 }
 
@@ -69,7 +69,7 @@ export interface SchemaArgField<
   TName extends string = string,
   TSchema extends StandardSchemaV1 = StandardSchemaV1,
 > extends SchemaFieldBase<TName, TSchema> {
-  readonly alias?: never;
+  readonly short?: never;
   readonly flag?: never;
 }
 
@@ -79,7 +79,7 @@ export interface PrimitiveOptionField<
   TType extends PrimitiveFieldType = PrimitiveFieldType,
 > extends PrimitiveFieldBase<TName, TType> {
   /** Single-character shorthand (e.g. `"v"` for `--verbose` → `-v`). */
-  readonly alias?: string | undefined;
+  readonly short?: string | undefined;
   readonly flag?: never;
 }
 
@@ -89,7 +89,7 @@ export interface SchemaOptionField<
   TSchema extends StandardSchemaV1 = StandardSchemaV1,
 > extends SchemaFieldBase<TName, TSchema> {
   /** Single-character shorthand (e.g. `"v"` for `--verbose` → `-v`). */
-  readonly alias?: string | undefined;
+  readonly short?: string | undefined;
   /**
    * When `true`, the option is parsed as a boolean flag (no value expected).
    * The schema receives `true` when the flag is present, `undefined` when absent.
@@ -272,7 +272,7 @@ export interface DefineCommandInput<
    */
   readonly args?: TArgsFields;
   /**
-   * Options declared as `--name` flags, with optional single-character aliases.
+   * Options declared as `--name` flags, with optional single-character short forms.
    * Option names must be unique within the command, start with a letter, and
    * contain only letters, numbers, and internal hyphens.
    *
