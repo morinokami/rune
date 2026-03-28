@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.11
+
+### Patch Changes
+
+- [#36](https://github.com/morinokami/rune/pull/36) [`4622c5d`](https://github.com/morinokami/rune/commit/4622c5d57be307a811a2e5369747f13baef0fb3c) Thanks [@morinokami](https://github.com/morinokami)! - refactor(core): rename option `alias` to `short`
+
+- [#34](https://github.com/morinokami/rune/pull/34) [`b24beea`](https://github.com/morinokami/rune/commit/b24beeab6a2e7c2e26372345c1076464b712dae2) Thanks [@morinokami](https://github.com/morinokami)! - feat: add command and group aliases
+
 ## 0.0.10
 
 ### Patch Changes
