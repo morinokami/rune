@@ -1,8 +1,8 @@
 import { executeCommand, parseCommand } from "@rune-cli/core";
 
-import type { CommandManifest } from "./manifest-types";
+import type { CommandManifest } from "../manifest-types";
 
-import { isVersionFlag } from "../cli/flags";
+import { isVersionFlag } from "../../cli/flags";
 import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
 import { resolveCommandPath } from "./resolve-command-path";
 import { renderResolvedHelp } from "./resolve-help";

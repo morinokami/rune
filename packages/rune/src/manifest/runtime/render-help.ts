@@ -9,10 +9,10 @@ import type {
   CommandManifest,
   CommandManifestGroupNode,
   CommandManifestPath,
-} from "./manifest-types";
+} from "../manifest-types";
 import type { UnknownCommandRoute } from "./resolve-command-path";
 
-import { commandManifestPathToKey, createCommandManifestNodeMap } from "./manifest-map";
+import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 
 function formatCommandName(cliName: string, pathSegments: CommandManifestPath): string {
   return pathSegments.length === 0 ? cliName : `${cliName} ${pathSegments.join(" ")}`;

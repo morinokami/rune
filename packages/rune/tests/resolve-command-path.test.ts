@@ -2,7 +2,7 @@ import { expect, test } from "vite-plus/test";
 
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
-import { resolveCommandPath } from "../src/manifest/resolve-command-path";
+import { resolveCommandPath } from "../src/manifest/runtime/resolve-command-path";
 
 const manifest: CommandManifest = {
   nodes: [

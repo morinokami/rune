@@ -8,7 +8,7 @@ import {
   createCommandManifestNodeMap,
   generateCommandManifest,
   serializeCommandManifest,
-} from "../src/manifest/generate-manifest";
+} from "../src/manifest/generate/generate-manifest";
 
 const fixtureRootDirectories = new Set<string>();
 

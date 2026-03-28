@@ -3,9 +3,9 @@ import { expect, test } from "vite-plus/test";
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
 import { defineCommand } from "../src";
-import { renderCommandHelp, renderGroupHelp } from "../src/manifest/render-help";
-import { resolveCommandPath } from "../src/manifest/resolve-command-path";
-import { renderResolvedHelp } from "../src/manifest/resolve-help";
+import { renderCommandHelp, renderGroupHelp } from "../src/manifest/runtime/render-help";
+import { resolveCommandPath } from "../src/manifest/runtime/resolve-command-path";
+import { renderResolvedHelp } from "../src/manifest/runtime/resolve-help";
 
 const manifest: CommandManifest = {
   nodes: [

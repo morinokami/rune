@@ -1,4 +1,4 @@
-import type { CommandManifest } from "./manifest-types";
+import type { CommandManifest } from "../manifest-types";
 import type { ResolveCommandPathResult } from "./resolve-command-path";
 
 import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
