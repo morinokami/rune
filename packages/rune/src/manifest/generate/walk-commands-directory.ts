@@ -32,6 +32,43 @@ export function comparePathSegments(left: CommandManifestPath, right: CommandMan
   return left.length - right.length;
 }
 
+function collectSiblingEntries(
+  childResults: readonly { directoryName: string; walkResult: WalkDirectoryResult }[],
+  bareCommandNodes: readonly CommandManifestNode[],
+  pathSegments: readonly string[],
+): readonly { readonly name: string; readonly aliases: readonly string[] }[] {
+  const entries: { name: string; aliases: readonly string[] }[] = [];
+
+  for (const childResult of childResults) {
+    if (!childResult.walkResult.hasNode) {
+      continue;
+    }
+
+    // Find the direct child node (the one whose pathSegments matches this level).
+    const childNode = childResult.walkResult.nodes.find(
+      (n) =>
+        n.pathSegments.length === pathSegments.length + 1 &&
+        n.pathSegments[pathSegments.length] === childResult.directoryName,
+    );
+
+    entries.push({
+      name: childResult.directoryName,
+      aliases: childNode?.aliases ?? [],
+    });
+  }
+
+  for (const bareNode of bareCommandNodes) {
+    const name = bareNode.pathSegments[bareNode.pathSegments.length - 1];
+
+    entries.push({
+      name,
+      aliases: bareNode.aliases,
+    });
+  }
+
+  return entries;
+}
+
 function validateSiblingAliases(
   siblings: readonly { readonly name: string; readonly aliases: readonly string[] }[],
 ): void {
@@ -76,9 +113,9 @@ export async function walkCommandsDirectory(
   // Scan directory & recurse into subdirectories
   // ---------------------------------------------------------------------------
 
-  const entries = await readdir(absoluteDirectoryPath, { withFileTypes: true });
+  const dirEntries = await readdir(absoluteDirectoryPath, { withFileTypes: true });
 
-  const childDirectoryNames = entries
+  const childDirectoryNames = dirEntries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
@@ -94,7 +131,7 @@ export async function walkCommandsDirectory(
 
       return {
         directoryName,
-        result: childResult,
+        walkResult: childResult,
       };
     }),
   );
@@ -103,7 +140,7 @@ export async function walkCommandsDirectory(
   // Collect bare command files (e.g. "status.ts", excluding index.ts / _group.ts)
   // ---------------------------------------------------------------------------
 
-  const bareCommandFiles = entries
+  const bareCommandFileNames = dirEntries
     .filter(
       (entry) =>
         entry.isFile() &&
@@ -120,11 +157,13 @@ export async function walkCommandsDirectory(
   // ---------------------------------------------------------------------------
 
   const childDirectoriesWithNodes = new Set(
-    childResults.filter(({ result }) => result.hasNode).map(({ directoryName }) => directoryName),
+    childResults
+      .filter(({ walkResult }) => walkResult.hasNode)
+      .map(({ directoryName }) => directoryName),
   );
 
   const bareCommandNodes = await Promise.all(
-    bareCommandFiles.map(async (fileName) => {
+    bareCommandFileNames.map(async (fileName) => {
       const commandName = fileName.slice(0, -BARE_COMMAND_EXTENSION.length);
 
       if (childDirectoriesWithNodes.has(commandName)) {
@@ -152,20 +191,20 @@ export async function walkCommandsDirectory(
   // ---------------------------------------------------------------------------
 
   // All nodes collected from recursive walks (includes grandchildren and deeper).
-  const descendantNodes = childResults.flatMap(({ result }) => result.nodes);
+  const descendantNodes = childResults.flatMap(({ walkResult }) => walkResult.nodes);
 
   // Direct child names only (used to populate this node's `childNames`).
   const childNames = [
     ...childResults
-      .filter(({ result }) => result.hasNode)
+      .filter(({ walkResult }) => walkResult.hasNode)
       .map(({ directoryName }) => directoryName),
-    ...bareCommandFiles.map((fileName) => fileName.slice(0, -BARE_COMMAND_EXTENSION.length)),
+    ...bareCommandFileNames.map((fileName) => fileName.slice(0, -BARE_COMMAND_EXTENSION.length)),
   ].sort((left, right) => left.localeCompare(right));
 
-  const hasCommandEntry = entries.some(
+  const hasCommandEntry = dirEntries.some(
     (entry) => entry.isFile() && entry.name === COMMAND_ENTRY_FILE,
   );
-  const hasGroupMeta = entries.some((entry) => entry.isFile() && entry.name === GROUP_META_FILE);
+  const hasGroupMeta = dirEntries.some((entry) => entry.isFile() && entry.name === GROUP_META_FILE);
 
   if (hasGroupMeta && hasCommandEntry) {
     throw new Error(
@@ -248,38 +287,7 @@ export async function walkCommandsDirectory(
   // Validate sibling alias collisions
   // ---------------------------------------------------------------------------
 
-  // Collect all direct children info (directory-based nodes + bare command nodes)
-  // for alias collision checking.
-  const siblingEntries: { name: string; aliases: readonly string[] }[] = [];
-
-  for (const childResult of childResults) {
-    if (!childResult.result.hasNode) {
-      continue;
-    }
-
-    // Find the direct child node (the one whose pathSegments matches this level).
-    const childNode = childResult.result.nodes.find(
-      (n) =>
-        n.pathSegments.length === pathSegments.length + 1 &&
-        n.pathSegments[pathSegments.length] === childResult.directoryName,
-    );
-
-    siblingEntries.push({
-      name: childResult.directoryName,
-      aliases: childNode?.aliases ?? [],
-    });
-  }
-
-  for (const bareNode of bareCommandNodes) {
-    const name = bareNode.pathSegments[bareNode.pathSegments.length - 1];
-
-    siblingEntries.push({
-      name,
-      aliases: bareNode.aliases,
-    });
-  }
-
-  validateSiblingAliases(siblingEntries);
+  validateSiblingAliases(collectSiblingEntries(childResults, bareCommandNodes, pathSegments));
 
   return {
     nodes: [node, ...descendantNodes, ...bareCommandNodes],

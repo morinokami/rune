@@ -89,34 +89,21 @@ function extractMetadataFromCommandDefinition(
   let aliases: readonly string[] = [];
 
   for (const property of definition.properties) {
+    let propertyName: string | undefined;
+    let resolved: ts.Expression | undefined;
+
     // Shorthand property: `{ aliases }` is equivalent to `{ aliases: aliases }`
     if (ts.isShorthandPropertyAssignment(property)) {
-      const propertyName = property.name.text;
-      const resolved = resolveExpression(property.name, sourceFile);
-
-      if (propertyName === "description") {
-        description = getStaticStringValue(resolved);
-      } else if (propertyName === "aliases") {
-        const extracted = getStaticStringArrayValue(resolved);
-
-        if (extracted === undefined) {
-          throw new Error(
-            'Could not statically analyze aliases. Aliases must be an inline array of string literals (e.g. aliases: ["d"]).',
-          );
-        }
-
-        aliases = extracted;
-      }
-
-      continue;
+      propertyName = property.name.text;
+      resolved = resolveExpression(property.name, sourceFile);
+    } else if (ts.isPropertyAssignment(property)) {
+      propertyName = getPropertyNameText(property.name);
+      resolved = resolveExpression(property.initializer, sourceFile);
     }
 
-    if (!ts.isPropertyAssignment(property)) {
+    if (!propertyName || !resolved) {
       continue;
     }
-
-    const propertyName = getPropertyNameText(property.name);
-    const resolved = resolveExpression(property.initializer, sourceFile);
 
     if (propertyName === "description") {
       description = getStaticStringValue(resolved);
