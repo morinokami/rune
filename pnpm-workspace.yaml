@@ -18,7 +18,7 @@ catalog:
   sherif: 1.11.0
   typescript: 5.9.3
   vite: npm:@voidzero-dev/vite-plus-core@0.1.12
-  vite-plus: v0.1.13
+  vite-plus: v0.1.14
   vitest: npm:@voidzero-dev/vite-plus-test@0.1.12
   zod: 4.3.6
 
