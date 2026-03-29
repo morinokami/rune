@@ -30,7 +30,7 @@ jobs:
         run: vp run build --filter './packages/*'
 
       - name: Run Vite+ check
-        run: vp check
+        run: vp run check --filter './packages/*'
 
       - name: Run ls-lint
         run: vpx ls-lint
