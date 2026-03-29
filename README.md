@@ -27,10 +27,10 @@ my-cli/
   tsconfig.json
 ```
 
-Run your CLI in development mode:
+Run your CLI directly from source:
 
 ```bash
-npx rune dev -- hello
+npx rune run -- hello
 # => hello from my-cli
 ```
 

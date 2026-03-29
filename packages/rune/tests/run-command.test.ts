@@ -14,7 +14,7 @@ const coreEntryPath = fileURLToPath(new URL("../../core/src/index.ts", import.me
 // Fixtures
 // ---------------------------------------------------------------------------
 
-function createDevCommandModule(lines: readonly string[]): string {
+function createCommandModule(lines: readonly string[]): string {
   return [
     `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
     "",
@@ -33,8 +33,8 @@ afterEach(async () => {
   fixtureRootDirectories.clear();
 });
 
-async function createDevProject(files: Readonly<Record<string, string>>): Promise<string> {
-  const projectRoot = await mkdtemp(path.join(os.tmpdir(), "rune-dev-project-"));
+async function createRunProject(files: Readonly<Record<string, string>>): Promise<string> {
+  const projectRoot = await mkdtemp(path.join(os.tmpdir(), "rune-run-project-"));
   fixtureRootDirectories.add(projectRoot);
 
   await Promise.all(
@@ -57,13 +57,13 @@ async function captureRuneCli(argv: readonly string[], cwd?: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Development execution
+// Run execution
 // ---------------------------------------------------------------------------
 
-test("runRuneCli executes a simple command through `rune dev`", async () => {
-  const projectRoot = await createDevProject({
+test("runRuneCli executes a simple command through `rune run`", async () => {
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-    "src/commands/hello/index.ts": createDevCommandModule([
+    "src/commands/hello/index.ts": createCommandModule([
       '  description: "Say hello",',
       "  args: [],",
       '  options: [{ name: "name", type: "string", required: true }],',
@@ -73,7 +73,7 @@ test("runRuneCli executes a simple command through `rune dev`", async () => {
     ]),
   });
 
-  const captured = await captureRuneCli(["dev", "hello", "--name", "rune"], projectRoot);
+  const captured = await captureRuneCli(["run", "hello", "--name", "rune"], projectRoot);
 
   expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("hello rune\n");
@@ -83,8 +83,8 @@ test("runRuneCli executes a simple command through `rune dev`", async () => {
   expect(manifestContents).toContain('"hello"');
 });
 
-test("runRuneCli shows help in dev mode and refreshes the manifest after command edits", async () => {
-  const projectRoot = await createDevProject({
+test("runRuneCli shows help in run mode and refreshes the manifest after command edits", async () => {
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
     "src/commands/hello/index.ts": [
       `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
@@ -96,7 +96,7 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
     ].join("\n"),
   });
 
-  const firstResult = await captureRuneCli(["dev"], projectRoot);
+  const firstResult = await captureRuneCli(["run"], projectRoot);
 
   expect(firstResult.exitCode).toBe(0);
   expect(firstResult.stdout).toContain("hello  Say hello");
@@ -114,7 +114,7 @@ test("runRuneCli shows help in dev mode and refreshes the manifest after command
     ].join("\n"),
   );
 
-  const secondResult = await captureRuneCli(["dev"], projectRoot);
+  const secondResult = await captureRuneCli(["run"], projectRoot);
 
   expect(secondResult.exitCode).toBe(0);
   expect(secondResult.stdout).toContain("hello  Say hi");
@@ -133,11 +133,11 @@ test("runRuneCli shows top-level help with no args", async () => {
   expect(captured.stderr).toBe("");
 });
 
-test("runRuneCli shows dev help without loading a project", async () => {
-  const captured = await captureRuneCli(["dev", "--help"]);
+test("runRuneCli shows run help without loading a project", async () => {
+  const captured = await captureRuneCli(["run", "--help"]);
 
   expect(captured.exitCode).toBe(0);
-  expect(captured.stdout).toContain("Usage: rune dev [options] [command...]\n");
+  expect(captured.stdout).toContain("Usage: rune run [options] [command...]\n");
   expect(captured.stderr).toBe("");
 });
 
@@ -146,17 +146,17 @@ test("runRuneCli reports unknown top-level subcommands", async () => {
 
   expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
-  expect(captured.stderr).toBe("Unknown command: unknown. Available commands: build, dev\n");
+  expect(captured.stderr).toBe("Unknown command: unknown. Available commands: build, run\n");
 });
 
 // ---------------------------------------------------------------------------
-// Dev subcommand parsing
+// Run subcommand parsing
 // ---------------------------------------------------------------------------
 
-test("runRuneCli only parses rune dev options before the command path", async () => {
-  const projectRoot = await createDevProject({
+test("runRuneCli only parses rune run options before the command path", async () => {
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-    "src/commands/create/index.ts": createDevCommandModule([
+    "src/commands/create/index.ts": createCommandModule([
       "  args: [],",
       '  options: [{ name: "project", type: "string", required: true }],',
       "  async run(ctx) {",
@@ -165,7 +165,7 @@ test("runRuneCli only parses rune dev options before the command path", async ()
     ]),
   });
 
-  const captured = await captureRuneCli(["dev", "create", "--project", "myapp"], projectRoot);
+  const captured = await captureRuneCli(["run", "create", "--project", "myapp"], projectRoot);
 
   expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("create myapp\n");
@@ -173,7 +173,7 @@ test("runRuneCli only parses rune dev options before the command path", async ()
 });
 
 test("runRuneCli supports forwarding commands after `--` with an explicit project path", async () => {
-  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-dev-workspace-"));
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-run-workspace-"));
   fixtureRootDirectories.add(workspaceRoot);
   const projectRoot = path.join(workspaceRoot, "fixture");
 
@@ -184,7 +184,7 @@ test("runRuneCli supports forwarding commands after `--` with an explicit projec
   );
   await writeFile(
     path.join(projectRoot, "src", "commands", "hello", "index.ts"),
-    createDevCommandModule([
+    createCommandModule([
       '  description: "Say hello",',
       "  args: [],",
       "  options: [],",
@@ -195,7 +195,7 @@ test("runRuneCli supports forwarding commands after `--` with an explicit projec
   );
 
   const captured = await captureRuneCli(
-    ["dev", "--project", "./fixture", "--", "hello"],
+    ["run", "--project", "./fixture", "--", "hello"],
     workspaceRoot,
   );
 
@@ -204,8 +204,8 @@ test("runRuneCli supports forwarding commands after `--` with an explicit projec
   expect(captured.stderr).toBe("");
 });
 
-test("runRuneCli preserves the caller cwd when using `--project` in dev mode", async () => {
-  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-dev-workspace-"));
+test("runRuneCli preserves the caller cwd when using `--project` in run mode", async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-run-workspace-"));
   fixtureRootDirectories.add(workspaceRoot);
   const projectRoot = path.join(workspaceRoot, "fixture");
 
@@ -231,7 +231,7 @@ test("runRuneCli preserves the caller cwd when using `--project` in dev mode", a
   await mkdir(invocationRoot, { recursive: true });
 
   const captured = await captureRuneCli(
-    ["dev", "--project", "../fixture", "--", "show-cwd"],
+    ["run", "--project", "../fixture", "--", "show-cwd"],
     invocationRoot,
   );
 
@@ -241,7 +241,7 @@ test("runRuneCli preserves the caller cwd when using `--project` in dev mode", a
 });
 
 test("runRuneCli supports `--project=<path>` before the command path", async () => {
-  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-dev-workspace-"));
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), "rune-run-workspace-"));
   fixtureRootDirectories.add(workspaceRoot);
   const projectRoot = path.join(workspaceRoot, "fixture");
 
@@ -252,7 +252,7 @@ test("runRuneCli supports `--project=<path>` before the command path", async () 
   );
   await writeFile(
     path.join(projectRoot, "src", "commands", "hello", "index.ts"),
-    createDevCommandModule([
+    createCommandModule([
       "  args: [],",
       "  options: [],",
       "  async run() {",
@@ -261,15 +261,15 @@ test("runRuneCli supports `--project=<path>` before the command path", async () 
     ]),
   );
 
-  const captured = await captureRuneCli(["dev", "--project=./fixture", "hello"], workspaceRoot);
+  const captured = await captureRuneCli(["run", "--project=./fixture", "hello"], workspaceRoot);
 
   expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("hello\n");
   expect(captured.stderr).toBe("");
 });
 
-test("runRuneCli reports missing values for `rune dev --project`", async () => {
-  const captured = await captureRuneCli(["dev", "--project"]);
+test("runRuneCli reports missing values for `rune run --project`", async () => {
+  const captured = await captureRuneCli(["run", "--project"]);
 
   expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
@@ -281,7 +281,7 @@ test("runRuneCli reports missing values for `rune dev --project`", async () => {
 // ---------------------------------------------------------------------------
 
 test("runRuneCli uses the package bin name for help output", async () => {
-  const projectRoot = await createDevProject({
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify(
       {
         name: "@scope/mycli",
@@ -302,7 +302,7 @@ test("runRuneCli uses the package bin name for help output", async () => {
     ].join("\n"),
   });
 
-  const captured = await captureRuneCli(["dev"], projectRoot);
+  const captured = await captureRuneCli(["run"], projectRoot);
 
   expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: runeplay <command>\n");
@@ -310,7 +310,7 @@ test("runRuneCli uses the package bin name for help output", async () => {
 });
 
 test("runRuneCli falls back to the unscoped package name when no bin field exists", async () => {
-  const projectRoot = await createDevProject({
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify({ name: "@scope/mycli" }, null, 2),
     "src/commands/hello/index.ts": [
       `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
@@ -322,7 +322,7 @@ test("runRuneCli falls back to the unscoped package name when no bin field exist
     ].join("\n"),
   });
 
-  const captured = await captureRuneCli(["dev"], projectRoot);
+  const captured = await captureRuneCli(["run"], projectRoot);
 
   expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain("Usage: mycli <command>\n");
@@ -330,7 +330,7 @@ test("runRuneCli falls back to the unscoped package name when no bin field exist
 });
 
 test("runRuneCli falls back to the project directory name when package.json is missing", async () => {
-  const projectRoot = await createDevProject({
+  const projectRoot = await createRunProject({
     "src/commands/hello/index.ts": [
       `import { defineCommand } from ${JSON.stringify(coreEntryPath)};`,
       "",
@@ -341,7 +341,7 @@ test("runRuneCli falls back to the project directory name when package.json is m
     ].join("\n"),
   });
 
-  const captured = await captureRuneCli(["dev"], projectRoot);
+  const captured = await captureRuneCli(["run"], projectRoot);
 
   expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toContain(`Usage: ${path.basename(projectRoot)} <command>\n`);
@@ -352,10 +352,10 @@ test("runRuneCli falls back to the project directory name when package.json is m
 // Alternate command layouts & runtime errors
 // ---------------------------------------------------------------------------
 
-test("runRuneCli executes a bare file command through `rune dev`", async () => {
-  const projectRoot = await createDevProject({
+test("runRuneCli executes a bare file command through `rune run`", async () => {
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-    "src/commands/hello.ts": createDevCommandModule([
+    "src/commands/hello.ts": createCommandModule([
       '  description: "Say hello",',
       '  options: [{ name: "name", type: "string", required: true }],',
       "  async run(ctx) {",
@@ -364,7 +364,7 @@ test("runRuneCli executes a bare file command through `rune dev`", async () => {
     ]),
   });
 
-  const captured = await captureRuneCli(["dev", "hello", "--name", "rune"], projectRoot);
+  const captured = await captureRuneCli(["run", "hello", "--name", "rune"], projectRoot);
 
   expect(captured.exitCode).toBe(0);
   expect(captured.stdout).toBe("hello rune\n");
@@ -372,11 +372,11 @@ test("runRuneCli executes a bare file command through `rune dev`", async () => {
 });
 
 test("runRuneCli reports missing src/commands directories", async () => {
-  const projectRoot = await createDevProject({
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
   });
 
-  const captured = await captureRuneCli(["dev"], projectRoot);
+  const captured = await captureRuneCli(["run"], projectRoot);
 
   expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");
@@ -384,7 +384,7 @@ test("runRuneCli reports missing src/commands directories", async () => {
 });
 
 test("runRuneCli reports plain object default exports with a clear error", async () => {
-  const projectRoot = await createDevProject({
+  const projectRoot = await createRunProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
     "src/commands/plain/index.ts": [
       "export default {",
@@ -396,7 +396,7 @@ test("runRuneCli reports plain object default exports with a clear error", async
     ].join("\n"),
   });
 
-  const captured = await captureRuneCli(["dev", "plain"], projectRoot);
+  const captured = await captureRuneCli(["run", "plain"], projectRoot);
 
   expect(captured.exitCode).toBe(1);
   expect(captured.stdout).toBe("");

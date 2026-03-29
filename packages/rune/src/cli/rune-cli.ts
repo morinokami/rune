@@ -1,7 +1,7 @@
 import runePackageJson from "../../package.json" with { type: "json" };
 import { renderRuneBuildHelp, runBuildCommand } from "./build-command";
-import { renderRuneDevHelp, runDevCommand } from "./dev-command";
 import { isHelpFlag, isVersionFlag } from "./flags";
+import { renderRuneRunHelp, runRunCommand } from "./run-command";
 import { writeStderrLine, writeStdout } from "./write-result";
 
 // ---------------------------------------------------------------------------
@@ -21,7 +21,7 @@ interface EarlyExit {
   readonly stream: "stdout" | "stderr";
 }
 
-interface ParsedDevArgs {
+interface ParsedRunArgs {
   readonly ok: true;
   readonly projectPath?: string | undefined;
   readonly commandArgs: readonly string[];
@@ -93,7 +93,7 @@ Usage: rune <command>
 
 Commands:
   build  Build a Rune project into a distributable CLI
-  dev    Run a Rune project in development mode
+  run    Run a Rune project directly from source
 
 Options:
   -h, --help     Show this help message
@@ -105,7 +105,7 @@ Options:
 // Subcommand argument parsing
 // ---------------------------------------------------------------------------
 
-function parseDevArgs(argv: readonly string[]): ParsedDevArgs | EarlyExit {
+function parseRunArgs(argv: readonly string[]): ParsedRunArgs | EarlyExit {
   const commandArgs: string[] = [];
   let projectPath: string | undefined;
 
@@ -118,7 +118,7 @@ function parseDevArgs(argv: readonly string[]): ParsedDevArgs | EarlyExit {
     }
 
     if (isHelpFlag(token)) {
-      return { ok: false, exitCode: 0, output: renderRuneDevHelp(), stream: "stdout" };
+      return { ok: false, exitCode: 0, output: renderRuneRunHelp(), stream: "stdout" };
     }
 
     const projectResult = tryParseProjectOption(argv, index);
@@ -177,19 +177,19 @@ function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
 // Subcommand dispatch
 // ---------------------------------------------------------------------------
 
-async function runDevSubcommand(
+async function runRunSubcommand(
   options: RunRuneCliOptions,
   restArgs: readonly string[],
 ): Promise<number> {
-  const parsedDevArgs = parseDevArgs(restArgs);
+  const parsedRunArgs = parseRunArgs(restArgs);
 
-  if (!parsedDevArgs.ok) {
-    return writeEarlyExit(parsedDevArgs);
+  if (!parsedRunArgs.ok) {
+    return writeEarlyExit(parsedRunArgs);
   }
 
-  return runDevCommand({
-    rawArgs: parsedDevArgs.commandArgs,
-    projectPath: parsedDevArgs.projectPath,
+  return runRunCommand({
+    rawArgs: parsedRunArgs.commandArgs,
+    projectPath: parsedRunArgs.projectPath,
     cwd: options.cwd,
   });
 }
@@ -214,7 +214,7 @@ async function runBuildSubcommand(
 // Public API
 // ---------------------------------------------------------------------------
 
-// Parses Rune's own CLI arguments and dispatches to subcommands such as `rune dev`.
+// Parses Rune's own CLI arguments and dispatches to subcommands such as `rune run`.
 export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   const [subcommand, ...restArgs] = options.argv;
 
@@ -228,14 +228,14 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
     return 0;
   }
 
-  if (subcommand === "dev") {
-    return runDevSubcommand(options, restArgs);
+  if (subcommand === "run") {
+    return runRunSubcommand(options, restArgs);
   }
 
   if (subcommand === "build") {
     return runBuildSubcommand(options, restArgs);
   }
 
-  await writeStderrLine(`Unknown command: ${subcommand}. Available commands: build, dev`);
+  await writeStderrLine(`Unknown command: ${subcommand}. Available commands: build, run`);
   return 1;
 }

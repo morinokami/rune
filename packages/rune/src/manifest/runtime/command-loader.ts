@@ -12,7 +12,7 @@ import type { CommandManifestCommandNode } from "../manifest-types";
 async function loadCommandFromModule(
   sourceFilePath: string,
 ): Promise<DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>> {
-  // In `rune dev`, `sourceFilePath` points at source `.ts` command modules.
+  // In `rune run`, `sourceFilePath` points at source `.ts` command modules.
   const moduleUrl = pathToFileURL(sourceFilePath).href;
   const loadedModule = (await import(moduleUrl)) as { default?: unknown };
 

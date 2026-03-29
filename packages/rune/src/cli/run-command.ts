@@ -19,10 +19,10 @@ import { writeStderrLine, writeStdout } from "./write-result";
 // Constants & types
 // ---------------------------------------------------------------------------
 
-const DEV_MANIFEST_DIRECTORY_PATH = ".rune";
-const DEV_MANIFEST_FILENAME = "manifest.json";
+const RUN_MANIFEST_DIRECTORY_PATH = ".rune";
+const RUN_MANIFEST_FILENAME = "manifest.json";
 
-export interface RunDevCommandOptions {
+export interface RunRunCommandOptions {
   readonly rawArgs: readonly string[];
   readonly cwd?: string | undefined;
   readonly projectPath?: string | undefined;
@@ -32,9 +32,9 @@ export interface RunDevCommandOptions {
 // Manifest helpers
 // ---------------------------------------------------------------------------
 
-async function writeDevManifest(projectRoot: string, manifestContents: string): Promise<void> {
-  const manifestDirectory = path.join(projectRoot, DEV_MANIFEST_DIRECTORY_PATH);
-  const manifestPath = path.join(manifestDirectory, DEV_MANIFEST_FILENAME);
+async function writeRunManifest(projectRoot: string, manifestContents: string): Promise<void> {
+  const manifestDirectory = path.join(projectRoot, RUN_MANIFEST_DIRECTORY_PATH);
+  const manifestPath = path.join(manifestDirectory, RUN_MANIFEST_FILENAME);
 
   await mkdir(manifestDirectory, { recursive: true });
   await writeFile(manifestPath, manifestContents);
@@ -44,19 +44,19 @@ async function writeDevManifest(projectRoot: string, manifestContents: string): 
 // Help rendering
 // ---------------------------------------------------------------------------
 
-export function renderRuneDevHelp(): string {
+export function renderRuneRunHelp(): string {
   return `\
-Run a Rune project in development mode.
+Run a Rune project directly from source.
 
-Usage: rune dev [options] [command...]
+Usage: rune run [options] [command...]
 
 Options:
   --project <path>  Path to the Rune project root (default: current directory)
   -h, --help        Show this help message
 
 Examples:
-  rune dev hello
-  rune dev --project ./my-app hello
+  rune run hello
+  rune run --project ./my-app hello
 `;
 }
 
@@ -65,9 +65,9 @@ Examples:
 // ---------------------------------------------------------------------------
 
 // Generates a fresh manifest and executes commands directly from source.
-// `rune dev` imports command `.ts` modules without an extra loader, so it relies
+// `rune run` imports command `.ts` modules without an extra loader, so it relies
 // on a Node.js runtime that can execute native type-stripped TypeScript.
-export async function runDevCommand(options: RunDevCommandOptions): Promise<number> {
+export async function runRunCommand(options: RunRunCommandOptions): Promise<number> {
   try {
     const projectRoot = resolveProjectPath(options);
     const cliInfo = await readProjectCliInfo(projectRoot);
@@ -82,7 +82,7 @@ export async function runDevCommand(options: RunDevCommandOptions): Promise<numb
     await assertCommandsDirectoryExists(commandsDirectory);
 
     const manifest = await generateCommandManifest({ commandsDirectory });
-    await writeDevManifest(projectRoot, serializeCommandManifest(manifest));
+    await writeRunManifest(projectRoot, serializeCommandManifest(manifest));
 
     return runManifestCommand({
       manifest,
@@ -92,7 +92,7 @@ export async function runDevCommand(options: RunDevCommandOptions): Promise<numb
       cwd: options.cwd,
     });
   } catch (error) {
-    await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune dev");
+    await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune run");
     return 1;
   }
 }

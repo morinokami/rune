@@ -410,7 +410,7 @@ test("runRuneCli builds a fixture project and emits a runnable dist CLI", async 
   });
 });
 
-test("the built CLI shows help without invoking rune dev", async () => {
+test("the built CLI shows help without invoking rune run", async () => {
   const projectRoot = await createBuildProject({
     "package.json": JSON.stringify({ name: "mycli" }, null, 2),
     "src/commands/hello/index.ts": [
