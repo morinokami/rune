@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.12
+
+### Patch Changes
+
+- [#40](https://github.com/morinokami/rune/pull/40) [`481cb9e`](https://github.com/morinokami/rune/commit/481cb9e340004d75a03d5bfeecc655771987592f) Thanks [@morinokami](https://github.com/morinokami)! - rename(cli): rename `rune dev` subcommand to `rune run`
+
 ## 0.0.11
 
 ### Patch Changes
