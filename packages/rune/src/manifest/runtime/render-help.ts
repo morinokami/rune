@@ -26,6 +26,10 @@ function formatSectionEntries(
     .join("\n");
 }
 
+function formatExamplesSection(examples: readonly string[]): string {
+  return `Examples:\n${examples.map((example) => `  $ ${example}`).join("\n")}`;
+}
+
 function formatTypeHint(field: CommandArgField | CommandOptionField): string {
   return isSchemaField(field) ? "" : ` <${field.type}>`;
 }
@@ -113,6 +117,10 @@ export function renderGroupHelp(options: RenderGroupHelpOptions): string {
 
   parts.push(`Options:\n${formatSectionEntries(optionEntries)}`);
 
+  if (node.examples && node.examples.length > 0) {
+    parts.push(formatExamplesSection(node.examples));
+  }
+
   return `${parts.join("\n\n")}\n`;
 }
 
@@ -157,6 +165,10 @@ export async function renderCommandHelp(
   ];
 
   parts.push(`Options:\n${formatSectionEntries(optionEntries)}`);
+
+  if (command.examples.length > 0) {
+    parts.push(formatExamplesSection(command.examples));
+  }
 
   return `${parts.join("\n\n")}\n`;
 }

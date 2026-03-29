@@ -16,12 +16,18 @@ export interface DefineGroupInput {
    * (lowercase letters, digits, and internal hyphens).
    */
   readonly aliases?: readonly string[] | undefined;
+  /**
+   * Usage examples shown in the `Examples:` section of `--help` output.
+   * Each entry is a string representing a full command invocation.
+   */
+  readonly examples?: readonly string[] | undefined;
 }
 
 /** The normalized group object returned by `defineGroup`. */
 export interface DefinedGroup {
   readonly description: string;
   readonly aliases: readonly string[];
+  readonly examples: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +57,7 @@ export function defineGroup(input: DefineGroupInput): DefinedGroup {
   const group: DefinedGroup = {
     description: input.description,
     aliases: (input.aliases ?? []) as readonly string[],
+    examples: (input.examples ?? []) as readonly string[],
   };
 
   Object.defineProperty(group, DEFINED_GROUP_BRAND, {

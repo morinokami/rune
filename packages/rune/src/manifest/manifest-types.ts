@@ -17,6 +17,8 @@ interface CommandManifestNodeBase {
   readonly aliases: readonly string[];
   // One-line help text extracted during manifest generation when available.
   readonly description?: string | undefined;
+  // Usage examples extracted during manifest generation when available.
+  readonly examples?: readonly string[] | undefined;
 }
 
 // Manifest node for an executable command backed by an `index.ts` file.

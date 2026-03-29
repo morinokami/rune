@@ -74,7 +74,7 @@ test("generateCommandManifest discovers nested commands and groups deterministic
     commandsDirectory,
     async extractMetadata(sourceFilePath) {
       const relativePath = path.relative(commandsDirectory, sourceFilePath);
-      return { description: descriptions[relativePath], aliases: [] };
+      return { description: descriptions[relativePath], aliases: [], examples: [] };
     },
   });
 
@@ -149,6 +149,7 @@ test("generateCommandManifest supports a root command at `src/commands/index.ts`
       return {
         description: relativePath === "index.ts" ? "Create a project" : "Say hello",
         aliases: [],
+        examples: [],
       };
     },
   });
@@ -323,7 +324,7 @@ test("generateCommandManifest mixes bare files and directory commands", async ()
     commandsDirectory,
     async extractMetadata(sourceFilePath) {
       const relativePath = path.relative(commandsDirectory, sourceFilePath);
-      return { description: descriptions[relativePath], aliases: [] };
+      return { description: descriptions[relativePath], aliases: [], examples: [] };
     },
   });
 
@@ -718,7 +719,7 @@ test("generateCommandManifest does not treat _group.ts as a bare command", async
     commandsDirectory,
     async extractMetadata(sourceFilePath) {
       if (sourceFilePath.endsWith("_group.ts")) {
-        return { description: "Root", aliases: [] };
+        return { description: "Root", aliases: [], examples: [] };
       }
 
       return undefined;
@@ -1010,4 +1011,84 @@ test("generateCommandManifest throws when aliases cannot be statically analyzed"
   await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
     "Could not statically analyze aliases",
   );
+});
+
+// ---------------------------------------------------------------------------
+// Examples extraction
+// ---------------------------------------------------------------------------
+
+test("generateCommandManifest extracts examples from _group.ts into manifest", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      "",
+      "export default defineGroup({",
+      '  description: "Manage projects",',
+      '  examples: ["mycli project create my-app", "mycli project list --all"],',
+      "});",
+    ].join("\n"),
+    "project/create.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Create a project",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  const manifest = await generateCommandManifest({ commandsDirectory });
+  const projectNode = manifest.nodes.find(
+    (n) => n.pathSegments.length === 1 && n.pathSegments[0] === "project",
+  );
+
+  expect(projectNode?.examples).toEqual([
+    "mycli project create my-app",
+    "mycli project list --all",
+  ]);
+});
+
+test("generateCommandManifest throws when group examples cannot be statically analyzed", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "project/_group.ts": [
+      'import { defineGroup } from "@rune-cli/rune";',
+      "",
+      "function makeExamples() { return ['mycli project create']; }",
+      "",
+      "export default defineGroup({",
+      '  description: "Manage projects",',
+      "  examples: makeExamples(),",
+      "});",
+    ].join("\n"),
+    "project/create.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "export default defineCommand({",
+      '  description: "Create a project",',
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).rejects.toThrow(
+    "Could not statically analyze examples",
+  );
+});
+
+test("generateCommandManifest does not throw when command examples cannot be statically analyzed", async () => {
+  const commandsDirectory = await createCommandsFixture({
+    "deploy.ts": [
+      'import { defineCommand } from "@rune-cli/rune";',
+      "",
+      "function makeExamples() { return ['mycli deploy --env production']; }",
+      "",
+      "export default defineCommand({",
+      '  description: "Deploy the app",',
+      "  examples: makeExamples(),",
+      "  async run() {},",
+      "});",
+    ].join("\n"),
+  });
+
+  await expect(generateCommandManifest({ commandsDirectory })).resolves.toBeDefined();
 });

@@ -24,9 +24,7 @@
       "project": ["src/**/*.ts", "tests/**/*.ts"],
       "ignoreDependencies": ["@typescript/native-preview"]
     },
-    "docs": {
-      "ignoreDependencies": ["sharp"]
-    },
+    "docs": {},
     "packages/rune": {
       "entry": [
         "src/index.ts",

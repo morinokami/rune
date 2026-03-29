@@ -206,6 +206,7 @@ export function defineCommand<
   const command = {
     description: input.description,
     aliases: (input.aliases ?? []) as readonly string[],
+    examples: (input.examples ?? []) as readonly string[],
     args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,
     options: (input.options ?? []) as NormalizeFields<TOptionsFields, CommandOptionField>,
     run: input.run,
