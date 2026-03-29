@@ -1,25 +1,29 @@
 packages:
+  - docs
   - examples/*
   - packages/*
 
 catalog:
   "@arethetypeswrong/cli": 0.18.2
-  "@bluwy/giget-core": ^0.1.7
+  "@astrojs/starlight": 0.38.2
+  "@bluwy/giget-core": 0.1.7
   "@changesets/changelog-github": 0.6.0
   "@changesets/cli": 2.30.0
   "@ls-lint/ls-lint": 2.3.1
   "@standard-schema/spec": 1.1.0
   "@types/node": 24.12.0
   "@typescript/native-preview": 7.0.0-dev.20260322.1
+  astro: 6.1.1
   esbuild: 0.27.4
   knip: 6.0.1
   pkg-pr-new: 0.0.66
   publint: 0.3.18
+  sharp: 0.34.5
   sherif: 1.11.0
   typescript: 5.9.3
-  vite: npm:@voidzero-dev/vite-plus-core@0.1.12
-  vite-plus: v0.1.13
-  vitest: npm:@voidzero-dev/vite-plus-test@0.1.12
+  vite: npm:@voidzero-dev/vite-plus-core@0.1.14
+  vite-plus: 0.1.14
+  vitest: npm:@voidzero-dev/vite-plus-test@0.1.14
   zod: 4.3.6
 
 catalogMode: prefer
