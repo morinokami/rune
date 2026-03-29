@@ -23,23 +23,6 @@ const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // Field validation
 // ---------------------------------------------------------------------------
 
-function validateFieldShape(
-  fields: readonly (CommandArgField | CommandOptionField)[],
-  kind: "argument" | "option",
-): void {
-  for (const field of fields) {
-    // Cast to a loose shape so the check works even when the union has
-    // already been narrowed to `never` by the type-level constraints.
-    const raw = field as { name: string; type?: unknown; schema?: unknown };
-
-    if (raw.schema === undefined && raw.type === undefined) {
-      throw new Error(
-        `${kind === "argument" ? "Argument" : "Option"} "${raw.name}" must have either a "type" or "schema" property.`,
-      );
-    }
-  }
-}
-
 function validateUniqueFieldNames(
   fields: readonly (CommandArgField | CommandOptionField)[],
   kind: "argument" | "option",
@@ -205,22 +188,16 @@ export function defineCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>
 > {
-  if (typeof input.run !== "function") {
-    throw new Error('defineCommand() requires a "run" function.');
-  }
-
   if (input.aliases) {
     validateCommandAliases(input.aliases);
   }
 
   if (input.args) {
-    validateFieldShape(input.args, "argument");
     validateUniqueFieldNames(input.args, "argument");
     validateArgOrdering(input.args);
   }
 
   if (input.options) {
-    validateFieldShape(input.options, "option");
     validateUniqueFieldNames(input.options, "option");
     validateOptionNames(input.options);
     validateOptionShortNames(input.options);

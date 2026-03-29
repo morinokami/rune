@@ -83,10 +83,6 @@ test("defineCommand accepts explicit flag hints for schema-backed options", () =
   ]);
 });
 
-test("defineCommand rejects missing run function", () => {
-  expect(() => defineCommand({} as any)).toThrow('defineCommand() requires a "run" function.');
-});
-
 // ---------------------------------------------------------------------------
 // Argument ordering
 // ---------------------------------------------------------------------------
@@ -292,24 +288,4 @@ test("defineCommand rejects duplicate argument names", () => {
       async run() {},
     }),
   ).toThrow('Duplicate argument name "source"');
-});
-
-test("defineCommand rejects arg with no type or schema", () => {
-  expect(() =>
-    defineCommand({
-      // @ts-expect-error missing type and schema
-      args: [{ name: "x" }],
-      async run() {},
-    }),
-  ).toThrow('Argument "x" must have either a "type" or "schema" property.');
-});
-
-test("defineCommand rejects option with no type or schema", () => {
-  expect(() =>
-    defineCommand({
-      // @ts-expect-error missing type and schema
-      options: [{ name: "verbose" }],
-      async run() {},
-    }),
-  ).toThrow('Option "verbose" must have either a "type" or "schema" property.');
 });

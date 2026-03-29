@@ -44,10 +44,6 @@ export interface DefinedGroup {
  * ```
  */
 export function defineGroup(input: DefineGroupInput): DefinedGroup {
-  if (typeof input.description !== "string" || input.description.length === 0) {
-    throw new Error('defineGroup() requires a non-empty "description" string.');
-  }
-
   if (input.aliases) {
     validateCommandAliases(input.aliases);
   }

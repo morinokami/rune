@@ -28,6 +28,7 @@ TypeScript-first, file-based CLI framework. Directory structure maps directly to
 - For schema-backed fields, use the Standard Schema contract via `schema["~standard"].validate(value)`. Do not call library-specific APIs such as Zod `.parse()`.
 - Keep source and test filenames in `kebab-case`.
 - Preserve the manifest-routing invariant: at runtime, only the matched leaf command module should be loaded.
+- TypeScript-first: do not add runtime checks for constraints already enforced by the type system (e.g. required properties, discriminated unions). Reserve runtime validation for domain rules that types cannot express, such as string format, uniqueness, or ordering.
 
 ## Testing
 
