@@ -6,6 +6,7 @@ import type {
   InferNamedFields,
 } from "./command-types";
 
+import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
 import { isSchemaField } from "./schema-field";
 
 // ---------------------------------------------------------------------------
@@ -48,6 +49,8 @@ function createExecutionOptions<TOptionsFields extends readonly CommandOptionFie
 ): InferNamedFields<TOptionsFields, true> {
   const options: Record<string, unknown> = { ...input.options };
 
+  normalizeToCanonicalKeys(command.options, options);
+
   for (const field of command.options) {
     if (options[field.name] === undefined && !isSchemaField(field) && field.type === "boolean") {
       options[field.name] = false;
@@ -74,8 +77,12 @@ export async function executeCommand<
 ): Promise<ExecuteCommandResult> {
   try {
     await command.run({
-      options: createExecutionOptions(command, input),
-      args: (input.args ?? {}) as InferNamedFields<TArgsFields>,
+      options: addCamelCaseAliases(
+        createExecutionOptions(command, input) as Record<string, unknown>,
+      ) as InferNamedFields<TOptionsFields, true>,
+      args: addCamelCaseAliases(
+        normalizeToCanonicalKeys(command.args, { ...input.args } as Record<string, unknown>),
+      ) as InferNamedFields<TArgsFields>,
       cwd: input.cwd ?? process.cwd(),
       rawArgs: input.rawArgs ?? [],
     });

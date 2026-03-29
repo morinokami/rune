@@ -405,3 +405,21 @@ test("parseCommandArgs rejects extra positional arguments", async () => {
     },
   });
 });
+
+test("parseCommandArgs adds camelCase aliases for kebab-case fields", async () => {
+  const command = defineCommand({
+    args: [{ name: "my-arg", type: "string", required: true }] as const,
+    options: [{ name: "dry-run", type: "boolean" }] as const,
+    async run() {},
+  });
+
+  const result = await parseCommandArgs(command, ["hello", "--dry-run"]);
+
+  expect(result).toMatchObject({
+    ok: true,
+    value: {
+      args: { "my-arg": "hello", myArg: "hello" },
+      options: { "dry-run": true, dryRun: true },
+    },
+  });
+});

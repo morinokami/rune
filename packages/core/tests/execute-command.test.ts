@@ -99,6 +99,50 @@ test("executeCommand accepts omitted required and default-backed fields", async 
   expect(result).toEqual({ exitCode: 0 });
 });
 
+test("executeCommand exposes camelCase aliases for kebab-case options and args", async () => {
+  const observed = { opt: "", arg: "" };
+
+  const command = defineCommand({
+    args: [{ name: "my-arg", type: "string", required: true }] as const,
+    options: [{ name: "dry-run", type: "boolean" }] as const,
+    run(ctx) {
+      observed.opt = String(ctx.options.dryRun);
+      observed.arg = ctx.args.myArg;
+    },
+  });
+
+  const result = await executeCommand(command, {
+    options: { "dry-run": true },
+    args: { "my-arg": "hello" },
+  });
+
+  expect(observed).toEqual({ opt: "true", arg: "hello" });
+  expect(result).toEqual({ exitCode: 0 });
+});
+
+test("executeCommand accepts camelCase input and exposes both casings", async () => {
+  const observed = { kebab: "", camel: "", optKebab: false, optCamel: false };
+
+  const command = defineCommand({
+    args: [{ name: "my-arg", type: "string", required: true }] as const,
+    options: [{ name: "dry-run", type: "boolean" }] as const,
+    run(ctx) {
+      observed.camel = ctx.args.myArg;
+      observed.kebab = ctx.args["my-arg"];
+      observed.optCamel = ctx.options.dryRun;
+      observed.optKebab = ctx.options["dry-run"];
+    },
+  });
+
+  const result = await executeCommand(command, {
+    options: { dryRun: true },
+    args: { myArg: "hello" },
+  });
+
+  expect(observed).toEqual({ kebab: "hello", camel: "hello", optKebab: true, optCamel: true });
+  expect(result).toEqual({ exitCode: 0 });
+});
+
 test("executeCommand supports synchronous run functions", async () => {
   let called = false;
 

@@ -63,6 +63,38 @@ test("defineCommand infers schema-backed flag options", () => {
   expectTypeOf<InferCommandOptions<typeof schemaFlagCommand>>().toEqualTypeOf<{ force: boolean }>();
 });
 
+test("defineCommand exposes camelCase aliases for kebab-case field names", () => {
+  const cmd = defineCommand({
+    args: [{ name: "my-arg", type: "string", required: true }] as const,
+    options: [
+      { name: "dry-run", type: "boolean" },
+      { name: "output-dir", type: "string", required: true },
+    ] as const,
+    async run(ctx) {
+      // camelCase access
+      expectTypeOf(ctx.args.myArg).toEqualTypeOf<string>();
+      expectTypeOf(ctx.options.dryRun).toEqualTypeOf<boolean>();
+      expectTypeOf(ctx.options.outputDir).toEqualTypeOf<string>();
+
+      // original kebab-case access still works
+      expectTypeOf(ctx.args["my-arg"]).toEqualTypeOf<string>();
+      expectTypeOf(ctx.options["dry-run"]).toEqualTypeOf<boolean>();
+      expectTypeOf(ctx.options["output-dir"]).toEqualTypeOf<string>();
+    },
+  });
+
+  expectTypeOf<InferCommandArgs<typeof cmd>>().toEqualTypeOf<{
+    "my-arg": string;
+    myArg: string;
+  }>();
+  expectTypeOf<InferCommandOptions<typeof cmd>>().toEqualTypeOf<{
+    "dry-run": boolean;
+    dryRun: boolean;
+    "output-dir": string;
+    outputDir: string;
+  }>();
+});
+
 test("defineCommand rejects invalid field shapes at compile time", () => {
   defineCommand({
     options: [{ name: "name", type: "string", required: true }],

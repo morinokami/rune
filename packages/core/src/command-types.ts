@@ -14,7 +14,8 @@ interface NamedField<TName extends string = string> {
   /**
    * Identifier used as the key in `ctx.args` / `ctx.options`.
    *
-   * For args, any non-empty name is allowed.
+   * For args, any non-empty name is allowed. Hyphenated names must follow
+   * the same rules as options (no consecutive, leading, or trailing hyphens).
    * For options, names must start with a letter and may contain only letters,
    * numbers, and internal hyphens (for example: `dry-run`, `dryRun`, `v2`).
    */
@@ -109,9 +110,15 @@ export type NormalizeFields<
   TField,
 > = TFields extends readonly TField[] ? TFields : readonly [];
 
-// Pulls the declared field name out of a field definition.
+// Converts a kebab-case string to camelCase at the type level.
+type KebabToCamelCase<S extends string> = S extends `${infer Head}-${infer Tail}`
+  ? `${Head}${Capitalize<KebabToCamelCase<Tail>>}`
+  : S;
+
+// Pulls the declared field name out of a field definition and includes a
+// camelCase alias so kebab-case fields can be accessed with either casing.
 type FieldName<TField> = TField extends { readonly name: infer TName extends string }
-  ? TName
+  ? TName | KebabToCamelCase<TName>
   : never;
 
 // Reads the output type produced by a Standard Schema field.
@@ -270,7 +277,8 @@ export interface DefineCommandInput<
   /**
    * Positional arguments declared in the order they appear on the command line.
    * Required arguments must come before optional ones.
-   * Argument names must be non-empty and unique within the command.
+   * Argument names must be non-empty and unique within the command. Hyphenated
+   * names must start with a letter and use only single internal hyphens.
    *
    * Each entry is either a primitive field (`{ name, type }`) or a schema
    * field (`{ name, schema }`).
