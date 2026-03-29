@@ -23,6 +23,10 @@ const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // Field validation
 // ---------------------------------------------------------------------------
 
+function kebabToCamelCase(str: string): string {
+  return str.replace(/-(.)/g, (_, char: string) => char.toUpperCase());
+}
+
 function validateUniqueFieldNames(
   fields: readonly (CommandArgField | CommandOptionField)[],
   kind: "argument" | "option",
@@ -39,6 +43,35 @@ function validateUniqueFieldNames(
     }
 
     seen.add(field.name);
+
+    if (field.name.includes("-")) {
+      const camelName = kebabToCamelCase(field.name);
+
+      if (seen.has(camelName)) {
+        throw new Error(
+          `${kind === "argument" ? "Argument" : "Option"} "${field.name}" conflicts with "${camelName}" (same camelCase alias).`,
+        );
+      }
+
+      seen.add(camelName);
+    }
+  }
+}
+
+// Hyphenated field names (args or options) must follow the same kebab-case
+// rules so that the type-level KebabToCamelCase and the runtime regex produce
+// identical camelCase aliases. OPTION_NAME_RE already enforces this for
+// options; this helper applies the same check to argument names that contain
+// hyphens (plain non-hyphenated arg names remain unrestricted).
+const HYPHENATED_NAME_RE = OPTION_NAME_RE;
+
+function validateArgNames(args: readonly CommandArgField[]): void {
+  for (const field of args) {
+    if (field.name.includes("-") && !HYPHENATED_NAME_RE.test(field.name)) {
+      throw new Error(
+        `Invalid argument name "${field.name}". Hyphenated names must start with a letter and contain only letters, numbers, and single internal hyphens.`,
+      );
+    }
   }
 }
 
@@ -194,6 +227,7 @@ export function defineCommand<
 
   if (input.args) {
     validateUniqueFieldNames(input.args, "argument");
+    validateArgNames(input.args);
     validateArgOrdering(input.args);
   }
 

@@ -213,6 +213,60 @@ test("defineCommand accepts camelCase names for args and options", () => {
   ).not.toThrow();
 });
 
+test("defineCommand rejects options whose camelCase aliases collide (kebab first)", () => {
+  expect(() =>
+    defineCommand({
+      options: [
+        { name: "foo-bar", type: "string" },
+        { name: "fooBar", type: "string" },
+      ],
+      async run() {},
+    }),
+  ).toThrow('Duplicate option name "fooBar".');
+});
+
+test("defineCommand rejects options whose camelCase aliases collide (camel first)", () => {
+  expect(() =>
+    defineCommand({
+      options: [
+        { name: "fooBar", type: "string" },
+        { name: "foo-bar", type: "string" },
+      ],
+      async run() {},
+    }),
+  ).toThrow('Option "foo-bar" conflicts with "fooBar" (same camelCase alias).');
+});
+
+test("defineCommand rejects args whose camelCase aliases collide", () => {
+  expect(() =>
+    defineCommand({
+      args: [
+        { name: "my-arg", type: "string", required: true },
+        { name: "myArg", type: "string" },
+      ],
+      async run() {},
+    }),
+  ).toThrow('Duplicate argument name "myArg".');
+});
+
+test("defineCommand rejects hyphenated arg names with consecutive hyphens", () => {
+  expect(() =>
+    defineCommand({
+      args: [{ name: "my--arg", type: "string" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid argument name "my--arg"');
+});
+
+test("defineCommand rejects hyphenated arg names with leading hyphen", () => {
+  expect(() =>
+    defineCommand({
+      args: [{ name: "-arg", type: "string" }],
+      async run() {},
+    }),
+  ).toThrow('Invalid argument name "-arg"');
+});
+
 test("defineCommand rejects option name with spaces", () => {
   expect(() =>
     defineCommand({

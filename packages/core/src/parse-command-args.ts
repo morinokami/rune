@@ -9,6 +9,7 @@ import type {
   InferNamedFields,
 } from "./command-types";
 
+import { addCamelCaseAliases } from "./camel-case-aliases";
 import { isSchemaField } from "./schema-field";
 
 // Parsed command input ready to be passed into the low-level executor.
@@ -521,8 +522,8 @@ export async function parseCommandArgs<
   return {
     ok: true,
     value: {
-      options: parsedOptions as InferNamedFields<TOptionsFields, true>,
-      args: parsedArgs as InferNamedFields<TArgsFields>,
+      options: addCamelCaseAliases(parsedOptions) as InferNamedFields<TOptionsFields, true>,
+      args: addCamelCaseAliases(parsedArgs) as InferNamedFields<TArgsFields>,
       rawArgs,
     },
   };
