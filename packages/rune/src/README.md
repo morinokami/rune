@@ -8,7 +8,7 @@
   - Internal runtime helper re-export used when building distributable CLIs.
 - `cli/`
   - Rune's own CLI orchestration.
-  - Handles `rune dev`, `rune build`, top-level arg parsing, and process output writing.
+  - Handles `rune run`, `rune build`, top-level arg parsing, and process output writing.
 - `manifest/`
   - Command-tree scanning and runtime resolution.
   - Contains manifest generation, routing, help rendering, and manifest-based execution.

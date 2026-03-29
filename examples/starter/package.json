@@ -10,7 +10,7 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "rune dev",
+    "exec": "rune run",
     "build": "rune build",
     "test": "vitest run"
   },
