@@ -280,6 +280,9 @@ export async function walkCommandsDirectory(
       childNames,
       aliases,
       ...(metadata?.description !== undefined ? { description: metadata.description } : {}),
+      ...(metadata?.examples && metadata.examples.length > 0
+        ? { examples: metadata.examples }
+        : {}),
     };
   }
 

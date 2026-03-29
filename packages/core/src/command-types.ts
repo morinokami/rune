@@ -263,6 +263,11 @@ export interface DefineCommandInput<
    */
   readonly aliases?: readonly string[] | undefined;
   /**
+   * Usage examples shown in the `Examples:` section of `--help` output.
+   * Each entry is a string representing a full command invocation.
+   */
+  readonly examples?: readonly string[] | undefined;
+  /**
    * Positional arguments declared in the order they appear on the command line.
    * Required arguments must come before optional ones.
    * Argument names must be non-empty and unique within the command.
@@ -299,6 +304,7 @@ export interface DefinedCommand<
 > {
   readonly description?: string | undefined;
   readonly aliases: readonly string[];
+  readonly examples: readonly string[];
   readonly args: TArgsFields;
   readonly options: TOptionsFields;
   readonly run: (

@@ -4,6 +4,7 @@ import ts from "typescript";
 export interface CommandMetadata {
   readonly description?: string | undefined;
   readonly aliases: readonly string[];
+  readonly examples: readonly string[];
 }
 
 function getPropertyNameText(name: ts.PropertyName): string | undefined {
@@ -79,6 +80,7 @@ function extractMetadataFromCommandDefinition(
     return undefined;
   }
 
+  const isGroup = isDefineGroupExpression(expression.expression);
   const [definition] = expression.arguments;
 
   if (!definition || !ts.isObjectLiteralExpression(definition)) {
@@ -87,6 +89,7 @@ function extractMetadataFromCommandDefinition(
 
   let description: string | undefined;
   let aliases: readonly string[] = [];
+  let examples: readonly string[] = [];
 
   for (const property of definition.properties) {
     let propertyName: string | undefined;
@@ -117,10 +120,26 @@ function extractMetadataFromCommandDefinition(
       }
 
       aliases = extracted;
+    } else if (propertyName === "examples") {
+      const extracted = getStaticStringArrayValue(resolved);
+
+      // Group help renders from manifest metadata only, so examples must be
+      // statically analyzable. Command help loads the module at runtime, so
+      // dynamic expressions (e.g. `examples: makeExamples()`) are fine — we
+      // simply skip them here.
+      if (extracted === undefined && isGroup) {
+        throw new Error(
+          'Could not statically analyze examples. Examples must be an inline array of string literals (e.g. examples: ["my-cli project create"]).',
+        );
+      }
+
+      if (extracted !== undefined) {
+        examples = extracted;
+      }
     }
   }
 
-  return { description, aliases };
+  return { description, aliases, examples };
 }
 
 export function findVariableInitializer(

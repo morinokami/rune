@@ -246,6 +246,92 @@ test("renderCommandHelp includes usage, description, args, and options", async (
   expect(help).toContain("-h, --help  Show help");
 });
 
+test("renderCommandHelp shows examples section when examples are provided", async () => {
+  const command = defineCommand({
+    description: "Deploy the application",
+    examples: ["mycli deploy --env production", "mycli deploy --dry-run"],
+    async run() {},
+  });
+
+  const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+  const help = await renderCommandHelp(command, ["deploy"], "mycli");
+
+  expect(help).toContain("Examples:");
+  expect(help).toContain("  $ mycli deploy --env production");
+  expect(help).toContain("  $ mycli deploy --dry-run");
+});
+
+test("renderCommandHelp omits examples section when no examples are provided", async () => {
+  const command = defineCommand({
+    description: "Deploy the application",
+    async run() {},
+  });
+
+  const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+  const help = await renderCommandHelp(command, ["deploy"], "mycli");
+
+  expect(help).not.toContain("Examples:");
+});
+
+test("renderGroupHelp shows examples section when examples are present on group node", () => {
+  const manifestWithExamples: CommandManifest = {
+    nodes: [
+      {
+        pathSegments: ["project"],
+        kind: "group",
+        childNames: ["create", "list"],
+        aliases: [],
+        description: "Manage projects",
+        examples: ["mycli project create my-app", "mycli project list --all"],
+      },
+      {
+        pathSegments: ["project", "create"],
+        kind: "command",
+        sourceFilePath: "/commands/project/create/index.ts",
+        childNames: [],
+        aliases: [],
+        description: "Create a project",
+      },
+      {
+        pathSegments: ["project", "list"],
+        kind: "command",
+        sourceFilePath: "/commands/project/list/index.ts",
+        childNames: [],
+        aliases: [],
+        description: "List projects",
+      },
+    ],
+  };
+
+  const groupNode = manifestWithExamples.nodes[0];
+
+  if (groupNode.kind !== "group") {
+    throw new Error("Expected group node");
+  }
+
+  const help = renderGroupHelp({
+    manifest: manifestWithExamples,
+    node: groupNode,
+    cliName: "mycli",
+  });
+
+  expect(help).toContain("Examples:");
+  expect(help).toContain("  $ mycli project create my-app");
+  expect(help).toContain("  $ mycli project list --all");
+});
+
+test("renderGroupHelp omits examples section when no examples are present", () => {
+  const userGroup = manifest.nodes[5];
+
+  if (userGroup.kind !== "group") {
+    throw new Error("Expected user node to be a group");
+  }
+
+  const help = renderGroupHelp({ manifest, node: userGroup, cliName: "mycli" });
+
+  expect(help).not.toContain("Examples:");
+});
+
 // ---------------------------------------------------------------------------
 // Resolved help routing
 // ---------------------------------------------------------------------------

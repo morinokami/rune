@@ -18,6 +18,23 @@ test("defineCommand normalizes empty args and options", () => {
   expect(command.options).toEqual([]);
 });
 
+test("defineCommand normalizes omitted examples to empty array", () => {
+  const command = defineCommand({
+    async run() {},
+  });
+
+  expect(command.examples).toEqual([]);
+});
+
+test("defineCommand preserves examples", () => {
+  const command = defineCommand({
+    examples: ["my-cli greet Alice", "my-cli greet --loud Bob"],
+    async run() {},
+  });
+
+  expect(command.examples).toEqual(["my-cli greet Alice", "my-cli greet --loud Bob"]);
+});
+
 test("defineCommand preserves description and field definitions", () => {
   const command = defineCommand({
     description: "Create a project",
