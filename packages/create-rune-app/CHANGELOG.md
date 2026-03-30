@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.4
+
+### Patch Changes
+
+- [#45](https://github.com/morinokami/rune/pull/45) [`f22a2bc`](https://github.com/morinokami/rune/commit/f22a2bc04c2555b206e1e201d36540087e111202) Thanks [@morinokami](https://github.com/morinokami)! - feat(create-rune-app): add clack-based interactive setup flow
+
 ## 0.0.3
 
 ### Patch Changes

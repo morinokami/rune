@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.13
+
+### Patch Changes
+
+- [#44](https://github.com/morinokami/rune/pull/44) [`8302231`](https://github.com/morinokami/rune/commit/8302231fbbeda8f7516e8bceb05675c24d0aab26) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): support camelCase access for kebab-case args and options
+
+- [#42](https://github.com/morinokami/rune/pull/42) [`3b2db62`](https://github.com/morinokami/rune/commit/3b2db62ae8ba43190072951dbc02744d22c86985) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): add `examples` option to `defineCommand` and `defineGroup`
+
 ## 0.0.12
 
 ### Patch Changes
