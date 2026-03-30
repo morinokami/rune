@@ -1,6 +1,7 @@
 export interface PackageManager {
   readonly name: string;
   readonly installCommand: string;
+  readonly installArgs: readonly string[];
   readonly runCommand: (script: string, args: string) => string;
 }
 
@@ -16,24 +17,28 @@ export function detectPackageManager(): PackageManager {
       return {
         name: "yarn",
         installCommand: "yarn",
+        installArgs: [],
         runCommand: (script, args) => `yarn ${script} ${args}`,
       };
     case "pnpm":
       return {
         name: "pnpm",
         installCommand: "pnpm install",
+        installArgs: ["install"],
         runCommand: (script, args) => `pnpm ${script} ${args}`,
       };
     case "bun":
       return {
         name: "bun",
         installCommand: "bun install",
+        installArgs: ["install"],
         runCommand: (script, args) => `bun ${script} ${args}`,
       };
     default:
       return {
         name: "npm",
         installCommand: "npm install",
+        installArgs: ["install"],
         runCommand: (script, args) => `npm run ${script} -- ${args}`,
       };
   }

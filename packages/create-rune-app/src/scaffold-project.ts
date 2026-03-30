@@ -73,7 +73,7 @@ export async function scaffoldProject(
 
   // Post-process: replace the placeholder CLI name with the actual one.
   for (const relativePath of [
-    path.join("src", "commands", "hello", "index.ts"),
+    path.join("src", "commands", "hello.ts"),
     path.join("tests", "commands", "hello.test.ts"),
   ]) {
     const filePath = path.join(projectRoot, relativePath);
