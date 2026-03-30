@@ -31,6 +31,7 @@
     "@bluwy/giget-core": "catalog:"
   },
   "devDependencies": {
+    "@clack/prompts": "catalog:",
     "@rune-cli/rune": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
