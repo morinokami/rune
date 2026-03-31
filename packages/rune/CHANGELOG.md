@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.14
+
+### Patch Changes
+
+- [`04c0bf4`](https://github.com/morinokami/rune/commit/04c0bf4879646f561a6b97390969549310e36eb5) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): add command output API and JSON mode
+
+- [#46](https://github.com/morinokami/rune/pull/46) [`19aeddb`](https://github.com/morinokami/rune/commit/19aeddb632b5709d50b20dd95216464ac617583b) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): add compile-time validation for field names, duplicates, and short names
+
 ## 0.0.13
 
 ### Patch Changes
