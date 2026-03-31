@@ -3,6 +3,8 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { expect, test } from "vite-plus/test";
 import { z } from "zod";
 
+import type { CommandArgField, CommandOptionField, SingleLetter } from "../src/command-types";
+
 import { defineCommand } from "../src";
 
 // ---------------------------------------------------------------------------
@@ -216,6 +218,7 @@ test("defineCommand accepts camelCase names for args and options", () => {
 test("defineCommand rejects options whose camelCase aliases collide (kebab first)", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error camelCase alias collision
       options: [
         { name: "foo-bar", type: "string" },
         { name: "fooBar", type: "string" },
@@ -228,6 +231,7 @@ test("defineCommand rejects options whose camelCase aliases collide (kebab first
 test("defineCommand rejects options whose camelCase aliases collide (camel first)", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error camelCase alias collision
       options: [
         { name: "fooBar", type: "string" },
         { name: "foo-bar", type: "string" },
@@ -240,6 +244,7 @@ test("defineCommand rejects options whose camelCase aliases collide (camel first
 test("defineCommand rejects args whose camelCase aliases collide", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error camelCase alias collision
       args: [
         { name: "my-arg", type: "string", required: true },
         { name: "myArg", type: "string" },
@@ -252,6 +257,7 @@ test("defineCommand rejects args whose camelCase aliases collide", () => {
 test("defineCommand rejects hyphenated arg names with consecutive hyphens", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error invalid hyphenated name
       args: [{ name: "my--arg", type: "string" }],
       async run() {},
     }),
@@ -261,6 +267,7 @@ test("defineCommand rejects hyphenated arg names with consecutive hyphens", () =
 test("defineCommand rejects hyphenated arg names with leading hyphen", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error invalid hyphenated name
       args: [{ name: "-arg", type: "string" }],
       async run() {},
     }),
@@ -279,6 +286,7 @@ test("defineCommand rejects option name with spaces", () => {
 test("defineCommand rejects empty option name", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error empty name
       options: [{ name: "", type: "string" }],
       async run() {},
     }),
@@ -288,6 +296,7 @@ test("defineCommand rejects empty option name", () => {
 test("defineCommand rejects empty argument name", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error empty name
       args: [{ name: "", type: "string" }],
       async run() {},
     }),
@@ -297,6 +306,7 @@ test("defineCommand rejects empty argument name", () => {
 test("defineCommand rejects option name starting with a hyphen", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error invalid hyphenated name
       options: [{ name: "-verbose", type: "boolean" }],
       async run() {},
     }),
@@ -306,6 +316,7 @@ test("defineCommand rejects option name starting with a hyphen", () => {
 test("defineCommand rejects invalid short name", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error invalid short name
       options: [{ name: "verbose", type: "boolean", short: "vv" }],
       async run() {},
     }),
@@ -315,6 +326,7 @@ test("defineCommand rejects invalid short name", () => {
 test("defineCommand rejects numeric short name", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error invalid short name
       options: [{ name: "verbose", type: "boolean", short: "1" }],
       async run() {},
     }),
@@ -328,6 +340,7 @@ test("defineCommand rejects numeric short name", () => {
 test("defineCommand rejects duplicate option names", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error duplicate option name
       options: [
         { name: "force", type: "boolean" },
         { name: "force", type: "boolean" },
@@ -340,6 +353,7 @@ test("defineCommand rejects duplicate option names", () => {
 test("defineCommand rejects duplicate option short names", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error duplicate short name
       options: [
         { name: "force", type: "boolean", short: "f" },
         { name: "file", type: "string", short: "f" },
@@ -352,6 +366,7 @@ test("defineCommand rejects duplicate option short names", () => {
 test("defineCommand rejects duplicate argument names", () => {
   expect(() =>
     defineCommand({
+      // @ts-expect-error duplicate argument name
       args: [
         { name: "source", type: "string", required: true },
         { name: "source", type: "string" },
@@ -359,4 +374,75 @@ test("defineCommand rejects duplicate argument names", () => {
       async run() {},
     }),
   ).toThrow('Duplicate argument name "source"');
+});
+
+// ---------------------------------------------------------------------------
+// Widened input pass-through — type-level validators bail out, runtime catches
+// ---------------------------------------------------------------------------
+
+test("widened option arrays with camelCase collision pass type check and are caught at runtime", () => {
+  const fields: readonly CommandOptionField[] = [
+    { name: "foo-bar", type: "string" },
+    { name: "fooBar", type: "string" },
+  ];
+
+  expect(() => defineCommand({ options: fields, run() {} })).toThrow(/Duplicate option name/);
+});
+
+test("widened arg arrays with duplicate names pass type check and are caught at runtime", () => {
+  const fields: readonly CommandArgField[] = [
+    { name: "input", type: "string" },
+    { name: "input", type: "string" },
+  ];
+
+  expect(() => defineCommand({ args: fields, run() {} })).toThrow(/Duplicate/);
+});
+
+test("widened option arrays with duplicate short names pass type check and are caught at runtime", () => {
+  const fields: readonly CommandOptionField[] = [
+    { name: "verbose", type: "boolean", short: "v" },
+    { name: "version", type: "boolean", short: "v" },
+  ];
+
+  expect(() => defineCommand({ options: fields, run() {} })).toThrow(/Duplicate short/);
+});
+
+test("widened option arrays with invalid names pass type check and are caught at runtime", () => {
+  const fields: readonly CommandOptionField[] = [{ name: "-bad", type: "string" }];
+
+  expect(() => defineCommand({ options: fields, run() {} })).toThrow(/Invalid option name/);
+});
+
+test("widened arg arrays with empty names pass type check and are caught at runtime", () => {
+  const fields: readonly CommandArgField[] = [{ name: "", type: "string" }];
+
+  expect(() => defineCommand({ args: fields, run() {} })).toThrow(/Invalid argument name/);
+});
+
+test("tuple with widened member names does not trigger false positive", () => {
+  const dynamicName: string = "alpha";
+
+  expect(() =>
+    defineCommand({
+      options: [
+        { name: dynamicName, type: "string" },
+        { name: "beta", type: "string" },
+      ] as const,
+      async run() {},
+    }),
+  ).not.toThrow();
+});
+
+test("tuple with widened short name does not trigger false positive", () => {
+  const dynamicShort = "a" as SingleLetter;
+
+  expect(() =>
+    defineCommand({
+      options: [
+        { name: "alpha", type: "string", short: dynamicShort },
+        { name: "beta", type: "string", short: "b" },
+      ] as const,
+      async run() {},
+    }),
+  ).not.toThrow();
 });
