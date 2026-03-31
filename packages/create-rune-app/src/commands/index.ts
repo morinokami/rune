@@ -193,6 +193,6 @@ export default defineCommand({
     if (!shouldInstallDependencies) {
       ctx.output.info(`  $ ${pm.installCommand}`);
     }
-    ctx.output.info(`  $ ${pm.runCommand("dev", "hello")}`);
+    ctx.output.info(`  $ ${pm.runCommand("start", "hello")}`);
   },
 });
