@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.6
+
+### Patch Changes
+
+- [#49](https://github.com/morinokami/rune/pull/49) [`0682ea3`](https://github.com/morinokami/rune/commit/0682ea385481d8d89ac345cd796d5896183e09c5) Thanks [@morinokami](https://github.com/morinokami)! - chore(examples): rename exec script to start to avoid pnpm conflict
+
 ## 0.0.5
 
 ### Patch Changes
