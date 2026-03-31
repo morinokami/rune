@@ -15,7 +15,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@rune-cli/rune": "^0.0.13",
+    "@rune-cli/rune": "^0.0.14",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   },
