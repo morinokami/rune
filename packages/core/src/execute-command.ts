@@ -5,8 +5,10 @@ import type {
   InferExecutionFields,
   InferNamedFields,
 } from "./command-types";
+import type { CommandOutput } from "./output";
 
 import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
+import { createOutput } from "./output";
 import { isSchemaField } from "./schema-field";
 
 // ---------------------------------------------------------------------------
@@ -19,12 +21,15 @@ export interface ExecuteCommandInput<TOptions, TArgs> {
   readonly args?: TArgs | undefined;
   readonly cwd?: string | undefined;
   readonly rawArgs?: readonly string[] | undefined;
+  readonly output?: CommandOutput | undefined;
+  readonly jsonMode?: boolean | undefined;
 }
 
 // The normalized result of running a command without spawning a process.
 export interface ExecuteCommandResult {
   readonly exitCode: number;
   readonly errorMessage?: string | undefined;
+  readonly data?: unknown;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,8 +80,22 @@ export async function executeCommand<
     InferExecutionFields<TArgsFields>
   > = {},
 ): Promise<ExecuteCommandResult> {
+  const output =
+    input.output ??
+    createOutput(
+      {
+        stdout: (message) => {
+          process.stdout.write(message);
+        },
+        stderr: (message) => {
+          process.stderr.write(message);
+        },
+      },
+      { silentStdout: input.jsonMode === true },
+    );
+
   try {
-    await command.run({
+    const data = await command.run({
       options: addCamelCaseAliases(
         createExecutionOptions(command, input) as Record<string, unknown>,
       ) as InferNamedFields<TOptionsFields, true>,
@@ -85,9 +104,10 @@ export async function executeCommand<
       ) as InferNamedFields<TArgsFields>,
       cwd: input.cwd ?? process.cwd(),
       rawArgs: input.rawArgs ?? [],
+      output,
     });
 
-    return { exitCode: 0 };
+    return { exitCode: 0, data };
   } catch (error) {
     const message = formatExecutionError(error);
 

@@ -188,11 +188,11 @@ export default defineCommand({
     ]);
 
     outro(`Rune project is ready at ${displayProjectPath}`);
-    console.log("Next steps:");
-    console.log(`  $ cd ${displayProjectPath}`);
+    ctx.output.info("Next steps:");
+    ctx.output.info(`  $ cd ${displayProjectPath}`);
     if (!shouldInstallDependencies) {
-      console.log(`  $ ${pm.installCommand}`);
+      ctx.output.info(`  $ ${pm.installCommand}`);
     }
-    console.log(`  $ ${pm.runCommand("dev", "hello")}`);
+    ctx.output.info(`  $ ${pm.runCommand("dev", "hello")}`);
   },
 });

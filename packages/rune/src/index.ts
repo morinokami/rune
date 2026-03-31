@@ -1,13 +1,15 @@
-export { defineCommand, defineGroup } from "@rune-cli/core";
+export { createOutput, defineCommand, defineGroup } from "@rune-cli/core";
 export type {
   CommandArgField,
   CommandContext,
   CommandOptionField,
+  CommandOutput,
   DefineGroupInput,
   DefinedCommand,
   DefinedGroup,
   ExecuteCommandInput,
   InferExecutionFields,
+  OutputSink,
   PrimitiveFieldType,
   PrimitiveArgField,
   PrimitiveOptionField,

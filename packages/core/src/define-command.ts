@@ -215,11 +215,13 @@ function validateArgOrdering(args: readonly CommandArgField[]): void {
 export function defineCommand<
   const TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   const TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
+  const TJson extends boolean = false,
 >(
-  input: DefineCommandInput<TArgsFields, TOptionsFields> & ValidateArgOrder<TArgsFields>,
+  input: DefineCommandInput<TArgsFields, TOptionsFields, TJson> & ValidateArgOrder<TArgsFields>,
 ): DefinedCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
-  NormalizeFields<TOptionsFields, CommandOptionField>
+  NormalizeFields<TOptionsFields, CommandOptionField>,
+  TJson
 > {
   if (input.aliases) {
     validateCommandAliases(input.aliases);
@@ -239,6 +241,7 @@ export function defineCommand<
 
   const command = {
     description: input.description,
+    json: ((input as { json?: boolean }).json === true) as TJson,
     aliases: (input.aliases ?? []) as readonly string[],
     examples: (input.examples ?? []) as readonly string[],
     args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,

@@ -158,6 +158,9 @@ export async function renderCommandHelp(
       label: formatOptionLabel(field),
       description: field.description,
     })),
+    ...(command.json
+      ? [{ label: "--json", description: "Output structured results as JSON" }]
+      : []),
     {
       label: "-h, --help",
       description: "Show help",

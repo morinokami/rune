@@ -33,6 +33,43 @@ function formatRuntimeError(error: unknown): string {
   return "Failed to run command";
 }
 
+/**
+ * Extracts a framework-managed `--json` flag from argv when the command
+ * supports JSON mode. Only tokens before the `--` terminator are considered.
+ *
+ * Returns the detected JSON mode flag and the argv to pass to the parser
+ * (with `--json` removed). The original argv is always preserved for
+ * `ctx.rawArgs`.
+ */
+function extractJsonFlag(argv: readonly string[]): {
+  jsonMode: boolean;
+  parseArgv: readonly string[];
+} {
+  const terminatorIndex = argv.indexOf("--");
+  const scanEnd = terminatorIndex === -1 ? argv.length : terminatorIndex;
+  const jsonIndex = argv.indexOf("--json");
+
+  if (jsonIndex === -1 || jsonIndex >= scanEnd) {
+    return { jsonMode: false, parseArgv: argv };
+  }
+
+  const parseArgv = [...argv.slice(0, jsonIndex), ...argv.slice(jsonIndex + 1)];
+  return { jsonMode: true, parseArgv };
+}
+
+function writeJsonToStdout(value: unknown): boolean {
+  try {
+    process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
+    return true;
+  } catch {
+    process.stdout.write(
+      `${JSON.stringify({ error: "Failed to serialize command output" }, null, 2)}\n`,
+    );
+    process.stderr.write("Failed to serialize command output\n");
+    return false;
+  }
+}
+
 // Resolves argv, loads only the matched leaf module, and executes it in-process.
 export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
   try {
@@ -63,9 +100,18 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
 
     const loadCommand = options.loadCommand ?? defaultLoadCommand;
     const command = await loadCommand(route.node);
-    const commandInput = await parseCommandArgs(command, route.remainingArgs);
+
+    // Detect --json only for commands that opt in.
+    const { jsonMode, parseArgv } = command.json
+      ? extractJsonFlag(route.remainingArgs)
+      : { jsonMode: false, parseArgv: route.remainingArgs };
+
+    const commandInput = await parseCommandArgs(command, parseArgv);
 
     if (!commandInput.ok) {
+      if (jsonMode) {
+        process.stdout.write(`${JSON.stringify({ error: commandInput.error.message }, null, 2)}\n`);
+      }
       process.stderr.write(ensureTrailingNewline(commandInput.error.message));
       return 1;
     }
@@ -74,14 +120,28 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
       options: commandInput.value.options,
       args: commandInput.value.args,
       cwd: options.cwd,
-      rawArgs: commandInput.value.rawArgs,
+      rawArgs: route.remainingArgs,
+      jsonMode,
     });
+
+    let exitCode = result.exitCode;
+
+    if (jsonMode) {
+      if (result.exitCode === 0) {
+        const payload = result.data === undefined ? null : result.data;
+        if (!writeJsonToStdout(payload)) {
+          exitCode = 1;
+        }
+      } else {
+        writeJsonToStdout({ error: result.errorMessage ?? "Command failed" });
+      }
+    }
 
     if (result.errorMessage) {
       process.stderr.write(ensureTrailingNewline(result.errorMessage));
     }
 
-    return result.exitCode;
+    return exitCode;
   } catch (error) {
     process.stderr.write(ensureTrailingNewline(formatRuntimeError(error)));
     return 1;

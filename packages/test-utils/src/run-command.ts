@@ -1,4 +1,5 @@
 import {
+  createOutput,
   executeCommand,
   type CommandArgField,
   type CommandOptionField,
@@ -7,8 +8,6 @@ import {
   type InferExecutionFields,
 } from "@rune-cli/core";
 
-import { captureProcessOutput } from "./capture-output";
-
 export type RunCommandOptions<TOptions, TArgs> = ExecuteCommandInput<TOptions, TArgs>;
 
 export interface CommandExecutionResult {
@@ -16,6 +15,7 @@ export interface CommandExecutionResult {
   readonly stdout: string;
   readonly stderr: string;
   readonly errorMessage?: string | undefined;
+  readonly data?: unknown;
 }
 
 export async function runCommand<
@@ -28,16 +28,27 @@ export async function runCommand<
     InferExecutionFields<TArgsFields>
   > = {},
 ): Promise<CommandExecutionResult> {
-  const captured = await captureProcessOutput(() => executeCommand(command, options));
+  const stdoutChunks: string[] = [];
+  const stderrChunks: string[] = [];
 
-  if (!captured.ok) {
-    throw captured.error;
-  }
+  const output = createOutput(
+    {
+      stdout: (message) => stdoutChunks.push(message),
+      stderr: (message) => stderrChunks.push(message),
+    },
+    { silentStdout: options.jsonMode === true },
+  );
+
+  const result = await executeCommand(command, {
+    ...options,
+    output,
+  });
 
   return {
-    exitCode: captured.value.exitCode,
-    stdout: captured.stdout,
-    stderr: captured.stderr,
-    errorMessage: captured.value.errorMessage,
+    exitCode: result.exitCode,
+    stdout: stdoutChunks.join(""),
+    stderr: stderrChunks.join(""),
+    errorMessage: result.errorMessage,
+    data: result.data,
   };
 }
