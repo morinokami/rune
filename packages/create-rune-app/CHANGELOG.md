@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.5
+
+### Patch Changes
+
+- [`04c0bf4`](https://github.com/morinokami/rune/commit/04c0bf4879646f561a6b97390969549310e36eb5) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): add command output API and JSON mode
+
 ## 0.0.4
 
 ### Patch Changes
