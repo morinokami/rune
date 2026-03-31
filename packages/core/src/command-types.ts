@@ -82,7 +82,7 @@ export interface PrimitiveOptionField<
   TType extends PrimitiveFieldType = PrimitiveFieldType,
 > extends PrimitiveFieldBase<TName, TType> {
   /** Single-character shorthand (e.g. `"v"` for `--verbose` → `-v`). */
-  readonly short?: string | undefined;
+  readonly short?: SingleLetter | undefined;
   readonly flag?: never;
 }
 
@@ -92,7 +92,7 @@ export interface SchemaOptionField<
   TSchema extends StandardSchemaV1 = StandardSchemaV1,
 > extends SchemaFieldBase<TName, TSchema> {
   /** Single-character shorthand (e.g. `"v"` for `--verbose` → `-v`). */
-  readonly short?: string | undefined;
+  readonly short?: SingleLetter | undefined;
   /**
    * When `true`, the option is parsed as a boolean flag (no value expected).
    * The schema receives `true` when the flag is present, `undefined` when absent.
@@ -112,10 +112,188 @@ export type NormalizeFields<
   TField,
 > = TFields extends readonly TField[] ? TFields : readonly [];
 
+// Single ASCII letter, used to constrain option short names.
+export type SingleLetter =
+  | "a"
+  | "b"
+  | "c"
+  | "d"
+  | "e"
+  | "f"
+  | "g"
+  | "h"
+  | "i"
+  | "j"
+  | "k"
+  | "l"
+  | "m"
+  | "n"
+  | "o"
+  | "p"
+  | "q"
+  | "r"
+  | "s"
+  | "t"
+  | "u"
+  | "v"
+  | "w"
+  | "x"
+  | "y"
+  | "z"
+  | "A"
+  | "B"
+  | "C"
+  | "D"
+  | "E"
+  | "F"
+  | "G"
+  | "H"
+  | "I"
+  | "J"
+  | "K"
+  | "L"
+  | "M"
+  | "N"
+  | "O"
+  | "P"
+  | "Q"
+  | "R"
+  | "S"
+  | "T"
+  | "U"
+  | "V"
+  | "W"
+  | "X"
+  | "Y"
+  | "Z";
+
 // Converts a kebab-case string to camelCase at the type level.
 type KebabToCamelCase<S extends string> = S extends `${infer Head}-${infer Tail}`
   ? `${Head}${Capitalize<KebabToCamelCase<Tail>>}`
   : S;
+
+// ---------------------------------------------------------------------------
+// Tuple guard — returns true only for fixed-length tuple types.
+// For non-tuple arrays (e.g. `readonly CommandOptionField[]`), `number extends
+// T["length"]` is true, so the guard returns false and validators bail out to
+// `unknown`, deferring to the runtime check.
+// ---------------------------------------------------------------------------
+
+type IsTuple<T extends readonly any[]> = number extends T["length"] ? false : true;
+
+// ---------------------------------------------------------------------------
+// Field name validation
+// ---------------------------------------------------------------------------
+
+// Rejects names with consecutive hyphens, leading hyphens, or trailing hyphens.
+type IsValidHyphenatedName<S extends string> = S extends `${string}--${string}`
+  ? false
+  : S extends `-${string}`
+    ? false
+    : S extends `${string}-`
+      ? false
+      : true;
+
+// Validates a single field's name: rejects empty names and invalid hyphenation.
+type IsValidFieldName<TField> = TField extends { readonly name: infer N extends string }
+  ? N extends ""
+    ? false
+    : N extends `${string}-${string}`
+      ? IsValidHyphenatedName<N> extends false
+        ? false
+        : true
+      : true
+  : true;
+
+// Walks a tuple looking for any field with an invalid name.
+type HasInvalidFieldName<TFields extends readonly NamedField[]> = TFields extends readonly [
+  infer H,
+  ...infer T extends readonly NamedField[],
+]
+  ? IsValidFieldName<H> extends false
+    ? true
+    : HasInvalidFieldName<T>
+  : false;
+
+// ---------------------------------------------------------------------------
+// Duplicate field name detection (includes camelCase alias collision)
+// ---------------------------------------------------------------------------
+
+type HasDuplicateOrCollidingName<
+  TFields extends readonly NamedField[],
+  TSeen extends string = never,
+> = TFields extends readonly [infer H extends NamedField, ...infer T extends readonly NamedField[]]
+  ? H extends { readonly name: infer N extends string }
+    ? string extends N // widened name — skip, defer to runtime
+      ? HasDuplicateOrCollidingName<T, TSeen>
+      : N extends TSeen
+        ? true
+        : KebabToCamelCase<N> extends TSeen
+          ? true
+          : HasDuplicateOrCollidingName<T, TSeen | N | KebabToCamelCase<N>>
+    : HasDuplicateOrCollidingName<T, TSeen>
+  : false;
+
+// ---------------------------------------------------------------------------
+// Duplicate short name detection
+// ---------------------------------------------------------------------------
+
+type HasDuplicateShort<
+  TFields extends readonly CommandOptionField[],
+  TSeen extends string = never,
+> = TFields extends readonly [infer H, ...infer T extends readonly CommandOptionField[]]
+  ? H extends { readonly short: infer S extends string }
+    ? SingleLetter extends S // widened short (full union) — skip, defer to runtime
+      ? HasDuplicateShort<T, TSeen>
+      : S extends TSeen
+        ? true
+        : HasDuplicateShort<T, TSeen | S>
+    : HasDuplicateShort<T, TSeen>
+  : false;
+
+// ---------------------------------------------------------------------------
+// Composed validators — each returns `unknown` on success or
+// `{ readonly args/options: never }` on failure. All bail out to `unknown`
+// for non-tuple (widened) arrays via the IsTuple guard.
+// ---------------------------------------------------------------------------
+
+export type ValidateFieldNames<TArgs, TOpts> = (TArgs extends readonly NamedField[]
+  ? IsTuple<TArgs> extends true
+    ? HasInvalidFieldName<TArgs> extends true
+      ? { readonly args: never }
+      : unknown
+    : unknown
+  : unknown) &
+  (TOpts extends readonly NamedField[]
+    ? IsTuple<TOpts> extends true
+      ? HasInvalidFieldName<TOpts> extends true
+        ? { readonly options: never }
+        : unknown
+      : unknown
+    : unknown);
+
+export type ValidateUniqueNames<TArgs, TOpts> = (TArgs extends readonly NamedField[]
+  ? IsTuple<TArgs> extends true
+    ? HasDuplicateOrCollidingName<TArgs> extends true
+      ? { readonly args: never }
+      : unknown
+    : unknown
+  : unknown) &
+  (TOpts extends readonly NamedField[]
+    ? IsTuple<TOpts> extends true
+      ? HasDuplicateOrCollidingName<TOpts> extends true
+        ? { readonly options: never }
+        : unknown
+      : unknown
+    : unknown);
+
+export type ValidateDuplicateShortNames<TOpts> = TOpts extends readonly CommandOptionField[]
+  ? IsTuple<TOpts> extends true
+    ? HasDuplicateShort<TOpts> extends true
+      ? { readonly options: never }
+      : unknown
+    : unknown
+  : unknown;
 
 // Pulls the declared field name out of a field definition and includes a
 // camelCase alias so kebab-case fields can be accessed with either casing.
@@ -211,9 +389,12 @@ type IsValidArgOrder<
   : true;
 
 // When arg ordering is invalid, intersects to make `args` accept `never`.
+// For non-tuple (widened) arrays, bails out to `unknown` and defers to runtime.
 export type ValidateArgOrder<TArgs> = TArgs extends readonly CommandArgField[]
-  ? IsValidArgOrder<TArgs> extends false
-    ? { readonly args: never }
+  ? IsTuple<TArgs> extends true
+    ? IsValidArgOrder<TArgs> extends false
+      ? { readonly args: never }
+      : unknown
     : unknown
   : unknown;
 

@@ -5,6 +5,9 @@ import type {
   DefinedCommand,
   NormalizeFields,
   ValidateArgOrder,
+  ValidateDuplicateShortNames,
+  ValidateFieldNames,
+  ValidateUniqueNames,
 } from "./command-types";
 
 import { isSchemaField } from "./schema-field";
@@ -217,7 +220,11 @@ export function defineCommand<
   const TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
   const TJson extends boolean = false,
 >(
-  input: DefineCommandInput<TArgsFields, TOptionsFields, TJson> & ValidateArgOrder<TArgsFields>,
+  input: DefineCommandInput<TArgsFields, TOptionsFields, TJson> &
+    ValidateArgOrder<TArgsFields> &
+    ValidateFieldNames<TArgsFields, TOptionsFields> &
+    ValidateUniqueNames<TArgsFields, TOptionsFields> &
+    ValidateDuplicateShortNames<TOptionsFields>,
 ): DefinedCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>,

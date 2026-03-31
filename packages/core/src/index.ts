@@ -17,6 +17,7 @@ export type {
   PrimitiveOptionField,
   SchemaArgField,
   SchemaOptionField,
+  SingleLetter,
 } from "./command-types";
 export type { DefineGroupInput, DefinedGroup } from "./define-group";
 export type { ExecuteCommandInput, ExecuteCommandResult } from "./execute-command";
