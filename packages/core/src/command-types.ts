@@ -1,5 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
+import type { CommandOutput } from "./output";
+
 // Primitive field kinds supported by Rune without an external schema.
 export type PrimitiveFieldType = "string" | "number" | "boolean";
 
@@ -435,12 +437,15 @@ export interface CommandContext<TOptions, TArgs> {
    * into `args` and `options`. Useful for forwarding to child processes.
    */
   readonly rawArgs: readonly string[];
+  /** Framework-owned output API for producing CLI output. */
+  readonly output: CommandOutput;
 }
 
 /** The command definition object accepted by {@link defineCommand}. */
 export interface DefineCommandInput<
   TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
+  TJson extends boolean = false,
 > {
   /** One-line summary shown in `--help` output. */
   readonly description?: string | undefined;
@@ -455,6 +460,11 @@ export interface DefineCommandInput<
    * Each entry is a string representing a full command invocation.
    */
   readonly examples?: readonly string[] | undefined;
+  /**
+   * When `true`, the framework accepts a built-in `--json` flag and the
+   * return value of `run()` becomes the structured stdout payload.
+   */
+  readonly json?: TJson;
   /**
    * Positional arguments declared in the order they appear on the command line.
    * Required arguments must come before optional ones.
@@ -477,28 +487,33 @@ export interface DefineCommandInput<
   /**
    * The function executed when this command is invoked.
    * Receives a {@link CommandContext} with fully parsed `args` and `options`.
+   *
+   * When `json` is `true`, the return value is serialized as structured JSON
+   * output. Otherwise, the return value is ignored.
    */
   readonly run: (
     ctx: CommandContext<
       InferNamedFields<NormalizeFields<TOptionsFields, CommandOptionField>, true>,
       InferNamedFields<NormalizeFields<TArgsFields, CommandArgField>>
     >,
-  ) => void | Promise<void>;
+  ) => TJson extends true ? unknown : void | Promise<void>;
 }
 
 // The normalized command object returned by `defineCommand`.
 export interface DefinedCommand<
   TArgsFields extends readonly CommandArgField[] = readonly [],
   TOptionsFields extends readonly CommandOptionField[] = readonly [],
+  TJson extends boolean = boolean,
 > {
   readonly description?: string | undefined;
+  readonly json: TJson;
   readonly aliases: readonly string[];
   readonly examples: readonly string[];
   readonly args: TArgsFields;
   readonly options: TOptionsFields;
   readonly run: (
     ctx: CommandContext<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>,
-  ) => void | Promise<void>;
+  ) => TJson extends true ? unknown : void | Promise<void>;
 }
 
 // Extracts the inferred options object from a defined command.

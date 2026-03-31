@@ -1,6 +1,6 @@
 import { defineCommand } from "@rune-cli/core";
 import path from "node:path";
-import { expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { runCommand } from "../src";
 
@@ -8,7 +8,7 @@ test("runCommand returns a successful command result", async () => {
   const command = defineCommand({
     options: [{ name: "name", type: "string", required: true }],
     async run(ctx) {
-      console.log(`hello ${ctx.options.name}`);
+      ctx.output.info(`hello ${ctx.options.name}`);
     },
   });
 
@@ -20,6 +20,8 @@ test("runCommand returns a successful command result", async () => {
     exitCode: 0,
     stdout: "hello rune\n",
     stderr: "",
+    data: undefined,
+    errorMessage: undefined,
   });
 });
 
@@ -37,6 +39,7 @@ test("runCommand captures command failures without spawning a process", async ()
     stdout: "",
     stderr: "",
     errorMessage: "boom",
+    data: undefined,
   });
 });
 
@@ -44,7 +47,7 @@ test("runCommand injects cwd and rawArgs into the command context", async () => 
   const cwd = path.join("/tmp", "rune-test");
   const command = defineCommand({
     async run(ctx) {
-      console.log(`${ctx.cwd} :: ${ctx.rawArgs.join(" ")}`);
+      ctx.output.info(`${ctx.cwd} :: ${ctx.rawArgs.join(" ")}`);
     },
   });
 
@@ -57,6 +60,8 @@ test("runCommand injects cwd and rawArgs into the command context", async () => 
     exitCode: 0,
     stdout: `${cwd} :: hello --name rune\n`,
     stderr: "",
+    data: undefined,
+    errorMessage: undefined,
   });
 });
 
@@ -64,7 +69,7 @@ test("runCommand injects args into the command context", async () => {
   const command = defineCommand({
     args: [{ name: "id", type: "string", required: true }],
     async run(ctx) {
-      console.log(`id=${ctx.args.id}`);
+      ctx.output.info(`id=${ctx.args.id}`);
     },
   });
 
@@ -76,5 +81,59 @@ test("runCommand injects args into the command context", async () => {
     exitCode: 0,
     stdout: "id=cmd_123\n",
     stderr: "",
+    data: undefined,
+    errorMessage: undefined,
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSON mode
+// ---------------------------------------------------------------------------
+
+describe("json mode", () => {
+  test("runCommand suppresses output.info when jsonMode is true", async () => {
+    const command = defineCommand({
+      json: true,
+      async run(ctx) {
+        ctx.output.info("this should be suppressed");
+        return { items: [1, 2, 3] };
+      },
+    });
+
+    const result = await runCommand(command, { jsonMode: true });
+
+    expect(result.stdout).toBe("");
+    expect(result.data).toEqual({ items: [1, 2, 3] });
+    expect(result.exitCode).toBe(0);
+  });
+
+  test("runCommand preserves output.error in jsonMode", async () => {
+    const command = defineCommand({
+      json: true,
+      async run(ctx) {
+        ctx.output.error("diagnostic warning");
+        return { ok: true };
+      },
+    });
+
+    const result = await runCommand(command, { jsonMode: true });
+
+    expect(result.stderr).toBe("diagnostic warning\n");
+    expect(result.data).toEqual({ ok: true });
+  });
+
+  test("runCommand returns data from json-enabled command without jsonMode", async () => {
+    const command = defineCommand({
+      json: true,
+      async run(ctx) {
+        ctx.output.info("visible output");
+        return { count: 42 };
+      },
+    });
+
+    const result = await runCommand(command);
+
+    expect(result.stdout).toBe("visible output\n");
+    expect(result.data).toEqual({ count: 42 });
   });
 });
