@@ -6,6 +6,7 @@ import path from "node:path";
 import { styleText } from "node:util";
 
 import { detectPackageManager } from "../detect-package-manager.ts";
+import { isGitInitAvailable, tryGitInit } from "../init-git.ts";
 import { scaffoldProject } from "../scaffold-project.ts";
 
 const INTRO_TITLE = styleText(["bgCyan", "black", "bold"], "Create Rune App");
@@ -77,6 +78,7 @@ export default defineCommand({
     const promptAnswers = await group<{
       projectName: string;
       shouldInstallDependencies: boolean;
+      shouldInitGit: boolean;
     }>({
       projectName: async (): Promise<string> => {
         if (provided.kind === "available") {
@@ -111,6 +113,19 @@ export default defineCommand({
 
         return !isCancel(promptResult) ? promptResult : cancelProjectCreation();
       },
+      shouldInitGit: async ({ results }): Promise<boolean> => {
+        const resolvedRoot = path.resolve(ctx.cwd, results.projectName as string);
+        if (!isGitInitAvailable(resolvedRoot)) {
+          return false;
+        }
+
+        const promptResult = await confirm({
+          message: "Initialize a git repository?",
+          initialValue: true,
+        });
+
+        return !isCancel(promptResult) ? promptResult : cancelProjectCreation();
+      },
     });
 
     const projectRoot = path.resolve(ctx.cwd, promptAnswers.projectName);
@@ -118,6 +133,7 @@ export default defineCommand({
     const projectName = promptAnswers.projectName;
     const displayProjectPath = path.relative(ctx.cwd, projectRoot) || path.basename(projectRoot);
     const shouldInstallDependencies = promptAnswers.shouldInstallDependencies;
+    const shouldInitGit = promptAnswers.shouldInitGit;
     let scaffoldedProject: Awaited<ReturnType<typeof scaffoldProject>> | undefined;
 
     await tasks([
@@ -183,6 +199,18 @@ export default defineCommand({
           });
 
           return "Installed dependencies";
+        },
+      },
+      {
+        title: "Initializing git repository",
+        enabled: shouldInitGit,
+        task: async () => {
+          if (scaffoldedProject === undefined) {
+            throw new Error("Project scaffolding did not complete.");
+          }
+
+          const ok = tryGitInit(scaffoldedProject.projectRoot);
+          return ok ? "Initialized git repository" : "Git initialization skipped";
         },
       },
     ]);
