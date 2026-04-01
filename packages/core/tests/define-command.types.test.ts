@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import { expectTypeOf, test } from "vite-plus/test";
+import { describe, expectTypeOf, test } from "vite-plus/test";
 import { z } from "zod";
 
 import { defineCommand } from "../src";
@@ -145,114 +145,110 @@ test("defineCommand rejects invalid field shapes at compile time", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Type-level field name validation
-// ---------------------------------------------------------------------------
+describe("type-level field name validation", () => {
+  test("defineCommand rejects empty field names at compile time", () => {
+    void ((input: { args: [{ name: ""; type: "string" }]; run: () => void }) => {
+      // @ts-expect-error empty arg name
+      defineCommand(input);
+    });
 
-test("defineCommand rejects empty field names at compile time", () => {
-  void ((input: { args: [{ name: ""; type: "string" }]; run: () => void }) => {
-    // @ts-expect-error empty arg name
-    defineCommand(input);
+    void ((input: { options: [{ name: ""; type: "string" }]; run: () => void }) => {
+      // @ts-expect-error empty option name
+      defineCommand(input);
+    });
   });
 
-  void ((input: { options: [{ name: ""; type: "string" }]; run: () => void }) => {
-    // @ts-expect-error empty option name
-    defineCommand(input);
-  });
-});
+  test("defineCommand rejects invalid hyphenated names at compile time", () => {
+    void ((input: { args: [{ name: "my--arg"; type: "string" }]; run: () => void }) => {
+      // @ts-expect-error consecutive hyphens
+      defineCommand(input);
+    });
 
-test("defineCommand rejects invalid hyphenated names at compile time", () => {
-  void ((input: { args: [{ name: "my--arg"; type: "string" }]; run: () => void }) => {
-    // @ts-expect-error consecutive hyphens
-    defineCommand(input);
-  });
+    void ((input: { options: [{ name: "-verbose"; type: "boolean" }]; run: () => void }) => {
+      // @ts-expect-error leading hyphen
+      defineCommand(input);
+    });
 
-  void ((input: { options: [{ name: "-verbose"; type: "boolean" }]; run: () => void }) => {
-    // @ts-expect-error leading hyphen
-    defineCommand(input);
-  });
-
-  void ((input: { options: [{ name: "verbose-"; type: "boolean" }]; run: () => void }) => {
-    // @ts-expect-error trailing hyphen
-    defineCommand(input);
+    void ((input: { options: [{ name: "verbose-"; type: "boolean" }]; run: () => void }) => {
+      // @ts-expect-error trailing hyphen
+      defineCommand(input);
+    });
   });
 });
 
-// ---------------------------------------------------------------------------
-// Type-level duplicate / collision detection
-// ---------------------------------------------------------------------------
+describe("type-level duplicate and collision detection", () => {
+  test("defineCommand rejects duplicate field names at compile time", () => {
+    void ((input: {
+      options: [{ name: "force"; type: "boolean" }, { name: "force"; type: "boolean" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error duplicate option name
+      defineCommand(input);
+    });
 
-test("defineCommand rejects duplicate field names at compile time", () => {
-  void ((input: {
-    options: [{ name: "force"; type: "boolean" }, { name: "force"; type: "boolean" }];
-    run: () => void;
-  }) => {
-    // @ts-expect-error duplicate option name
-    defineCommand(input);
+    void ((input: {
+      args: [{ name: "id"; type: "string"; required: true }, { name: "id"; type: "string" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error duplicate arg name
+      defineCommand(input);
+    });
   });
 
-  void ((input: {
-    args: [{ name: "id"; type: "string"; required: true }, { name: "id"; type: "string" }];
-    run: () => void;
-  }) => {
-    // @ts-expect-error duplicate arg name
-    defineCommand(input);
-  });
-});
+  test("defineCommand rejects camelCase alias collision at compile time", () => {
+    void ((input: {
+      options: [{ name: "foo-bar"; type: "string" }, { name: "fooBar"; type: "string" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error camelCase collision (kebab first)
+      defineCommand(input);
+    });
 
-test("defineCommand rejects camelCase alias collision at compile time", () => {
-  void ((input: {
-    options: [{ name: "foo-bar"; type: "string" }, { name: "fooBar"; type: "string" }];
-    run: () => void;
-  }) => {
-    // @ts-expect-error camelCase collision (kebab first)
-    defineCommand(input);
-  });
+    void ((input: {
+      options: [{ name: "fooBar"; type: "string" }, { name: "foo-bar"; type: "string" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error camelCase collision (camel first)
+      defineCommand(input);
+    });
 
-  void ((input: {
-    options: [{ name: "fooBar"; type: "string" }, { name: "foo-bar"; type: "string" }];
-    run: () => void;
-  }) => {
-    // @ts-expect-error camelCase collision (camel first)
-    defineCommand(input);
-  });
-
-  void ((input: {
-    args: [{ name: "my-arg"; type: "string"; required: true }, { name: "myArg"; type: "string" }];
-    run: () => void;
-  }) => {
-    // @ts-expect-error camelCase collision in args
-    defineCommand(input);
-  });
-});
-
-test("defineCommand rejects duplicate short names at compile time", () => {
-  void ((input: {
-    options: [
-      { name: "force"; type: "boolean"; short: "f" },
-      { name: "file"; type: "string"; short: "f" },
-    ];
-    run: () => void;
-  }) => {
-    // @ts-expect-error duplicate short name
-    defineCommand(input);
-  });
-});
-
-test("defineCommand rejects invalid short name format at compile time", () => {
-  void ((input: {
-    options: [{ name: "verbose"; type: "boolean"; short: "vv" }];
-    run: () => void;
-  }) => {
-    // @ts-expect-error multi-character short name
-    defineCommand(input);
+    void ((input: {
+      args: [{ name: "my-arg"; type: "string"; required: true }, { name: "myArg"; type: "string" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error camelCase collision in args
+      defineCommand(input);
+    });
   });
 
-  void ((input: {
-    options: [{ name: "verbose"; type: "boolean"; short: "1" }];
-    run: () => void;
-  }) => {
-    // @ts-expect-error numeric short name
-    defineCommand(input);
+  test("defineCommand rejects duplicate short names at compile time", () => {
+    void ((input: {
+      options: [
+        { name: "force"; type: "boolean"; short: "f" },
+        { name: "file"; type: "string"; short: "f" },
+      ];
+      run: () => void;
+    }) => {
+      // @ts-expect-error duplicate short name
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand rejects invalid short name format at compile time", () => {
+    void ((input: {
+      options: [{ name: "verbose"; type: "boolean"; short: "vv" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error multi-character short name
+      defineCommand(input);
+    });
+
+    void ((input: {
+      options: [{ name: "verbose"; type: "boolean"; short: "1" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error numeric short name
+      defineCommand(input);
+    });
   });
 });
