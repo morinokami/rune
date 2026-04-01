@@ -5,10 +5,12 @@ TypeScript-first, file-based CLI framework. Directory structure maps directly to
 ## Toolchain
 
 - Use `vp` for all project tasks. Do not use pnpm/npm/yarn directly for running tasks.
+- Use Node `>=24.12.0`.
 - Common commands:
   - `vp install`
-  - `vp check`
-  - `vp test`
+  - `vp fmt`
+  - `vp lint`
+  - `vp run check --filter './packages/*'`
   - `vp run test --filter './packages/*'`
   - `vp run build --filter './packages/*'`
   - `vp run ready`
@@ -17,12 +19,13 @@ TypeScript-first, file-based CLI framework. Directory structure maps directly to
 
 ## Workflow
 
-- Prefer targeted tests while iterating; before finishing, run `vp check && vp run test --filter './packages/*'`.
+- Prefer targeted tests while iterating; before finishing, run `vp run check --filter './packages/*' && vp run test --filter './packages/*'`.
 - Use `vp run ready` when you need the full repo readiness check.
 
 ## Project Rules
 
-- Import test APIs from `vite-plus/test`, never from `vite` or `vitest`.
+- In workspace packages, import test APIs from `vite-plus/test`, never from `vite` or `vitest`.
+- `examples/starter` is a user-facing scaffold example for `create-rune-app`, so it may intentionally use consumer-app conventions such as direct `vitest` imports.
 - `core` must not depend on filesystem scanning or on `rune`.
 - Do not throw for expected parse or validation failures. Use explicit result types with `ok: true` / `ok: false`.
 - For schema-backed fields, use the Standard Schema contract via `schema["~standard"].validate(value)`. Do not call library-specific APIs such as Zod `.parse()`.
