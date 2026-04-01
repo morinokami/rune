@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.15
+
+### Patch Changes
+
+- [#51](https://github.com/morinokami/rune/pull/51) [`8290059`](https://github.com/morinokami/rune/commit/8290059e58a91ea4112258b3a18616e55a4fdd82) Thanks [@morinokami](https://github.com/morinokami)! - feat(test-utils): redesign runCommand to accept argv instead of pre-parsed objects
+
 ## 0.0.14
 
 ### Patch Changes
