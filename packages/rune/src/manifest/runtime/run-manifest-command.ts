@@ -1,4 +1,4 @@
-import { runCommandPipeline } from "@rune-cli/core";
+import { runCommandPipeline, type CommandFailure } from "@rune-cli/core";
 
 import type { CommandManifest } from "../manifest-types";
 
@@ -33,14 +33,62 @@ function formatRuntimeError(error: unknown): string {
   return "Failed to run command";
 }
 
-function writeJsonToStdout(value: unknown): boolean {
+function renderHumanError(error: CommandFailure): string {
+  const lines = [error.message];
+
+  if (error.hint) {
+    lines.push(`Hint: ${error.hint}`);
+  }
+
+  return lines.join("\n");
+}
+
+function getSerializableDetails(error: CommandFailure): unknown {
+  if (error.details === undefined) {
+    return undefined;
+  }
+
+  try {
+    JSON.stringify(error.details);
+    return error.details;
+  } catch {
+    return undefined;
+  }
+}
+
+function renderJsonError(error?: CommandFailure): { readonly error: Record<string, unknown> } {
+  if (!error) {
+    return {
+      error: {
+        kind: "internal",
+        message: "Command failed",
+      },
+    };
+  }
+
+  const details = getSerializableDetails(error);
+
+  return {
+    error: {
+      kind: error.kind,
+      message: error.message,
+      ...(error.hint ? { hint: error.hint } : {}),
+      ...(details !== undefined ? { details } : {}),
+    },
+  };
+}
+
+function writeJsonToStdout(
+  value: unknown,
+  fallback: unknown = {
+    error: { kind: "internal", message: "Failed to serialize command output" },
+  },
+): boolean {
   try {
     process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
     return true;
   } catch {
-    process.stdout.write(
-      `${JSON.stringify({ error: "Failed to serialize command output" }, null, 2)}\n`,
-    );
+    process.stdout.write(`${JSON.stringify(fallback, null, 2)}\n`);
     process.stderr.write("Failed to serialize command output\n");
     return false;
   }
@@ -92,12 +140,16 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
           exitCode = 1;
         }
       } else {
-        writeJsonToStdout({ error: result.errorMessage ?? "Command failed" });
+        writeJsonToStdout(renderJsonError(result.error));
       }
     }
 
-    if (result.errorMessage) {
-      process.stderr.write(ensureTrailingNewline(result.errorMessage));
+    if (!result.jsonMode && result.error) {
+      const renderedError = renderHumanError(result.error);
+
+      if (renderedError !== "") {
+        process.stderr.write(ensureTrailingNewline(renderedError));
+      }
     }
 
     return exitCode;

@@ -2,6 +2,7 @@ import type { CommandArgField, CommandOptionField, DefinedCommand } from "./comm
 import type { OutputSink } from "./output";
 
 import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
+import { CommandError, type CommandFailure } from "./command-error";
 import { createOutput } from "./output";
 import { extractJsonFlag, parseCommandArgs } from "./parse-command-args";
 import { isSchemaField } from "./schema-field";
@@ -21,7 +22,7 @@ export interface RunCommandPipelineResult {
   /** Whether argv parsing succeeded. When `false`, the command did not run. */
   readonly parseOk: boolean;
   readonly exitCode: number;
-  readonly errorMessage?: string | undefined;
+  readonly error?: CommandFailure | undefined;
   readonly data?: unknown;
   readonly jsonMode: boolean;
 }
@@ -39,16 +40,97 @@ const defaultSink: OutputSink = {
   },
 };
 
-function formatExecutionError(error: unknown): string {
+const INVALID_ARGUMENTS_ERROR_KIND = "invalid-arguments";
+const INTERNAL_ERROR_KIND = "internal";
+
+function formatUnexpectedExecutionError(error: unknown): string {
   if (error instanceof Error) {
-    return error.message === "" ? "" : error.message || error.name || "Unknown error";
+    return error.message || error.name || "Unknown error";
   }
 
-  if (typeof error === "string") {
+  if (typeof error === "string" && error.length > 0) {
     return error;
   }
 
   return "Unknown error";
+}
+
+function normalizeExitCode(exitCode: number | undefined): number {
+  if (Number.isInteger(exitCode) && exitCode !== undefined && exitCode > 0 && exitCode <= 255) {
+    return exitCode;
+  }
+
+  return 1;
+}
+
+function normalizeParseFailure(message: string): CommandFailure {
+  return {
+    kind: INVALID_ARGUMENTS_ERROR_KIND,
+    message,
+    exitCode: 1,
+  };
+}
+
+function getCommandErrorLikeFields(error: unknown): {
+  readonly kind: string;
+  readonly message: string;
+  readonly hint?: string | undefined;
+  readonly details?: CommandFailure["details"];
+  readonly exitCode?: number | undefined;
+} | null {
+  if (error instanceof CommandError) {
+    return {
+      kind: error.kind,
+      message: error.message,
+      hint: error.hint,
+      details: error.details,
+      exitCode: error.exitCode,
+    };
+  }
+
+  if (typeof error !== "object" || error === null) {
+    return null;
+  }
+
+  const { kind, message, hint, details, exitCode } = error as {
+    readonly kind?: unknown;
+    readonly message?: unknown;
+    readonly hint?: unknown;
+    readonly details?: unknown;
+    readonly exitCode?: unknown;
+  };
+
+  if (typeof kind !== "string" || typeof message !== "string") {
+    return null;
+  }
+
+  return {
+    kind,
+    message,
+    hint: typeof hint === "string" ? hint : undefined,
+    details: details as CommandFailure["details"],
+    exitCode: typeof exitCode === "number" ? exitCode : undefined,
+  };
+}
+
+function normalizeExecutionFailure(error: unknown): CommandFailure {
+  const structuredError = getCommandErrorLikeFields(error);
+
+  if (structuredError) {
+    return {
+      kind: structuredError.kind,
+      message: structuredError.message,
+      hint: structuredError.hint,
+      details: structuredError.details,
+      exitCode: normalizeExitCode(structuredError.exitCode),
+    };
+  }
+
+  return {
+    kind: INTERNAL_ERROR_KIND,
+    message: formatUnexpectedExecutionError(error),
+    exitCode: 1,
+  };
 }
 
 function normalizeOptions(
@@ -97,7 +179,7 @@ export async function runCommandPipeline(
     return {
       parseOk: false,
       exitCode: 1,
-      errorMessage: parsed.error.message,
+      error: normalizeParseFailure(parsed.error.message),
       data: undefined,
       jsonMode,
     };
@@ -132,16 +214,14 @@ export async function runCommandPipeline(
       jsonMode,
     };
   } catch (error) {
-    const message = formatExecutionError(error);
+    const failure = normalizeExecutionFailure(error);
 
-    return message
-      ? {
-          parseOk: true,
-          exitCode: 1,
-          errorMessage: message,
-          data: undefined,
-          jsonMode,
-        }
-      : { parseOk: true, exitCode: 1, data: undefined, jsonMode };
+    return {
+      parseOk: true,
+      exitCode: failure.exitCode,
+      error: failure,
+      data: undefined,
+      jsonMode,
+    };
   }
 }

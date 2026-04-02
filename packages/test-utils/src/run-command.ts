@@ -1,6 +1,7 @@
 import {
   runCommandPipeline,
   type CommandArgField,
+  type CommandFailure,
   type CommandOptionField,
   type DefinedCommand,
 } from "@rune-cli/core";
@@ -14,7 +15,7 @@ export interface CommandExecutionResult {
   readonly exitCode: number;
   readonly stdout: string;
   readonly stderr: string;
-  readonly errorMessage?: string | undefined;
+  readonly error?: CommandFailure | undefined;
   readonly data?: unknown;
 }
 
@@ -32,7 +33,7 @@ export interface CommandExecutionResult {
  *                  pipeline. Defaults to `[]` (no arguments).
  * @param context - Optional execution context such as `cwd`.
  * @returns A captured result including `exitCode`, `stdout`, `stderr`,
- *          `errorMessage`, and `data` (for `json: true` commands).
+ *          `error`, and `data` (for `json: true` commands).
  *
  * @example Basic usage
  * ```ts
@@ -105,15 +106,15 @@ export async function runCommand(
     },
   });
 
-  if (!result.parseOk && result.errorMessage) {
-    stderrChunks.push(result.errorMessage);
+  if (!result.parseOk && result.error) {
+    stderrChunks.push(result.error.message);
   }
 
   return {
     exitCode: result.exitCode,
     stdout: stdoutChunks.join(""),
     stderr: stderrChunks.join(""),
-    errorMessage: result.errorMessage,
+    error: result.error,
     data: result.data,
   };
 }

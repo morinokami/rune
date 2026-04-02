@@ -1,4 +1,4 @@
-import { defineCommand } from "@rune-cli/core";
+import { CommandError, defineCommand } from "@rune-cli/core";
 import path from "node:path";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -20,7 +20,7 @@ describe("execution", () => {
       stdout: "hello rune\n",
       stderr: "",
       data: undefined,
-      errorMessage: undefined,
+      error: undefined,
     });
   });
 
@@ -37,7 +37,39 @@ describe("execution", () => {
       exitCode: 1,
       stdout: "",
       stderr: "",
-      errorMessage: "boom",
+      error: {
+        kind: "internal",
+        message: "boom",
+        exitCode: 1,
+      },
+      data: undefined,
+    });
+  });
+
+  test("runCommand returns structured command failures", async () => {
+    const command = defineCommand({
+      async run() {
+        throw new CommandError({
+          kind: "config/not-found",
+          message: "Config file was not found",
+          hint: "Create rune.config.ts",
+          exitCode: 7,
+        });
+      },
+    });
+
+    const result = await runCommand(command);
+
+    expect(result).toEqual({
+      exitCode: 7,
+      stdout: "",
+      stderr: "",
+      error: {
+        kind: "config/not-found",
+        message: "Config file was not found",
+        hint: "Create rune.config.ts",
+        exitCode: 7,
+      },
       data: undefined,
     });
   });
@@ -83,7 +115,7 @@ describe("execution", () => {
       stdout: "id=cmd_123\n",
       stderr: "",
       data: undefined,
-      errorMessage: undefined,
+      error: undefined,
     });
   });
 });
@@ -101,6 +133,11 @@ describe("validation", () => {
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).not.toBe("");
+    expect(result.error).toEqual({
+      kind: "invalid-arguments",
+      message: "Missing required argument:\n\n  id",
+      exitCode: 1,
+    });
   });
 
   test("runCommand returns an error for unknown options", async () => {
@@ -112,6 +149,11 @@ describe("validation", () => {
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).not.toBe("");
+    expect(result.error).toEqual({
+      kind: "invalid-arguments",
+      message: 'Unknown option "--unknown"',
+      exitCode: 1,
+    });
   });
 
   test("runCommand applies default values", async () => {

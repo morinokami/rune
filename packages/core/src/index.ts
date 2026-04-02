@@ -1,3 +1,4 @@
+export { CommandError } from "./command-error";
 export { defineCommand, isDefinedCommand, validateCommandAliases } from "./define-command";
 export { defineGroup, isDefinedGroup } from "./define-group";
 export { createOutput } from "./output";
@@ -5,6 +6,7 @@ export { extractJsonFlag, parseCommandArgs } from "./parse-command-args";
 export { runCommandPipeline } from "./run-command-pipeline";
 export { isSchemaField } from "./schema-field";
 
+export type { CommandErrorInit, CommandFailure, JsonPrimitive, JsonValue } from "./command-error";
 export type {
   CommandArgField,
   CommandContext,
