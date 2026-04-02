@@ -1,4 +1,4 @@
-import { runParsedCommand } from "@rune-cli/core";
+import { runCommandPipeline } from "@rune-cli/core";
 
 import type { CommandManifest } from "../manifest-types";
 
@@ -77,7 +77,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
     const loadCommand = options.loadCommand ?? defaultLoadCommand;
     const command = await loadCommand(route.node);
 
-    const result = await runParsedCommand({
+    const result = await runCommandPipeline({
       command,
       argv: route.remainingArgs,
       cwd: options.cwd,

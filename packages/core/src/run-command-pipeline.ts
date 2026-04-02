@@ -10,14 +10,14 @@ import { isSchemaField } from "./schema-field";
 // Public types
 // ---------------------------------------------------------------------------
 
-export interface RunParsedCommandInput {
+export interface RunCommandPipelineInput {
   readonly command: DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>;
   readonly argv: readonly string[];
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
 }
 
-export interface RunParsedCommandResult {
+export interface RunCommandPipelineResult {
   /** Whether argv parsing succeeded. When `false`, the command did not run. */
   readonly parseOk: boolean;
   readonly exitCode: number;
@@ -80,9 +80,9 @@ function normalizeOptions(
  * loading, output presentation (JSON serialization, stderr formatting), and
  * providing an appropriate {@link OutputSink}.
  */
-export async function runParsedCommand(
-  input: RunParsedCommandInput,
-): Promise<RunParsedCommandResult> {
+export async function runCommandPipeline(
+  input: RunCommandPipelineInput,
+): Promise<RunCommandPipelineResult> {
   const { command, argv, cwd, sink = defaultSink } = input;
 
   const { jsonMode, parseArgv } = command.json

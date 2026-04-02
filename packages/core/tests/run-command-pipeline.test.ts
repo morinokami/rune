@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
 import { defineCommand } from "../src";
-import { runParsedCommand } from "../src/run-parsed-command";
+import { runCommandPipeline } from "../src/run-command-pipeline";
 
 describe("context injection and defaults", () => {
   test("injects options, args, cwd, and rawArgs into the command context", async () => {
@@ -23,7 +23,7 @@ describe("context injection and defaults", () => {
       },
     });
 
-    const result = await runParsedCommand({
+    const result = await runCommandPipeline({
       command,
       argv: ["my-id", "--name", "rune"],
       cwd: "/tmp/rune-project",
@@ -47,7 +47,7 @@ describe("context injection and defaults", () => {
       },
     });
 
-    await runParsedCommand({ command, argv: [] });
+    await runCommandPipeline({ command, argv: [] });
 
     expect(observedCwd).toBe(process.cwd());
   });
@@ -62,7 +62,7 @@ describe("context injection and defaults", () => {
       },
     });
 
-    await runParsedCommand({ command, argv: [] });
+    await runCommandPipeline({ command, argv: [] });
 
     expect(forceValue).toBe(false);
   });
@@ -79,7 +79,7 @@ describe("context injection and defaults", () => {
       },
     });
 
-    await runParsedCommand({
+    await runCommandPipeline({
       command,
       argv: ["hello", "--dry-run"],
     });
@@ -101,7 +101,7 @@ describe("context injection and defaults", () => {
       },
     });
 
-    await runParsedCommand({
+    await runCommandPipeline({
       command,
       argv: ["hello", "--dry-run"],
     });
@@ -118,7 +118,7 @@ describe("context injection and defaults", () => {
       },
     });
 
-    await runParsedCommand({ command, argv: [] });
+    await runCommandPipeline({ command, argv: [] });
 
     expect(called).toBe(true);
   });
@@ -135,7 +135,7 @@ describe("error handling", () => {
       },
     });
 
-    const result = await runParsedCommand({ command, argv: [] });
+    const result = await runCommandPipeline({ command, argv: [] });
 
     expect(called).toBe(true);
     expect(result.exitCode).toBe(1);
@@ -149,7 +149,7 @@ describe("error handling", () => {
       },
     });
 
-    const result = await runParsedCommand({ command, argv: [] });
+    const result = await runCommandPipeline({ command, argv: [] });
 
     expect(result.exitCode).toBe(1);
     expect(result.errorMessage).toBeUndefined();
@@ -162,7 +162,7 @@ describe("error handling", () => {
       },
     });
 
-    const result = await runParsedCommand({ command, argv: [] });
+    const result = await runCommandPipeline({ command, argv: [] });
 
     expect(result.exitCode).toBe(1);
     expect(result.errorMessage).toBe("Unknown error");

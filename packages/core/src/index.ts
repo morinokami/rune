@@ -2,7 +2,7 @@ export { defineCommand, isDefinedCommand, validateCommandAliases } from "./defin
 export { defineGroup, isDefinedGroup } from "./define-group";
 export { createOutput } from "./output";
 export { extractJsonFlag, parseCommandArgs } from "./parse-command-args";
-export { runParsedCommand } from "./run-parsed-command";
+export { runCommandPipeline } from "./run-command-pipeline";
 export { isSchemaField } from "./schema-field";
 
 export type {
@@ -26,5 +26,5 @@ export type {
   ParseCommandArgsResult,
   ParsedCommandInput,
 } from "./parse-command-args";
-export type { RunParsedCommandInput, RunParsedCommandResult } from "./run-parsed-command";
+export type { RunCommandPipelineInput, RunCommandPipelineResult } from "./run-command-pipeline";
 export type { SchemaField } from "./schema-field";

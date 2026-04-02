@@ -1,5 +1,5 @@
 import {
-  runParsedCommand,
+  runCommandPipeline,
   type CommandArgField,
   type CommandOptionField,
   type DefinedCommand,
@@ -95,7 +95,7 @@ export async function runCommand(
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
 
-  const result = await runParsedCommand({
+  const result = await runCommandPipeline({
     command,
     argv,
     cwd: context.cwd,
