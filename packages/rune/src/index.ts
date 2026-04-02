@@ -7,7 +7,6 @@ export type {
   DefineGroupInput,
   DefinedCommand,
   DefinedGroup,
-  ExecuteCommandInput,
   InferExecutionFields,
   OutputSink,
   PrimitiveFieldType,

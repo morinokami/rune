@@ -1,8 +1,8 @@
 export { defineCommand, isDefinedCommand, validateCommandAliases } from "./define-command";
 export { defineGroup, isDefinedGroup } from "./define-group";
-export { executeCommand } from "./execute-command";
 export { createOutput } from "./output";
-export { parseCommandArgs } from "./parse-command-args";
+export { extractJsonFlag, parseCommandArgs } from "./parse-command-args";
+export { runCommandPipeline } from "./run-command-pipeline";
 export { isSchemaField } from "./schema-field";
 
 export type {
@@ -20,11 +20,11 @@ export type {
   SingleLetter,
 } from "./command-types";
 export type { DefineGroupInput, DefinedGroup } from "./define-group";
-export type { ExecuteCommandInput, ExecuteCommandResult } from "./execute-command";
 export type { CommandOutput, OutputSink } from "./output";
 export type {
   ParseCommandArgsError,
   ParseCommandArgsResult,
   ParsedCommandInput,
 } from "./parse-command-args";
+export type { RunCommandPipelineInput, RunCommandPipelineResult } from "./run-command-pipeline";
 export type { SchemaField } from "./schema-field";
