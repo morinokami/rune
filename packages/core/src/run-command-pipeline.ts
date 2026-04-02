@@ -27,7 +27,7 @@ export interface RunCommandPipelineResult {
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers (inlined from the former execute-command module)
+// Internal helpers
 // ---------------------------------------------------------------------------
 
 const defaultSink: OutputSink = {
@@ -135,7 +135,13 @@ export async function runCommandPipeline(
     const message = formatExecutionError(error);
 
     return message
-      ? { parseOk: true, exitCode: 1, errorMessage: message, data: undefined, jsonMode }
+      ? {
+          parseOk: true,
+          exitCode: 1,
+          errorMessage: message,
+          data: undefined,
+          jsonMode,
+        }
       : { parseOk: true, exitCode: 1, data: undefined, jsonMode };
   }
 }
