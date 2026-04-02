@@ -1,7 +1,5 @@
 import {
-  createOutput,
-  executeCommand,
-  parseCommandArgs,
+  runParsedCommand,
   type CommandArgField,
   type CommandOptionField,
   type DefinedCommand,
@@ -97,40 +95,19 @@ export async function runCommand(
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
 
-  // Extract --json flag (only before "--" terminator, only for json-enabled commands)
-  const { jsonMode, parseArgv } = command.json
-    ? extractJsonFlag(argv)
-    : { jsonMode: false, parseArgv: argv };
-
-  const parsed = await parseCommandArgs(command, parseArgv);
-
-  if (!parsed.ok) {
-    stderrChunks.push(parsed.error.message);
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: stderrChunks.join(""),
-      errorMessage: parsed.error.message,
-      data: undefined,
-    };
-  }
-
-  const output = createOutput(
-    {
+  const result = await runParsedCommand({
+    command,
+    argv,
+    cwd: context.cwd,
+    sink: {
       stdout: (message) => stdoutChunks.push(message),
       stderr: (message) => stderrChunks.push(message),
     },
-    { silentStdout: jsonMode },
-  );
-
-  const result = await executeCommand(command, {
-    options: parsed.value.options,
-    args: parsed.value.args,
-    cwd: context.cwd,
-    rawArgs: argv,
-    jsonMode,
-    output,
   });
+
+  if (!result.parseOk && result.errorMessage) {
+    stderrChunks.push(result.errorMessage);
+  }
 
   return {
     exitCode: result.exitCode,
@@ -139,20 +116,4 @@ export async function runCommand(
     errorMessage: result.errorMessage,
     data: result.data,
   };
-}
-
-function extractJsonFlag(argv: readonly string[]): {
-  jsonMode: boolean;
-  parseArgv: readonly string[];
-} {
-  const terminatorIndex = argv.indexOf("--");
-  const scanEnd = terminatorIndex === -1 ? argv.length : terminatorIndex;
-  const jsonIndex = argv.indexOf("--json");
-
-  if (jsonIndex === -1 || jsonIndex >= scanEnd) {
-    return { jsonMode: false, parseArgv: argv };
-  }
-
-  const parseArgv = [...argv.slice(0, jsonIndex), ...argv.slice(jsonIndex + 1)];
-  return { jsonMode: true, parseArgv };
 }
