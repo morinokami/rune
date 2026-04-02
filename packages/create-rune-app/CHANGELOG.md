@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.7
+
+### Patch Changes
+
+- [#53](https://github.com/morinokami/rune/pull/53) [`6f82777`](https://github.com/morinokami/rune/commit/6f8277711a100fdebdd9ef18c1acd648c37a5c1b) Thanks [@morinokami](https://github.com/morinokami)! - feat(create-rune-app): add optional git repository initialization
+
 ## 0.0.6
 
 ### Patch Changes
