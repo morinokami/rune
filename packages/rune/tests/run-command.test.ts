@@ -131,7 +131,8 @@ describe("top-level CLI behavior", () => {
     const captured = await captureRuneCli(["run", "--help"]);
 
     expect(captured.exitCode).toBe(0);
-    expect(captured.stdout).toContain("Usage: rune run [options] [command...]\n");
+    expect(captured.stdout).toContain("Usage: rune run [options]\n");
+    expect(captured.stdout).toContain("Run a Rune project directly from source");
     expect(captured.stderr).toBe("");
   });
 
@@ -140,7 +141,23 @@ describe("top-level CLI behavior", () => {
 
     expect(captured.exitCode).toBe(1);
     expect(captured.stdout).toBe("");
-    expect(captured.stderr).toBe("Unknown command: unknown. Available commands: build, run\n");
+    expect(captured.stderr).toContain("Unknown command: rune unknown\n");
+  });
+
+  test("rune build --project <path> --help shows help", async () => {
+    const captured = await captureRuneCli(["build", "--project", "./foo", "--help"]);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toContain("Usage: rune build");
+    expect(captured.stderr).toBe("");
+  });
+
+  test("rune build foo --help reports an error instead of showing help", async () => {
+    const captured = await captureRuneCli(["build", "foo", "--help"]);
+
+    expect(captured.exitCode).toBe(1);
+    expect(captured.stdout).toBe("");
+    expect(captured.stderr).toContain("Unexpected argument for rune build: foo");
   });
 });
 
@@ -266,6 +283,27 @@ describe("run subcommand parsing", () => {
     expect(captured.exitCode).toBe(1);
     expect(captured.stdout).toBe("");
     expect(captured.stderr).toBe("Missing value for --project. Usage: --project <path>\n");
+  });
+
+  test("rune run hello --help passes --help through to the user command", async () => {
+    const projectRoot = await createRunProject({
+      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+      "src/commands/hello/index.ts": createCommandModule([
+        '  description: "Say hello",',
+        "  args: [],",
+        "  options: [],",
+        "  async run() {",
+        '    console.log("hello");',
+        "  },",
+      ]),
+    });
+
+    const captured = await captureRuneCli(["run", "hello", "--help"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toContain("Usage: mycli hello");
+    expect(captured.stdout).toContain("Say hello");
+    expect(captured.stderr).toBe("");
   });
 });
 
