@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.16
+
+### Patch Changes
+
+- [#58](https://github.com/morinokami/rune/pull/58) [`5c67823`](https://github.com/morinokami/rune/commit/5c67823b2353d0650dc52002e3fc7addebb0d773) Thanks [@morinokami](https://github.com/morinokami)! - refactor(rune): align Rune CLI help and routing with framework infrastructure
+
+- [#56](https://github.com/morinokami/rune/pull/56) [`d9d3b2a`](https://github.com/morinokami/rune/commit/d9d3b2ab4ac853ebadaddc852563a7fea1e532d7) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): add CommandError for structured command failures
+
 ## 0.0.15
 
 ### Patch Changes
