@@ -337,26 +337,6 @@ async function writeBuiltRuntimeFiles(
 }
 
 // ---------------------------------------------------------------------------
-// Help rendering
-// ---------------------------------------------------------------------------
-
-export function renderRuneBuildHelp(): string {
-  return `\
-Build a Rune project into a distributable CLI.
-
-Usage: rune build [options]
-
-Options:
-  --project <path>  Path to the Rune project root (default: current directory)
-  -h, --help        Show this help message
-
-Examples:
-  rune build
-  rune build --project ./my-app
-`;
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 

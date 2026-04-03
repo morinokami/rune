@@ -41,26 +41,6 @@ async function writeRunManifest(projectRoot: string, manifestContents: string): 
 }
 
 // ---------------------------------------------------------------------------
-// Help rendering
-// ---------------------------------------------------------------------------
-
-export function renderRuneRunHelp(): string {
-  return `\
-Run a Rune project directly from source.
-
-Usage: rune run [options] [command...]
-
-Options:
-  --project <path>  Path to the Rune project root (default: current directory)
-  -h, --help        Show this help message
-
-Examples:
-  rune run hello
-  rune run --project ./my-app hello
-`;
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 

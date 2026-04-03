@@ -1,7 +1,11 @@
 import runePackageJson from "../../package.json" with { type: "json" };
-import { renderRuneBuildHelp, runBuildCommand } from "./build-command";
+import { renderUnknownCommandMessage } from "../manifest/runtime/render-help";
+import { resolveCommandRoute } from "../manifest/runtime/resolve-command-route";
+import { renderResolvedHelp } from "../manifest/runtime/resolve-help";
+import { runBuildCommand } from "./build-command";
 import { isHelpFlag, isVersionFlag } from "./flags";
-import { renderRuneRunHelp, runRunCommand } from "./run-command";
+import { runRunCommand } from "./run-command";
+import { createRuneCliManifest, loadRuneCommand } from "./rune-manifest";
 import { writeStderrLine, writeStdout } from "./write-result";
 
 // ---------------------------------------------------------------------------
@@ -84,21 +88,35 @@ function getRuneVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Help rendering
+// Help request detection for Rune subcommands
 // ---------------------------------------------------------------------------
 
-function renderRuneCliHelp(): string {
-  return `\
-Usage: rune <command>
+// Scans only the Rune-managed prefix of remainingArgs for --help.
+// Stops at the first non-Rune token (a positional or unknown option), so that
+// `rune run hello --help` passes --help through to the user's command and
+// `rune build foo --help` correctly reports an error instead of showing help.
+function isRuneHelpRequested(remainingArgs: readonly string[]): boolean {
+  for (let i = 0; i < remainingArgs.length; i++) {
+    const token = remainingArgs[i];
 
-Commands:
-  build  Build a Rune project into a distributable CLI
-  run    Run a Rune project directly from source
+    if (isHelpFlag(token)) {
+      return true;
+    }
 
-Options:
-  -h, --help     Show this help message
-  -V, --version  Show the version number
-`;
+    if (token === "--project") {
+      i += 1;
+      continue;
+    }
+
+    if (token.startsWith("--project=")) {
+      continue;
+    }
+
+    // Any other token (positional or unknown option) starts passthrough.
+    return false;
+  }
+
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,10 +133,6 @@ function parseRunArgs(argv: readonly string[]): ParsedRunArgs | EarlyExit {
     if (token === "--") {
       commandArgs.push(...argv.slice(index + 1));
       return { ok: true, projectPath, commandArgs };
-    }
-
-    if (isHelpFlag(token)) {
-      return { ok: false, exitCode: 0, output: renderRuneRunHelp(), stream: "stdout" };
     }
 
     const projectResult = tryParseProjectOption(argv, index);
@@ -145,10 +159,6 @@ function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
-
-    if (isHelpFlag(token)) {
-      return { ok: false, exitCode: 0, output: renderRuneBuildHelp(), stream: "stdout" };
-    }
 
     const projectResult = tryParseProjectOption(argv, index);
 
@@ -216,26 +226,62 @@ async function runBuildSubcommand(
 
 // Parses Rune's own CLI arguments and dispatches to subcommands such as `rune run`.
 export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
-  const [subcommand, ...restArgs] = options.argv;
+  const manifest = createRuneCliManifest();
+  const route = resolveCommandRoute(manifest, options.argv);
 
-  if (!subcommand || isHelpFlag(subcommand)) {
-    await writeStdout(renderRuneCliHelp());
+  if (route.kind === "unknown") {
+    await writeStderrLine(renderUnknownCommandMessage(route, "rune"));
+    return 1;
+  }
+
+  if (route.kind === "group") {
+    if (route.remainingArgs.length === 1 && isVersionFlag(route.remainingArgs[0])) {
+      await writeStdout(`rune v${getRuneVersion()}\n`);
+      return 0;
+    }
+
+    const help = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "rune",
+      version: getRuneVersion(),
+      loadCommand: loadRuneCommand,
+    });
+    await writeStdout(help);
     return 0;
   }
 
-  if (isVersionFlag(subcommand)) {
-    await writeStdout(`rune v${getRuneVersion()}\n`);
-    return 0;
+  const commandName = route.node.pathSegments.at(-1);
+
+  if (commandName === "build") {
+    if (isRuneHelpRequested(route.remainingArgs)) {
+      const help = await renderResolvedHelp({
+        manifest,
+        route,
+        cliName: "rune",
+        loadCommand: loadRuneCommand,
+      });
+      await writeStdout(help);
+      return 0;
+    }
+
+    return runBuildSubcommand(options, route.remainingArgs);
   }
 
-  if (subcommand === "run") {
-    return runRunSubcommand(options, restArgs);
+  if (commandName === "run") {
+    if (isRuneHelpRequested(route.remainingArgs)) {
+      const help = await renderResolvedHelp({
+        manifest,
+        route,
+        cliName: "rune",
+        loadCommand: loadRuneCommand,
+      });
+      await writeStdout(help);
+      return 0;
+    }
+
+    return runRunSubcommand(options, route.remainingArgs);
   }
 
-  if (subcommand === "build") {
-    return runBuildSubcommand(options, restArgs);
-  }
-
-  await writeStderrLine(`Unknown command: ${subcommand}. Available commands: build, run`);
   return 1;
 }
