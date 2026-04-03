@@ -37,3 +37,9 @@ TypeScript-first, file-based CLI framework. Directory structure maps directly to
 
 - Prefer in-process command tests via `runCommand` instead of spawning a process unless process behavior is the thing being tested.
 - Type inference tests use `expectTypeOf()` from `vite-plus/test`.
+
+## Rune CLI (`packages/rune/src/cli/`)
+
+- Rune's own CLI uses the framework's routing (`resolveCommandRoute`) and help rendering (`renderResolvedHelp`) via a static manifest built from `defineCommand` definitions. Adding a Rune subcommand requires changes in four places: `rune-commands.ts` (defineCommand), `rune-manifest.ts` (manifest nodes, childNames, commandMap), and `rune-cli.ts` (dispatch).
+- Adding a Rune-managed option (like `--project`) requires updating both `tryParseProjectOption` and `isRuneHelpRequested`, which must skip the same set of known options.
+- `rune run` argument parsing (`parseRunArgs`) and `rune build` argument parsing (`parseBuildArgs`) are hand-written, not routed through the framework's `runCommandPipeline`, because `rune run` passes remaining args through to the user's CLI.
