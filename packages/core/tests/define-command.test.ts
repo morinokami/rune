@@ -416,7 +416,7 @@ describe("widened input pass-through", () => {
         options: [
           { name: dynamicName, type: "string" },
           { name: "beta", type: "string" },
-        ] as const,
+        ],
         async run() {},
       }),
     ).not.toThrow();
@@ -430,7 +430,7 @@ describe("widened input pass-through", () => {
         options: [
           { name: "alpha", type: "string", short: dynamicShort },
           { name: "beta", type: "string", short: "b" },
-        ] as const,
+        ],
         async run() {},
       }),
     ).not.toThrow();

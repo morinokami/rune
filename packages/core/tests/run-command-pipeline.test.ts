@@ -71,8 +71,8 @@ describe("context injection and defaults", () => {
     const observed = { opt: "", arg: "" };
 
     const command = defineCommand({
-      args: [{ name: "my-arg", type: "string", required: true }] as const,
-      options: [{ name: "dry-run", type: "boolean" }] as const,
+      args: [{ name: "my-arg", type: "string", required: true }],
+      options: [{ name: "dry-run", type: "boolean" }],
       run(ctx) {
         observed.opt = String(ctx.options.dryRun);
         observed.arg = ctx.args.myArg;
@@ -91,8 +91,8 @@ describe("context injection and defaults", () => {
     const observed = { kebab: "", camel: "", optKebab: false, optCamel: false };
 
     const command = defineCommand({
-      args: [{ name: "my-arg", type: "string", required: true }] as const,
-      options: [{ name: "dry-run", type: "boolean" }] as const,
+      args: [{ name: "my-arg", type: "string", required: true }],
+      options: [{ name: "dry-run", type: "boolean" }],
       run(ctx) {
         observed.camel = ctx.args.myArg;
         observed.kebab = ctx.args["my-arg"];

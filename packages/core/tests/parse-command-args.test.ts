@@ -397,8 +397,8 @@ describe("parseArgs edge cases", () => {
 
   test("parseCommandArgs adds camelCase aliases for kebab-case fields", async () => {
     const command = defineCommand({
-      args: [{ name: "my-arg", type: "string", required: true }] as const,
-      options: [{ name: "dry-run", type: "boolean" }] as const,
+      args: [{ name: "my-arg", type: "string", required: true }],
+      options: [{ name: "dry-run", type: "boolean" }],
       async run() {},
     });
 

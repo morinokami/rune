@@ -65,11 +65,11 @@ test("defineCommand infers schema-backed flag options", () => {
 
 test("defineCommand exposes camelCase aliases for kebab-case field names", () => {
   const cmd = defineCommand({
-    args: [{ name: "my-arg", type: "string", required: true }] as const,
+    args: [{ name: "my-arg", type: "string", required: true }],
     options: [
       { name: "dry-run", type: "boolean" },
       { name: "output-dir", type: "string", required: true },
-    ] as const,
+    ],
     async run(ctx) {
       // camelCase access
       expectTypeOf(ctx.args.myArg).toEqualTypeOf<string>();

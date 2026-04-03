@@ -5,7 +5,7 @@ export const runeRunCommand = defineCommand({
   options: [
     {
       name: "project",
-      type: "string" as const,
+      type: "string",
       description: "Path to the Rune project root (default: current directory)",
     },
   ],
@@ -20,7 +20,7 @@ export const runeBuildCommand = defineCommand({
   options: [
     {
       name: "project",
-      type: "string" as const,
+      type: "string",
       description: "Path to the Rune project root (default: current directory)",
     },
   ],
