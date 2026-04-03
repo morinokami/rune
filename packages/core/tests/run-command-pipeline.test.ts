@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { defineCommand } from "../src";
+import { CommandError, defineCommand } from "../src";
 import { runCommandPipeline } from "../src/run-command-pipeline";
 
 describe("context injection and defaults", () => {
@@ -139,10 +139,14 @@ describe("error handling", () => {
 
     expect(called).toBe(true);
     expect(result.exitCode).toBe(1);
-    expect(result.errorMessage).toBe("Boom");
+    expect(result.error).toEqual({
+      kind: "internal",
+      message: "Boom",
+      exitCode: 1,
+    });
   });
 
-  test("preserves an empty Error message", async () => {
+  test("normalizes an empty Error message", async () => {
     const command = defineCommand({
       run() {
         throw new Error("");
@@ -152,7 +156,11 @@ describe("error handling", () => {
     const result = await runCommandPipeline({ command, argv: [] });
 
     expect(result.exitCode).toBe(1);
-    expect(result.errorMessage).toBeUndefined();
+    expect(result.error).toEqual({
+      kind: "internal",
+      message: "Error",
+      exitCode: 1,
+    });
   });
 
   test("normalizes non-Error throws", async () => {
@@ -165,6 +173,84 @@ describe("error handling", () => {
     const result = await runCommandPipeline({ command, argv: [] });
 
     expect(result.exitCode).toBe(1);
-    expect(result.errorMessage).toBe("Unknown error");
+    expect(result.error).toEqual({
+      kind: "internal",
+      message: "Unknown error",
+      exitCode: 1,
+    });
+  });
+
+  test("normalizes CommandError instances", async () => {
+    const command = defineCommand({
+      run() {
+        throw new CommandError({
+          kind: "project/invalid-name",
+          message: "Project name must be lowercase kebab-case",
+          hint: "Try --name my-app",
+          details: { received: "MyApp" },
+          exitCode: 9,
+        });
+      },
+    });
+
+    const result = await runCommandPipeline({ command, argv: [] });
+
+    expect(result.exitCode).toBe(9);
+    expect(result.error).toEqual({
+      kind: "project/invalid-name",
+      message: "Project name must be lowercase kebab-case",
+      hint: "Try --name my-app",
+      details: { received: "MyApp" },
+      exitCode: 9,
+    });
+  });
+
+  test("normalizes invalid CommandError exit codes to 1", async () => {
+    const command = defineCommand({
+      run() {
+        throw new CommandError({
+          kind: "project/invalid-name",
+          message: "bad",
+          exitCode: 0,
+        });
+      },
+    });
+
+    const result = await runCommandPipeline({ command, argv: [] });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.error).toEqual({
+      kind: "project/invalid-name",
+      message: "bad",
+      exitCode: 1,
+    });
+  });
+
+  test("preserves CommandError causes", async () => {
+    const cause = new Error("root cause");
+
+    const command = defineCommand({
+      run() {
+        throw new CommandError({
+          kind: "wrapped",
+          message: "wrapped error",
+          cause,
+        });
+      },
+    });
+
+    try {
+      await runCommandPipeline({ command, argv: [] });
+    } catch {
+      throw new Error("runCommandPipeline should not rethrow command errors");
+    }
+
+    const commandError = new CommandError({
+      kind: "wrapped",
+      message: "wrapped error",
+      cause,
+    });
+
+    expect(commandError.cause).toBe(cause);
   });
 });
