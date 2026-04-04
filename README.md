@@ -63,10 +63,10 @@ import { defineCommand } from "@rune-cli/rune";
 export default defineCommand({
   description: "Greet someone",
   args: [{ name: "name", type: "string", required: true }],
-  options: [{ name: "loud", type: "boolean", alias: "l" }],
-  async run(ctx) {
-    const greeting = `Hello, ${ctx.args.name}!`;
-    console.log(ctx.options.loud ? greeting.toUpperCase() : greeting);
+  options: [{ name: "loud", type: "boolean", short: "l" }],
+  run({ args, options }) {
+    const greeting = `Hello, ${args.name}!`;
+    console.log(options.loud ? greeting.toUpperCase() : greeting);
   },
 });
 ```

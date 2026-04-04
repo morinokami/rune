@@ -5,6 +5,7 @@ import { defineConfig } from "astro/config";
 import starlightDotMd from "starlight-dot-md";
 
 export default defineConfig({
+  site: "https://rune-cli.org",
   trailingSlash: "always",
   integrations: [
     starlight({
@@ -33,6 +34,16 @@ export default defineConfig({
         },
       ],
       lastUpdated: true,
+      defaultLocale: "root",
+      locales: {
+        root: {
+          label: "English",
+          lang: "en",
+        },
+        ja: {
+          label: "日本語",
+        },
+      },
       editLink: {
         baseUrl: "https://github.com/morinokami/rune/edit/main/docs/",
       },

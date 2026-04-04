@@ -1,0 +1,52 @@
+---
+title: Routing
+description: An introduction to file-based command routing in Rune.
+---
+
+import { FileTree } from "@astrojs/starlight/components";
+
+## File-based Command Routing
+
+Rune uses **file-based command routing**, inspired by the file-based routing found in web frameworks like Astro and Next.js. The file structure under `src/commands` determines the command tree and defines the CLI's command paths.
+
+Consider the following directory structure:
+
+<FileTree>
+- src
+  - commands/
+    - index.ts
+    - hello/
+      - index.ts
+    - project/
+      - create.ts
+      - list.ts
+</FileTree>
+
+In Rune, commands are defined by `index.ts` files or regular `.ts` files inside `src/commands`. Directories represent groups of related commands, and placing an `index.ts` in a directory makes that directory path itself an executable command. If you've worked with web frameworks like Astro, this pattern should feel familiar.
+
+The directory structure above automatically makes the following commands available (assuming your CLI binary is named `your-cli`):
+
+```bash
+your-cli
+your-cli hello
+your-cli project create
+your-cli project list
+```
+
+Each file maps directly to a command path:
+
+```
+src/commands/index.ts           -> your-cli
+src/commands/hello/index.ts     -> your-cli hello
+src/commands/project/create.ts  -> your-cli project create
+src/commands/project/list.ts    -> your-cli project list
+```
+
+The rules for how command paths are determined are as follows:
+
+- `src/commands/index.ts` maps to the root command.
+- `src/commands/hello/index.ts` maps to the `hello` command.
+- Regular `.ts` files like `src/commands/project/create.ts` map directly to subcommands.
+- A file and a command directory with the same name cannot coexist at the same level — for example, having both `src/commands/hello.ts` and `src/commands/hello/` is not allowed.
+
+With file-based command routing, the structure of your CLI is visible at a glance from the directory layout. Rune resolves routing based on this command tree and only loads the matched command module.

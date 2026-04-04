@@ -6,6 +6,7 @@ export default defineConfig({
   },
   lint: { options: { typeAware: true, typeCheck: true } },
   fmt: {
+    ignorePatterns: ["docs/**/*.{md,mdx}"],
     sortImports: {
       groups: [
         "type-import",
