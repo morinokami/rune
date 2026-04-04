@@ -15,12 +15,14 @@ catalog:
   "@types/node": 24.12.0
   "@typescript/native-preview": 7.0.0-dev.20260329.1
   astro: 6.1.1
+  astro-og: 0.3.2
   esbuild: 0.27.4
   knip: 6.1.0
   pkg-pr-new: 0.0.66
   publint: 0.3.18
   sharp: 0.34.5
   sherif: 1.11.0
+  starlight-dot-md: 0.2.0
   typescript: 5.9.3
   vite: npm:@voidzero-dev/vite-plus-core@0.1.14
   vite-plus: 0.1.14

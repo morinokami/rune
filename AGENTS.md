@@ -1,6 +1,6 @@
 # Rune
 
-TypeScript-first, file-based CLI framework. Directory structure maps directly to CLI command structure.
+TypeScript-first, agent-friendly CLI framework. Directory structure maps directly to CLI command structure.
 
 ## Toolchain
 

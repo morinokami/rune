@@ -12,7 +12,8 @@
   "scripts": {
     "start": "rune run",
     "build": "rune build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "rune": "rune"
   },
   "devDependencies": {
     "@rune-cli/rune": "^0.0.16",

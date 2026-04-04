@@ -1,6 +1,6 @@
 # Rune
 
-Rune is a CLI framework built around the concept of file-based command routing. Directory structure maps directly to CLI command structure.
+Rune is an agent-friendly CLI framework built around the concept of file-based command routing. Directory structure maps directly to CLI command structure.
 
 > [!IMPORTANT]
 > This package is experimental and unstable. Proceed with caution when using it.

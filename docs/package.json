@@ -4,15 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
+    "dev": "astro dev --host",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "generate:logo": "node scripts/generate-logo.ts",
+    "generate:favicon": "node scripts/generate-favicon.ts"
   },
   "dependencies": {
     "@astrojs/starlight": "catalog:",
     "astro": "catalog:",
     "sharp": "catalog:"
+  },
+  "devDependencies": {
+    "astro-og": "catalog:",
+    "starlight-dot-md": "catalog:"
   }
 }
