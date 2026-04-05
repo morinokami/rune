@@ -91,6 +91,25 @@ export default defineGroup({
 
 `_group.ts` と `index.ts` は同じディレクトリに共存できません。ディレクトリパス自体を実行可能にしたい場合は `index.ts` を、サブコマンドのグループとしてのみ機能させたい場合は `_group.ts` を使用してください。
 
+## kebab-case のフィールド名
+
+引数やオプションの名前にハイフンを含む場合（例: `dry-run`）、`ctx.args` や `ctx.options` ではもとの名前に加えて camelCase 形式でもアクセスできます:
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  options: [{ name: "dry-run", type: "boolean" }],
+  run({ options }) {
+    // どちらでもアクセス可能
+    console.log(options["dry-run"]);
+    console.log(options.dryRun);
+  },
+});
+```
+
+この対応は型レベルでも保証されており、どちらの形式でも補完が効きます。
+
 ## エイリアス
 
 コマンドやグループには、エイリアス（別名）を設定できます。エイリアスを定義すると、元のコマンド名に加えて別名でも同じコマンドを呼び出せるようになります。
