@@ -23,7 +23,9 @@ Rune はコマンドをインプロセスでテストするための `runCommand
 
 ## 基本的なテスト
 
-[コマンド](/ja/guides/commands/)ガイドで定義したコマンドファイルをインポートし、`runCommand()` に渡すことでテストできます:
+`runCommand()` は `defineCommand()` で作成したコマンドを受け取り、指定された引数で実行します。テストしたいコマンドをインポートし、第 1 引数として渡してください。
+
+たとえば、[コマンド](/ja/guides/commands/)ガイドで作成した greeting コマンドは次のようにテストできます:
 
 ```ts
 import { expect, test } from "vitest";
