@@ -3,7 +3,7 @@ title: テスト
 description: Rune のコマンドをテストする方法について学ぶ。
 ---
 
-Rune はコマンドをインプロセスでテストするための `runCommand()` 関数を提供しています。`runCommand()` はテストランナーに依存しないため、Vitest や Jest、Node.js の組み込みテストランナーなど、任意のテストフレームワークと組み合わせて使用できます。`runCommand()` を使用するには、`@rune-cli/rune/test` からインポートします。
+Rune はコマンドをインプロセスでテストするための `runCommand()` 関数を提供しています。`runCommand()` は、解決済みコマンドそのものに対してユーザーが入力するのと同じ CLI トークンを受け取ります。`runCommand()` はテストランナーに依存しないため、Vitest や Jest、Node.js の組み込みテストランナーなど、任意のテストフレームワークと組み合わせて使用できます。`runCommand()` を使用するには、`@rune-cli/rune/test` からインポートします。
 
 :::note
 このガイドでは、テストフレームワークとして [Vitest](https://vitest.dev/) を使用しています。
