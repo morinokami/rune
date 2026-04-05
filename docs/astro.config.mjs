@@ -70,7 +70,13 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          autogenerate: { directory: "reference" },
+          items: [
+            { slug: "reference/define-command" },
+            { slug: "reference/define-group" },
+            { slug: "reference/command-error" },
+            { slug: "reference/test-utils" },
+            { slug: "reference/cli" },
+          ],
         },
       ],
       plugins: [starlightDotMd()],
