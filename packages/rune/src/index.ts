@@ -1,4 +1,4 @@
-export { createOutput, defineCommand, defineGroup } from "@rune-cli/core";
+export { CommandError, createOutput, defineCommand, defineGroup } from "@rune-cli/core";
 export type {
   CommandArgField,
   CommandContext,
