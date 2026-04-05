@@ -91,6 +91,25 @@ In this example, running `your-cli project` displays help output that includes t
 
 `_group.ts` and `index.ts` cannot coexist in the same directory. Use `index.ts` when the directory path itself should be an executable command, and `_group.ts` when it should only serve as a group of subcommands.
 
+## Kebab-case Field Names
+
+When an argument or option name contains hyphens (e.g. `dry-run`), it can be accessed on `ctx.args` or `ctx.options` using either the original name or its camelCase form:
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  options: [{ name: "dry-run", type: "boolean" }],
+  run({ options }) {
+    // both work
+    console.log(options["dry-run"]);
+    console.log(options.dryRun);
+  },
+});
+```
+
+This mapping is also enforced at the type level, so both forms get full autocompletion.
+
 ## Aliases
 
 Commands and groups can define aliases as alternative names. When an alias is set, the command can be invoked by either its original name or any of its aliases.
