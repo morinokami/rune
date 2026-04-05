@@ -3,7 +3,7 @@ title: Testing
 description: Learn how to test your Rune commands.
 ---
 
-Rune provides the `runCommand()` function for testing commands in-process. `runCommand()` does not depend on any specific test runner, so it works with any test framework such as Vitest, Jest, or the Node.js built-in test runner. Import it from `@rune-cli/rune/test`.
+Rune provides the `runCommand()` function for testing commands in-process. `runCommand()` takes the same CLI tokens a user would type for the resolved command itself. `runCommand()` does not depend on any specific test runner, so it works with any test framework such as Vitest, Jest, or the Node.js built-in test runner. Import it from `@rune-cli/rune/test`.
 
 :::note
 The examples in this guide use [Vitest](https://vitest.dev/) as the test framework.
