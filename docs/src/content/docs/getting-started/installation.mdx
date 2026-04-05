@@ -1,0 +1,112 @@
+---
+title: Install Rune
+description: How to install Rune and get started.
+sidebar:
+  label: Installation
+---
+
+import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Run the `create rune-app` command and answer a few prompts to quickly scaffold a new Rune project.
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) - `v24.12.0` or higher
+- Terminal - Rune requires command-line access to initialize a project
+
+## Installation
+
+<Steps>
+
+1. **Create a new project**
+
+   Run the following command in your terminal to create a new Rune project.
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     pnpm create rune-app
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     npm create rune-app@latest
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     yarn create rune-app
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     bun create rune-app
+     ```
+     </TabItem>
+   </Tabs>
+
+   You will be prompted for a project name, whether to install dependencies, and whether to initialize a git repository.
+
+   You can also pass the project name directly as an argument.
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     pnpm create rune-app my-cli
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     npm create rune-app@latest my-cli
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     yarn create rune-app my-cli
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     bun create rune-app my-cli
+     ```
+     </TabItem>
+   </Tabs>
+
+2. **Run a command**
+
+   Navigate to your project directory and run the starter `hello` command to verify everything works.
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     cd my-cli
+     pnpm run start hello
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     cd my-cli
+     npm run start -- hello
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     cd my-cli
+     yarn run start hello
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     cd my-cli
+     bun run start hello
+     ```
+     </TabItem>
+   </Tabs>
+
+   If you see the following output, you're all set.
+
+   ```
+   hello from my-cli
+   ```
+
+</Steps>

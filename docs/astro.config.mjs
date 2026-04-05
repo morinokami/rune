@@ -54,6 +54,7 @@ export default defineConfig({
           label: "Getting Started",
           items: [
             { slug: "getting-started/installation" },
+            { slug: "getting-started/quick-start" },
             { slug: "getting-started/project-structure" },
           ],
         },

@@ -1,0 +1,112 @@
+---
+title: Rune のインストール
+description: Rune のインストール方法とはじめ方。
+sidebar:
+  label: インストール
+---
+
+import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+`create rune-app` コマンドを実行していくつかの質問に回答することにより、新しい Rune プロジェクトを素早く作成できます。
+
+## 前提条件
+
+- [Node.js](https://nodejs.org/) - `v24.12.0` 以上
+- ターミナル - Rune プロジェクトの初期化にはコマンドライン操作が必要です
+
+## インストール
+
+<Steps>
+
+1. **新しいプロジェクトの作成**
+
+   ターミナルで以下のコマンドを実行し、新しい Rune プロジェクトを作成します。
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     pnpm create rune-app
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     npm create rune-app@latest
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     yarn create rune-app
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     bun create rune-app
+     ```
+     </TabItem>
+   </Tabs>
+
+   プロジェクト名の入力、依存関係のインストール、git リポジトリの初期化について対話形式で確認されます。
+
+   プロジェクト名は引数として直接渡すこともできます。
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     pnpm create rune-app my-cli
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     npm create rune-app@latest my-cli
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     yarn create rune-app my-cli
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     bun create rune-app my-cli
+     ```
+     </TabItem>
+   </Tabs>
+
+2. **コマンドの実行**
+
+   プロジェクトディレクトリに移動し、スターターに含まれる `hello` コマンドを実行して動作を確認します。
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     cd my-cli
+     pnpm run start hello
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     cd my-cli
+     npm run start -- hello
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     cd my-cli
+     yarn run start hello
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     cd my-cli
+     bun run start hello
+     ```
+     </TabItem>
+   </Tabs>
+
+   以下のような出力が表示されれば成功です。
+
+   ```
+   hello from my-cli
+   ```
+
+</Steps>
