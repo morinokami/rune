@@ -55,7 +55,6 @@ export default defineConfig({
           items: [
             { slug: "getting-started/installation" },
             { slug: "getting-started/quick-start" },
-            { slug: "getting-started/project-structure" },
           ],
         },
         {
@@ -65,8 +64,9 @@ export default defineConfig({
             { slug: "guides/commands" },
             { slug: "guides/testing" },
             { slug: "guides/json" },
-            { slug: "guides/skills" },
-            { slug: "guides/deployment" },
+            // { slug: "guides/standard-schema" },
+            // { slug: "guides/skills" },
+            // { slug: "guides/deployment" },
           ],
         },
         {

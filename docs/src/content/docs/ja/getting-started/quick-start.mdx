@@ -1,0 +1,390 @@
+---
+title: クイックスタート
+description: Rune ではじめての CLI をビルド・実行する。
+---
+
+import { FileTree, Tabs, TabItem } from "@astrojs/starlight/components";
+
+このガイドでは、[インストール](/ja/getting-started/installation/)で作成したスタータープロジェクトをベースに、コマンドの追加やビルドなどの Rune における基本的な開発の流れを体験します。
+
+## スタータープロジェクトの構造
+
+`create rune-app` コマンドにより生成されたプロジェクトは、次のような構成になっています:
+
+<FileTree>
+- src
+  - commands/
+    - hello.ts
+- tests
+  - commands/
+    - hello.test.ts
+- package.json
+- tsconfig.json
+</FileTree>
+
+`src/commands/hello.ts` は、スターターに含まれる唯一のコマンドファイルです。Rune では `src/commands` 以下のファイル構成がそのまま CLI のコマンド構造になります。詳しくは[ルーティング](/ja/guides/routing/)のガイドを参照してください。
+
+## hello コマンドの実行とテスト
+
+スターターに含まれる `hello` コマンドの中身を見てみましょう。`src/commands/hello.ts` は以下のようになっています:
+
+```ts
+// src/commands/hello.ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Say hello from your new Rune CLI",
+  run({ output }) {
+    output.info("hello from my-cli");
+  },
+});
+```
+
+`defineCommand()` にオブジェクトを渡し、返り値をデフォルトエクスポートすることでコマンドを定義します。`run` 関数がコマンドの実体です。`output.info` を通じて標準出力に書き込むことで、テスト時に `runCommand` で出力をキャプチャできるようになります。
+
+[インストール](/ja/getting-started/installation/)のステップで動作確認は済んでいますが、改めて実行してみます:
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  $ pnpm run start hello
+  hello from my-cli
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  $ npm run start -- hello
+  hello from my-cli
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  $ yarn run start hello
+  hello from my-cli
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  $ bun run start hello
+  hello from my-cli
+  ```
+  </TabItem>
+</Tabs>
+
+スターターにはテストファイルも含まれています。`tests/commands/hello.test.ts` を確認してみましょう:
+
+```ts
+// tests/commands/hello.test.ts
+import { runCommand } from "@rune-cli/rune/test";
+import { expect, test } from "vitest";
+
+import helloCommand from "../../src/commands/hello";
+
+test("hello command prints a greeting", async () => {
+  const result = await runCommand(helloCommand);
+
+  expect(result.stdout).toEqual("hello from my-cli\n");
+});
+```
+
+`@rune-cli/rune/test` が提供する `runCommand` を使うと、プロセスを起動せずにコマンドをインプロセスで実行し、出力を検証できます。ここではコマンドの標準出力が `hello from my-cli` であることをテストしています。スターターにはテストフレームワークの [Vitest](https://vitest.dev/) も同梱されているため、すぐにテストを実行できます:
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  pnpm run test
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  npm run test
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  yarn run test
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  bun run test
+  ```
+  </TabItem>
+</Tabs>
+
+以下のような出力が表示されれば成功です:
+
+```
+RUN  v4.1.2 /path/to/project
+
+✓ tests/commands/hello.test.ts (1 test) 2ms
+  ✓ hello command prints a greeting 1ms
+
+Test Files  1 passed (1)
+    Tests  1 passed (1)
+  Start at  21:45:01
+  Duration  139ms (transform 27ms, setup 0ms, import 42ms, tests 2ms, environment 0ms)
+```
+
+## 新しいコマンドの作成
+
+次に、引数を受け取る新しいコマンドを作成してみましょう。指定された数までカウントアップする `count` コマンドを実装します。
+
+`src/commands/count.ts` を作成し、以下の内容を記述します:
+
+```ts
+// src/commands/count.ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Count up to a number",
+  args: [
+    {
+      name: "to",
+      type: "number",
+      required: true,
+      description: "The number to count up to",
+    },
+  ],
+  run({ args, output }) {
+    for (let i = 1; i <= args.to; i++) {
+      output.info(i);
+    }
+  },
+});
+```
+
+`hello` コマンドとの違いとして、`args` で位置引数を定義しています。`run` 関数内では `args.to` として型安全にアクセスできます。
+
+ファイルを作成するだけで、Rune が自動的にコマンドとして認識します。実行してみましょう:
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  $ pnpm run start count 5
+  1
+  2
+  3
+  4
+  5
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  $ npm run start -- count 5
+  1
+  2
+  3
+  4
+  5
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  $ yarn run start count 5
+  1
+  2
+  3
+  4
+  5
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  $ bun run start count 5
+  1
+  2
+  3
+  4
+  5
+  ```
+  </TabItem>
+</Tabs>
+
+## オプションの追加
+
+続いて、`count` コマンドに `--reverse` オプションを追加してみましょう。`options` にオプションの定義を追加し、`run` 関数のロジックを更新します:
+
+```diff lang="ts"
+  // src/commands/count.ts
+  import { defineCommand } from "@rune-cli/rune";
+
+  export default defineCommand({
+    description: "Count up to a number",
+    args: [
+      {
+        name: "to",
+        type: "number",
+        required: true,
+        description: "The number to count up to",
+      },
+    ],
++   options: [
++     {
++       name: "reverse",
++       type: "boolean",
++       description: "Count in reverse order",
++     },
++   ],
+-   run({ args, output }) {
+-     for (let i = 1; i <= args.to; i++) {
+-       output.info(i);
+-     }
++   run({ args, options, output }) {
++     if (options.reverse) {
++       for (let i = args.to; i >= 1; i--) {
++         output.info(i);
++       }
++     } else {
++       for (let i = 1; i <= args.to; i++) {
++         output.info(i);
++       }
++     }
+    },
+  });
+```
+
+`--reverse` を指定すると、カウントダウンになります:
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  $ pnpm run start count 3 --reverse
+  3
+  2
+  1
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  $ npm run start -- count 3 --reverse
+  3
+  2
+  1
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  $ yarn run start count 3 --reverse
+  3
+  2
+  1
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  $ bun run start count 3 --reverse
+  3
+  2
+  1
+  ```
+  </TabItem>
+</Tabs>
+
+`--help` で、引数やオプションの情報が自動的にヘルプに反映されていることも確認できます:
+
+```
+Usage: my-cli count <to> [options]
+
+Description:
+  Count up to a number
+
+Arguments:
+  to <number>  The number to count up to
+
+Options:
+  --reverse <boolean>  Count in reverse order
+  -h, --help  Show help
+```
+
+## count コマンドのテスト
+
+hello コマンドのテストと同様に、`count` コマンドのテストも書いてみましょう。`tests/commands/count.test.ts` を作成します:
+
+```ts
+// tests/commands/count.test.ts
+import { runCommand } from "@rune-cli/rune/test";
+import { expect, test } from "vitest";
+
+import countCommand from "../../src/commands/count";
+
+test("counts up to the given number", async () => {
+  const result = await runCommand(countCommand, ["3"]);
+
+  expect(result.stdout).toEqual("1\n2\n3\n");
+});
+
+test("counts in reverse order with --reverse", async () => {
+  const result = await runCommand(countCommand, ["3", "--reverse"]);
+
+  expect(result.stdout).toEqual("3\n2\n1\n");
+});
+```
+
+`runCommand` の第2引数にコマンドライン引数を配列として渡すことで、実際の CLI 呼び出しと同じ条件でテストできます。テストを実行して結果を確認しましょう:
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  pnpm run test
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  npm run test
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  yarn run test
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  bun run test
+  ```
+  </TabItem>
+</Tabs>
+
+以下のような出力が表示されれば成功です:
+
+```
+RUN  v4.1.2 /path/to/project
+
+✓ tests/commands/hello.test.ts (1 test) 2ms
+✓ tests/commands/count.test.ts (2 tests) 2ms
+
+Test Files  2 passed (2)
+    Tests  3 passed (3)
+  Start at  22:06:11
+  Duration  164ms (transform 56ms, setup 0ms, import 86ms, tests 4ms, environment 0ms)
+```
+
+## CLI のビルド
+
+Rune プロジェクトをビルドすると、配布可能な CLI バイナリとして出力されます。
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  pnpm run build
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  npm run build
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  yarn run build
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  bun run build
+  ```
+  </TabItem>
+</Tabs>
+
+ビルド成果物は `dist/` ディレクトリに出力されます。`package.json` の `bin` フィールドに指定されたエントリーポイント（デフォルトでは `dist/cli.mjs`）を通じて、`npx` やグローバルインストール経由で CLI を実行できます。
