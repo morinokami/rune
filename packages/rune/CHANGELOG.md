@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.17
+
+### Patch Changes
+
+- [#59](https://github.com/morinokami/rune/pull/59) [`86ffa3f`](https://github.com/morinokami/rune/commit/86ffa3fadaaab018bf35b14449267befd837eca7) Thanks [@morinokami](https://github.com/morinokami)! - docs: add API reference pages and re-export CommandError from @rune-cli/rune
+
 ## 0.0.16
 
 ### Patch Changes
