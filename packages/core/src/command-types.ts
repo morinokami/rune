@@ -321,13 +321,6 @@ type FieldValue<TField> = TField extends { readonly schema: infer TSchema }
     ? PrimitiveFieldValue<TType>
     : never;
 
-// Computes the input value shape accepted before parsing or default application.
-type FieldInputValue<TField> = TField extends { readonly schema: infer TSchema }
-  ? InferSchemaInput<TSchema>
-  : TField extends { readonly type: infer TType extends PrimitiveFieldType }
-    ? PrimitiveFieldValue<TType>
-    : never;
-
 // Detects whether a field declares an actual default value.
 type HasDefaultValue<TField> = TField extends { readonly default: infer TDefault }
   ? [TDefault] extends [undefined]
@@ -418,11 +411,6 @@ export type InferNamedFields<
       : FieldName<TField>]?: FieldValue<TField>;
   }
 >;
-
-// Converts declared field arrays into the partial input shape accepted pre-normalization.
-export type InferExecutionFields<TFields extends readonly NamedField[]> = Simplify<{
-  [TField in TFields[number] as FieldName<TField>]?: FieldInputValue<TField>;
-}>;
 
 /** Runtime data passed into a command's `run` function. */
 export interface CommandContext<TOptions, TArgs> {

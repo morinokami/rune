@@ -67,11 +67,3 @@ export function defineGroup(input: DefineGroupInput): DefinedGroup {
 
   return group;
 }
-
-export function isDefinedGroup(value: unknown): value is DefinedGroup {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { [DEFINED_GROUP_BRAND]?: unknown })[DEFINED_GROUP_BRAND] === true
-  );
-}
