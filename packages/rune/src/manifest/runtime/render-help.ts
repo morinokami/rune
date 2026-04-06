@@ -14,6 +14,11 @@ import type { UnknownCommandRoute } from "./resolve-command-route";
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 
+export interface CommandHelpSubcommandEntry {
+  readonly label: string;
+  readonly description?: string | undefined;
+}
+
 function formatCommandName(cliName: string, pathSegments: CommandManifestPath): string {
   return pathSegments.length === 0 ? cliName : `${cliName} ${pathSegments.join(" ")}`;
 }
@@ -124,15 +129,36 @@ export function renderGroupHelp(options: RenderGroupHelpOptions): string {
   return `${parts.join("\n\n")}\n`;
 }
 
+export interface RenderCommandHelpOptions {
+  readonly command: DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>;
+  readonly pathSegments: CommandManifestPath;
+  readonly cliName: string;
+  readonly subcommands?: readonly CommandHelpSubcommandEntry[] | undefined;
+}
+
 // Renders help for a resolved executable command.
 export async function renderCommandHelp(
-  command: DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
-  pathSegments: CommandManifestPath,
-  cliName: string,
+  commandOrOptions:
+    | DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>
+    | RenderCommandHelpOptions,
+  pathSegments?: CommandManifestPath,
+  cliName?: string,
 ): Promise<string> {
+  const opts: RenderCommandHelpOptions =
+    "command" in commandOrOptions
+      ? commandOrOptions
+      : { command: commandOrOptions, pathSegments: pathSegments!, cliName: cliName! };
+
+  const { command, subcommands } = opts;
   const usageArguments = await formatUsageArguments(command.args);
   const optionUsageSuffix = getOptionUsageSuffix(command.options);
-  const usageParts = [formatCommandName(cliName, pathSegments), usageArguments, optionUsageSuffix]
+  const subcommandUsageSuffix = subcommands && subcommands.length > 0 ? "[command]" : "";
+  const usageParts = [
+    formatCommandName(opts.cliName, opts.pathSegments),
+    subcommandUsageSuffix,
+    usageArguments,
+    optionUsageSuffix,
+  ]
     .filter((part) => part.length > 0)
     .join(" ");
 
@@ -140,6 +166,10 @@ export async function renderCommandHelp(
 
   if (command.description) {
     parts.push(`Description:\n  ${command.description}`);
+  }
+
+  if (subcommands && subcommands.length > 0) {
+    parts.push(`Subcommands:\n${formatSectionEntries(subcommands)}`);
   }
 
   if (command.args.length > 0) {

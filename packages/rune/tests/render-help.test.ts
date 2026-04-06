@@ -371,6 +371,47 @@ describe("resolved help routing", () => {
     expect(help).toContain("-f, --force <boolean>");
   });
 
+  test("renderResolvedHelp shows subcommands for a command node with children", async () => {
+    const route = resolveCommandRoute(manifest, ["project", "--help"]);
+
+    const help = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return defineCommand({
+          description: "Project commands",
+          async run() {},
+        });
+      },
+    });
+
+    expect(help).toContain("Usage: mycli project [command]");
+    expect(help).toContain("Subcommands:");
+    expect(help).toContain("create  Create a project");
+    expect(help).toContain("list  List projects");
+    expect(help).toContain("-h, --help");
+  });
+
+  test("renderResolvedHelp places [command] before positional args in usage", async () => {
+    const route = resolveCommandRoute(manifest, ["project", "--help"]);
+
+    const help = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return defineCommand({
+          description: "Project commands",
+          args: [{ name: "id", type: "string", description: "Project identifier" }],
+          async run() {},
+        });
+      },
+    });
+
+    expect(help).toContain("Usage: mycli project [command] [id]");
+  });
+
   test("renderResolvedHelp renders scoped unknown-command suggestions", async () => {
     const route = resolveCommandRoute(manifest, ["project", "cretae"]);
     const help = await renderResolvedHelp({
