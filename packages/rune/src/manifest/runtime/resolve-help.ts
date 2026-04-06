@@ -1,6 +1,7 @@
-import type { CommandManifest } from "../manifest-types";
+import type { CommandManifest, CommandManifestPath } from "../manifest-types";
 import type { ResolveCommandRouteResult } from "./resolve-command-route";
 
+import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
 import { renderCommandHelp, renderGroupHelp, renderUnknownCommandMessage } from "./render-help";
 
@@ -28,6 +29,30 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
   }
 
   const loadCommand = options.loadCommand ?? defaultLoadCommand;
-  const command = await loadCommand(options.route.node);
-  return renderCommandHelp(command, options.route.matchedPath, options.cliName);
+  const node = options.route.node;
+  const command = await loadCommand(node);
+
+  if (node.childNames.length === 0) {
+    return renderCommandHelp(command, options.route.matchedPath, options.cliName);
+  }
+
+  const nodeMap = createCommandManifestNodeMap(options.manifest);
+  const subcommands = node.childNames.map((childName) => {
+    const childNode =
+      nodeMap[commandManifestPathToKey([...node.pathSegments, childName] as CommandManifestPath)];
+    const aliasSuffix =
+      childNode && childNode.aliases.length > 0 ? ` (${childNode.aliases.join(", ")})` : "";
+
+    return {
+      label: `${childName}${aliasSuffix}`,
+      description: childNode?.description,
+    };
+  });
+
+  return renderCommandHelp({
+    command,
+    pathSegments: options.route.matchedPath,
+    cliName: options.cliName,
+    subcommands,
+  });
 }
