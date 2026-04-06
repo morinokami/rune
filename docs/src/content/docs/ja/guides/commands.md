@@ -48,7 +48,7 @@ Arguments:
   name <string>
 
 Options:
-  --loud <boolean>
+  --loud
   -h, --help  Show help
 
 $ my-cli foo

@@ -291,7 +291,7 @@ describe("help and parse failures", () => {
 
     expect(captured.exitCode).toBe(0);
     expect(captured.stdout).toContain("Usage: mycli project create <id> [options]");
-    expect(captured.stdout).toContain("-f, --force <boolean>");
+    expect(captured.stdout).toContain("-f, --force");
     expect(captured.stderr).toBe("");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
       "create",

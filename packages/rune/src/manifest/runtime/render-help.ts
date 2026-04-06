@@ -36,7 +36,9 @@ function formatExamplesSection(examples: readonly string[]): string {
 }
 
 function formatTypeHint(field: CommandArgField | CommandOptionField): string {
-  return isSchemaField(field) ? "" : ` <${field.type}>`;
+  if (isSchemaField(field)) return "";
+  if (field.type === "boolean") return "";
+  return ` <${field.type}>`;
 }
 
 function formatArgumentLabel(field: CommandArgField): string {

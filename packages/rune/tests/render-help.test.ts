@@ -237,7 +237,7 @@ describe("command help", () => {
     expect(help).toContain("Description:\n  Create a project");
     expect(help).toContain("id <string>  Project identifier");
     expect(help).toContain("--name <string>  Project name");
-    expect(help).toContain("-f, --force <boolean>  Overwrite existing state");
+    expect(help).toContain("-f, --force  Overwrite existing state");
     expect(help).toContain("-h, --help  Show help");
   });
 
@@ -368,7 +368,7 @@ describe("resolved help routing", () => {
 
     expect(loadedSourceFilePaths).toEqual(["/commands/project/create/index.ts"]);
     expect(help).toContain("Usage: mycli project create [options]");
-    expect(help).toContain("-f, --force <boolean>");
+    expect(help).toContain("-f, --force");
   });
 
   test("renderResolvedHelp shows subcommands for a command node with children", async () => {
