@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.18
+
+### Patch Changes
+
+- [#65](https://github.com/morinokami/rune/pull/65) [`1999269`](https://github.com/morinokami/rune/commit/1999269589cbdcbbea936e1aa7d4eccea97a7cf2) Thanks [@morinokami](https://github.com/morinokami)! - fix: hide type hint for boolean options in help output
+
+- [#63](https://github.com/morinokami/rune/pull/63) [`ab96b97`](https://github.com/morinokami/rune/commit/ab96b977d6b01adcc1dc2f73a2ddf458f9cf904d) Thanks [@morinokami](https://github.com/morinokami)! - fix: show subcommands in help for command nodes with children
+
 ## 0.0.17
 
 ### Patch Changes
