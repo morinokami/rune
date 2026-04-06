@@ -42,3 +42,6 @@ peerDependencyRules:
     vitest: "*"
 
 minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - "@rune-cli/*"
+  - create-rune-app
