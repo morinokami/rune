@@ -3,7 +3,7 @@ import { format } from "node:util";
 /** Framework-owned output API for command-authored text. */
 export interface CommandOutput {
   /** Human-readable stdout output. Suppressed in JSON mode. */
-  info(...args: unknown[]): void;
+  log(...args: unknown[]): void;
 
   /** Diagnostic stderr output. Never suppressed by JSON mode. */
   error(...args: unknown[]): void;
@@ -22,7 +22,7 @@ export function createOutput(
   const silentStdout = options?.silentStdout ?? false;
 
   return {
-    info(...args: unknown[]) {
+    log(...args: unknown[]) {
       if (!silentStdout) {
         sink.stdout(`${format(...args)}\n`);
       }

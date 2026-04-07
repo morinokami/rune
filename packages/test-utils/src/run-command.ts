@@ -62,7 +62,7 @@ export interface CommandExecutionResult {
  * const command = defineCommand({
  *   args: [{ name: "id", type: "string", required: true }],
  *   async run(ctx) {
- *     ctx.output.info(ctx.args.id);
+ *     ctx.output.log(ctx.args.id);
  *   },
  * });
  *
@@ -78,7 +78,7 @@ export interface CommandExecutionResult {
  * const command = defineCommand({
  *   options: [{ name: "count", type: "number", default: 1 }],
  *   async run(ctx) {
- *     ctx.output.info(`count=${ctx.options.count}`);
+ *     ctx.output.log(`count=${ctx.options.count}`);
  *   },
  * });
  *

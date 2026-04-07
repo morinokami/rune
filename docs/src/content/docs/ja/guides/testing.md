@@ -88,7 +88,7 @@ test("returns structured error", async () => {
 
 ## JSON モードのテスト
 
-`json: true` が設定されたコマンドでは、`run()` の戻り値が `result.data` に格納されます。`--json` フラグを渡すと `output.info()` による出力が抑制され、`output.error()` は引き続き出力されます:
+`json: true` が設定されたコマンドでは、`run()` の戻り値が `result.data` に格納されます。`--json` フラグを渡すと `output.log()` による出力が抑制され、`output.error()` は引き続き出力されます:
 
 ```ts
 import { expect, test } from "vitest";
@@ -98,7 +98,7 @@ import { runCommand } from "@rune-cli/rune/test";
 const command = defineCommand({
   json: true,
   run({ output }) {
-    output.info("this is suppressed with --json");
+    output.log("this is suppressed with --json");
     return { items: [1, 2, 3] };
   },
 });
@@ -111,7 +111,7 @@ test("returns structured data", async () => {
 });
 ```
 
-`--json` フラグを渡さない場合でも `result.data` は取得できます。`--json` フラグは `output.info()` の出力を制御するものであり、`data` のキャプチャには影響しません。
+`--json` フラグを渡さない場合でも `result.data` は取得できます。`--json` フラグは `output.log()` の出力を制御するものであり、`data` のキャプチャには影響しません。
 
 ## コンテキストの注入
 
@@ -124,7 +124,7 @@ import { runCommand } from "@rune-cli/rune/test";
 
 const command = defineCommand({
   run({ cwd, output }) {
-    output.info(cwd);
+    output.log(cwd);
   },
 });
 

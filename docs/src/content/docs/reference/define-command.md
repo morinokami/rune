@@ -138,7 +138,7 @@ Usage examples shown in the `Examples:` section of `--help` output. Each entry i
 - **Type:** `boolean`
 - **Default:** `false`
 
-When `true`, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.info()` calls are suppressed.
+When `true`, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed.
 
 ### `run`
 
@@ -179,7 +179,7 @@ Unparsed argv tokens before Rune splits them into `args` and `options`. Useful f
 
 - **Type:** `CommandOutput`
 
-Framework output API. Use `output.info()` for stdout and `output.error()` for stderr.
+Framework output API. Use `output.log()` for stdout and `output.error()` for stderr.
 
 ## Kebab-case field names
 

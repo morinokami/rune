@@ -93,7 +93,7 @@ function runCommand(
 
 - **型:** `unknown`
 
-コマンドが `json: true` を使用している場合の `run()` の戻り値。`--json` フラグの有無にかかわらず格納されます。`--json` が制御するのは主に `output.info()` の抑制であり、`data` のキャプチャには影響しません。
+コマンドが `json: true` を使用している場合の `run()` の戻り値。`--json` フラグの有無にかかわらず格納されます。`--json` が制御するのは主に `output.log()` の抑制であり、`data` のキャプチャには影響しません。
 
 ## 使用例
 
@@ -114,7 +114,7 @@ test("requires an id argument", async () => {
 const command = defineCommand({
   options: [{ name: "count", type: "number", default: 1 }],
   run({ options, output }) {
-    output.info(`count=${options.count}`);
+    output.log(`count=${options.count}`);
   },
 });
 

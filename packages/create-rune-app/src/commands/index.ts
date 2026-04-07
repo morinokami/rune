@@ -216,11 +216,11 @@ export default defineCommand({
     ]);
 
     outro(`Rune project is ready at ${displayProjectPath}`);
-    ctx.output.info("Next steps:");
-    ctx.output.info(`  $ cd ${displayProjectPath}`);
+    ctx.output.log("Next steps:");
+    ctx.output.log(`  $ cd ${displayProjectPath}`);
     if (!shouldInstallDependencies) {
-      ctx.output.info(`  $ ${pm.installCommand}`);
+      ctx.output.log(`  $ ${pm.installCommand}`);
     }
-    ctx.output.info(`  $ ${pm.runCommand("start", "hello")}`);
+    ctx.output.log(`  $ ${pm.runCommand("start", "hello")}`);
   },
 });

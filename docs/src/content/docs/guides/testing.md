@@ -88,7 +88,7 @@ Unexpected exceptions are wrapped with `kind: "internal"`.
 
 ## Testing JSON Mode
 
-For commands with `json: true`, the return value of `run()` is captured in `result.data`. Passing the `--json` flag suppresses `output.info()`, while `output.error()` continues to output:
+For commands with `json: true`, the return value of `run()` is captured in `result.data`. Passing the `--json` flag suppresses `output.log()`, while `output.error()` continues to output:
 
 ```ts
 import { expect, test } from "vitest";
@@ -98,7 +98,7 @@ import { runCommand } from "@rune-cli/rune/test";
 const command = defineCommand({
   json: true,
   run({ output }) {
-    output.info("this is suppressed with --json");
+    output.log("this is suppressed with --json");
     return { items: [1, 2, 3] };
   },
 });
@@ -111,7 +111,7 @@ test("returns structured data", async () => {
 });
 ```
 
-`result.data` is populated even without the `--json` flag. The `--json` flag controls whether `output.info()` is suppressed, not whether `data` is captured.
+`result.data` is populated even without the `--json` flag. The `--json` flag controls whether `output.log()` is suppressed, not whether `data` is captured.
 
 ## Injecting Context
 
@@ -124,7 +124,7 @@ import { runCommand } from "@rune-cli/rune/test";
 
 const command = defineCommand({
   run({ cwd, output }) {
-    output.info(cwd);
+    output.log(cwd);
   },
 });
 
