@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.20
+
+### Patch Changes
+
+- [#74](https://github.com/morinokami/rune/pull/74) [`e2b6d6d`](https://github.com/morinokami/rune/commit/e2b6d6df051accf5b2afab7c1d8fdbb34fcb90c6) Thanks [@morinokami](https://github.com/morinokami)! - fix: rename output.info() to output.log() to avoid implying log-level semantics
+
 ## 0.0.19
 
 ### Patch Changes
