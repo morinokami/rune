@@ -12,7 +12,7 @@ catalog:
   "@clack/prompts": 1.1.0
   "@ls-lint/ls-lint": 2.3.1
   "@standard-schema/spec": 1.1.0
-  "@types/node": 24.12.0
+  "@types/node": 24.12.2
   "@typescript/native-preview": 7.0.0-dev.20260329.1
   astro: 6.1.1
   astro-og: 0.3.2
