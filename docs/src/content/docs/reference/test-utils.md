@@ -93,7 +93,7 @@ Structured error information, if the command failed.
 
 - **Type:** `unknown`
 
-Return value from `run()` when the command uses `json: true`. This is populated regardless of whether `--json` is passed; the `--json` flag controls whether `output.info()` is suppressed, not whether `data` is captured.
+Return value from `run()` when the command uses `json: true`. This is populated regardless of whether `--json` is passed; the `--json` flag controls whether `output.log()` is suppressed, not whether `data` is captured.
 
 ## Examples
 
@@ -114,7 +114,7 @@ test("requires an id argument", async () => {
 const command = defineCommand({
   options: [{ name: "count", type: "number", default: 1 }],
   run({ options, output }) {
-    output.info(`count=${options.count}`);
+    output.log(`count=${options.count}`);
   },
 });
 

@@ -47,9 +47,9 @@ $ your-cli projects list --json
 }
 ```
 
-`--json` フラグが渡された場合、`output.info()` による出力は自動的に抑制されます。一方、`output.error()` は引き続き stderr に出力されます。JSON モードでは成功・失敗を問わず stdout には常に 1 つの JSON ドキュメントだけが出力されるため、`jq` などのツールやプログラムから stdout をそのまま利用できます。
+`--json` フラグが渡された場合、`output.log()` による出力は自動的に抑制されます。一方、`output.error()` は引き続き stderr に出力されます。JSON モードでは成功・失敗を問わず stdout には常に 1 つの JSON ドキュメントだけが出力されるため、`jq` などのツールやプログラムから stdout をそのまま利用できます。
 
-`--json` フラグなしで実行した場合は、`output.info()` が通常通り出力されます。`run()` の戻り値は表示されません。そのため、人間向けとエージェント向けの両方の出力をひとつのコマンドで提供できます:
+`--json` フラグなしで実行した場合は、`output.log()` が通常通り出力されます。`run()` の戻り値は表示されません。そのため、人間向けとエージェント向けの両方の出力をひとつのコマンドで提供できます:
 
 ```ts
 import { defineCommand } from "@rune-cli/rune";
@@ -65,7 +65,7 @@ export default defineCommand({
 
     // --json なしの場合のみ表示される
     for (const p of projects) {
-      output.info(`${p.id}: ${p.name}`);
+      output.log(`${p.id}: ${p.name}`);
     }
 
     // --json の場合に JSON として出力される
@@ -74,7 +74,7 @@ export default defineCommand({
 });
 ```
 
-JSON モードの抑制対象はフレームワークの `output` API のみです。`console.log()` や `process.stdout.write()` で直接書き込まれた出力は抑制されず、JSON ペイロードに混入する原因になります。コマンドの出力には `output.info()` と `output.error()` を使用してください。
+JSON モードの抑制対象はフレームワークの `output` API のみです。`console.log()` や `process.stdout.write()` で直接書き込まれた出力は抑制されず、JSON ペイロードに混入する原因になります。コマンドの出力には `output.log()` と `output.error()` を使用してください。
 
 `run()` が明示的な値を返さなかった場合（戻り値が `undefined` の場合）、JSON 出力は `null` になります。
 

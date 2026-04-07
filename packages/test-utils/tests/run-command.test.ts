@@ -9,7 +9,7 @@ describe("execution", () => {
     const command = defineCommand({
       options: [{ name: "name", type: "string", required: true }],
       async run(ctx) {
-        ctx.output.info(`hello ${ctx.options.name}`);
+        ctx.output.log(`hello ${ctx.options.name}`);
       },
     });
 
@@ -78,7 +78,7 @@ describe("execution", () => {
     const cwd = path.join("/tmp", "rune-test");
     const command = defineCommand({
       async run(ctx) {
-        ctx.output.info(ctx.cwd);
+        ctx.output.log(ctx.cwd);
       },
     });
 
@@ -91,7 +91,7 @@ describe("execution", () => {
     const command = defineCommand({
       options: [{ name: "name", type: "string", required: true }],
       async run(ctx) {
-        ctx.output.info(ctx.rawArgs.join(" "));
+        ctx.output.log(ctx.rawArgs.join(" "));
       },
     });
 
@@ -104,7 +104,7 @@ describe("execution", () => {
     const command = defineCommand({
       args: [{ name: "id", type: "string", required: true }],
       async run(ctx) {
-        ctx.output.info(`id=${ctx.args.id}`);
+        ctx.output.log(`id=${ctx.args.id}`);
       },
     });
 
@@ -125,7 +125,7 @@ describe("validation", () => {
     const command = defineCommand({
       args: [{ name: "id", type: "string", required: true }],
       async run(ctx) {
-        ctx.output.info(ctx.args.id);
+        ctx.output.log(ctx.args.id);
       },
     });
 
@@ -160,7 +160,7 @@ describe("validation", () => {
     const command = defineCommand({
       options: [{ name: "count", type: "number", default: 1 }],
       async run(ctx) {
-        ctx.output.info(`count=${ctx.options.count}`);
+        ctx.output.log(`count=${ctx.options.count}`);
       },
     });
 
@@ -174,7 +174,7 @@ describe("validation", () => {
     const command = defineCommand({
       options: [{ name: "count", type: "number", required: true }],
       async run(ctx) {
-        ctx.output.info(`type=${typeof ctx.options.count},value=${ctx.options.count}`);
+        ctx.output.log(`type=${typeof ctx.options.count},value=${ctx.options.count}`);
       },
     });
 
@@ -186,11 +186,11 @@ describe("validation", () => {
 });
 
 describe("json mode", () => {
-  test("runCommand suppresses output.info when --json is passed", async () => {
+  test("runCommand suppresses output.log when --json is passed", async () => {
     const command = defineCommand({
       json: true,
       async run(ctx) {
-        ctx.output.info("this should be suppressed");
+        ctx.output.log("this should be suppressed");
         return { items: [1, 2, 3] };
       },
     });
@@ -221,7 +221,7 @@ describe("json mode", () => {
     const command = defineCommand({
       json: true,
       async run(ctx) {
-        ctx.output.info("visible output");
+        ctx.output.log("visible output");
         return { count: 42 };
       },
     });
@@ -295,7 +295,7 @@ describe("json mode", () => {
       json: true,
       args: [{ name: "flag", type: "string", required: true }],
       async run(ctx) {
-        ctx.output.info(ctx.args.flag);
+        ctx.output.log(ctx.args.flag);
         return { extracted: false };
       },
     });

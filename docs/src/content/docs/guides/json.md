@@ -47,9 +47,9 @@ $ your-cli projects list --json
 }
 ```
 
-When the `--json` flag is passed, `output.info()` calls are automatically suppressed. `output.error()` continues to write to stderr. In JSON mode, stdout always contains exactly one JSON document regardless of success or failure, so it can be consumed directly by tools like `jq` or other programs.
+When the `--json` flag is passed, `output.log()` calls are automatically suppressed. `output.error()` continues to write to stderr. In JSON mode, stdout always contains exactly one JSON document regardless of success or failure, so it can be consumed directly by tools like `jq` or other programs.
 
-Without the `--json` flag, `output.info()` works as normal and the return value of `run()` is not printed. This allows a single command to serve both human-readable and agent-friendly output:
+Without the `--json` flag, `output.log()` works as normal and the return value of `run()` is not printed. This allows a single command to serve both human-readable and agent-friendly output:
 
 ```ts
 import { defineCommand } from "@rune-cli/rune";
@@ -65,7 +65,7 @@ export default defineCommand({
 
     // Only displayed without --json
     for (const p of projects) {
-      output.info(`${p.id}: ${p.name}`);
+      output.log(`${p.id}: ${p.name}`);
     }
 
     // Output as JSON with --json
@@ -74,7 +74,7 @@ export default defineCommand({
 });
 ```
 
-Only output written through the framework's `output` API is suppressed in JSON mode. Output written directly via `console.log()` or `process.stdout.write()` is not suppressed and will corrupt the JSON payload. Always use `output.info()` and `output.error()` for command output.
+Only output written through the framework's `output` API is suppressed in JSON mode. Output written directly via `console.log()` or `process.stdout.write()` is not suppressed and will corrupt the JSON payload. Always use `output.log()` and `output.error()` for command output.
 
 If `run()` does not return an explicit value (i.e. returns `undefined`), the JSON output will be `null`.
 

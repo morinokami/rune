@@ -35,12 +35,12 @@ import { defineCommand } from "@rune-cli/rune";
 export default defineCommand({
   description: "Say hello from your new Rune CLI",
   run({ output }) {
-    output.info("hello from my-cli");
+    output.log("hello from my-cli");
   },
 });
 ```
 
-You define a command by passing an object to `defineCommand()` and default-exporting the result. The `run` function is where your command logic lives. Writing to stdout via `output.info` allows `runCommand` to capture the output during testing.
+You define a command by passing an object to `defineCommand()` and default-exporting the result. The `run` function is where your command logic lives. Writing to stdout via `output.log` allows `runCommand` to capture the output during testing.
 
 You already verified this works during [installation](/getting-started/installation/), but let's run it again:
 
@@ -148,7 +148,7 @@ export default defineCommand({
   ],
   run({ args, output }) {
     for (let i = 1; i <= args.to; i++) {
-      output.info(i);
+      output.log(i);
     }
   },
 });
@@ -228,16 +228,16 @@ Next, let's add a `--reverse` option to the `count` command. Add an `options` de
 +   ],
 -   run({ args, output }) {
 -     for (let i = 1; i <= args.to; i++) {
--       output.info(i);
+-       output.log(i);
 -     }
 +   run({ args, options, output }) {
 +     if (options.reverse) {
 +       for (let i = args.to; i >= 1; i--) {
-+         output.info(i);
++         output.log(i);
 +       }
 +     } else {
 +       for (let i = 1; i <= args.to; i++) {
-+         output.info(i);
++         output.log(i);
 +       }
 +     }
     },

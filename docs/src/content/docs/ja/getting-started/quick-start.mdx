@@ -35,12 +35,12 @@ import { defineCommand } from "@rune-cli/rune";
 export default defineCommand({
   description: "Say hello from your new Rune CLI",
   run({ output }) {
-    output.info("hello from my-cli");
+    output.log("hello from my-cli");
   },
 });
 ```
 
-`defineCommand()` にオブジェクトを渡し、返り値をデフォルトエクスポートすることでコマンドを定義します。`run` 関数がコマンドの実体です。`output.info` を通じて標準出力に書き込むことで、テスト時に `runCommand` で出力をキャプチャできるようになります。
+`defineCommand()` にオブジェクトを渡し、返り値をデフォルトエクスポートすることでコマンドを定義します。`run` 関数がコマンドの実体です。`output.log` を通じて標準出力に書き込むことで、テスト時に `runCommand` で出力をキャプチャできるようになります。
 
 [インストール](/ja/getting-started/installation/)のステップで動作確認は済んでいますが、改めて実行してみます:
 
@@ -148,7 +148,7 @@ export default defineCommand({
   ],
   run({ args, output }) {
     for (let i = 1; i <= args.to; i++) {
-      output.info(i);
+      output.log(i);
     }
   },
 });
@@ -228,16 +228,16 @@ export default defineCommand({
 +   ],
 -   run({ args, output }) {
 -     for (let i = 1; i <= args.to; i++) {
--       output.info(i);
+-       output.log(i);
 -     }
 +   run({ args, options, output }) {
 +     if (options.reverse) {
 +       for (let i = args.to; i >= 1; i--) {
-+         output.info(i);
++         output.log(i);
 +       }
 +     } else {
 +       for (let i = 1; i <= args.to; i++) {
-+         output.info(i);
++         output.log(i);
 +       }
 +     }
     },

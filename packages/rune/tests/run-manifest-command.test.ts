@@ -528,7 +528,7 @@ describe("json mode", () => {
       [
         "  json: true,",
         "  async run(ctx) {",
-        '    ctx.output.info("human text");',
+        '    ctx.output.log("human text");',
         "    return { items: [1, 2, 3] };",
         "  },",
       ].join("\n"),
@@ -542,14 +542,14 @@ describe("json mode", () => {
 
     expect(captured.exitCode).toBe(0);
     expect(JSON.parse(captured.stdout)).toEqual({ items: [1, 2, 3] });
-    // output.info should be suppressed in JSON mode
+    // output.log should be suppressed in JSON mode
     expect(captured.stdout).not.toContain("human text");
     expect(captured.stderr).toBe("");
   });
 
   test("runManifestCommand does not activate JSON mode for commands without json: true", async () => {
     const { manifest } = await createJsonFixture(
-      ["  async run(ctx) {", '    ctx.output.info("hello");', "  },"].join("\n"),
+      ["  async run(ctx) {", '    ctx.output.log("hello");', "  },"].join("\n"),
     );
 
     const captured = await captureRunManifestCommand({
@@ -568,7 +568,7 @@ describe("json mode", () => {
         "  json: true,",
         '  args: [{ name: "extra", type: "string" }],',
         "  async run(ctx) {",
-        '    ctx.output.info("visible");',
+        '    ctx.output.log("visible");',
         "    return { ok: true };",
         "  },",
       ].join("\n"),
