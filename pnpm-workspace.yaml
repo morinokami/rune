@@ -21,7 +21,7 @@ catalog:
   pkg-pr-new: 0.0.66
   publint: 0.3.18
   sharp: 0.34.5
-  sherif: 1.11.0
+  sherif: 1.11.1
   starlight-dot-md: 0.2.0
   typescript: 5.9.3
   vite: npm:@voidzero-dev/vite-plus-core@0.1.14
