@@ -7,6 +7,7 @@ import type {
   ValidateArgOrder,
   ValidateDuplicateShortNames,
   ValidateFieldNames,
+  ValidateNegationCollision,
   ValidateUniqueNames,
 } from "./command-types";
 
@@ -84,6 +85,22 @@ function validateOptionNames(options: readonly CommandOptionField[]): void {
       throw new Error(
         `Invalid option name "${field.name}". Option names must start with a letter and contain only letters, numbers, and internal hyphens.`,
       );
+    }
+  }
+}
+
+function validateNegationCollisions(options: readonly CommandOptionField[]): void {
+  const allNames = new Set(options.map((field) => field.name));
+
+  for (const field of options) {
+    if (!isSchemaField(field) && field.type === "boolean" && field.default === true) {
+      const negName = `no-${field.name}`;
+
+      if (allNames.has(negName)) {
+        throw new Error(
+          `Option "${negName}" conflicts with the automatic negation of boolean option "${field.name}".`,
+        );
+      }
     }
   }
 }
@@ -224,7 +241,8 @@ export function defineCommand<
     ValidateArgOrder<TArgsFields> &
     ValidateFieldNames<TArgsFields, TOptionsFields> &
     ValidateUniqueNames<TArgsFields, TOptionsFields> &
-    ValidateDuplicateShortNames<TOptionsFields>,
+    ValidateDuplicateShortNames<TOptionsFields> &
+    ValidateNegationCollision<TOptionsFields>,
 ): DefinedCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>,
@@ -244,6 +262,7 @@ export function defineCommand<
     validateUniqueFieldNames(input.options, "option");
     validateOptionNames(input.options);
     validateOptionShortNames(input.options);
+    validateNegationCollisions(input.options);
   }
 
   const command = {

@@ -311,6 +311,58 @@ export type ValidateDuplicateShortNames<TOpts> = TOpts extends readonly CommandO
     : unknown
   : unknown;
 
+// ---------------------------------------------------------------------------
+// Negation collision detection
+// ---------------------------------------------------------------------------
+
+// True when a field is a primitive boolean option with `default: true`.
+// Literal checks prevent matching widened types (e.g. `PrimitiveFieldType`,
+// `boolean`), deferring to the runtime validator in those cases.
+type IsNegatableOption<TField> = TField extends {
+  readonly type: "boolean";
+  readonly default: true;
+}
+  ? true
+  : false;
+
+// Collects `no-<name>` strings for every negatable option in the tuple.
+type CollectNegationNames<TFields extends readonly CommandOptionField[]> =
+  TFields extends readonly [infer H, ...infer T extends readonly CommandOptionField[]]
+    ? H extends { readonly name: infer N extends string }
+      ? string extends N // widened name — skip, defer to runtime
+        ? CollectNegationNames<T>
+        : IsNegatableOption<H> extends true
+          ? `no-${N}` | CollectNegationNames<T>
+          : CollectNegationNames<T>
+      : CollectNegationNames<T>
+    : never;
+
+// Walks the tuple checking whether any option name equals a collected negation name.
+type HasNegationCollision<
+  TFields extends readonly CommandOptionField[],
+  TNegNames extends string = CollectNegationNames<TFields>,
+> = [TNegNames] extends [never]
+  ? false
+  : TFields extends readonly [infer H, ...infer T extends readonly CommandOptionField[]]
+    ? H extends { readonly name: infer N extends string }
+      ? string extends N
+        ? HasNegationCollision<T, TNegNames>
+        : N extends TNegNames
+          ? true
+          : HasNegationCollision<T, TNegNames>
+      : HasNegationCollision<T, TNegNames>
+    : false;
+
+export type ValidateNegationCollision<TOpts> = TOpts extends readonly CommandOptionField[]
+  ? IsTuple<TOpts> extends true
+    ? HasNegationCollision<TOpts> extends true
+      ? {
+          readonly __negationCollision: ErrorMessage<"ERROR: Option name conflicts with automatic --no-<name> negation of a boolean option with default true.">;
+        }
+      : unknown
+    : unknown
+  : unknown;
+
 // Pulls the declared field name out of a field definition and includes a
 // camelCase alias so kebab-case fields can be accessed with either casing.
 type FieldName<TField> = TField extends { readonly name: infer TName extends string }

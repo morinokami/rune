@@ -68,6 +68,18 @@ type TokenizedParseArgsResult = ReturnType<typeof parseArgs<TokenizedParseArgsCo
 type ParseArgsToken = NonNullable<TokenizedParseArgsResult["tokens"]>[number];
 
 // ---------------------------------------------------------------------------
+// Negatable boolean options
+// ---------------------------------------------------------------------------
+
+function isNegatableOption(field: CommandOptionField): boolean {
+  return !isSchemaField(field) && field.type === "boolean" && field.default === true;
+}
+
+function negationName(name: string): string {
+  return `no-${name}`;
+}
+
+// ---------------------------------------------------------------------------
 // Error constructors
 // ---------------------------------------------------------------------------
 
@@ -148,6 +160,15 @@ function createUnexpectedArgumentError(token: string): FailedFieldParse {
     ok: false,
     error: {
       message: `Unexpected argument "${token}"`,
+    },
+  };
+}
+
+function createConflictingOptionError(field: CommandOptionField): FailedFieldParse {
+  return {
+    ok: false,
+    error: {
+      message: `Conflicting options: "--${field.name}" and "--${negationName(field.name)}" cannot be used together`,
     },
   };
 }
@@ -404,6 +425,10 @@ function buildParseArgsOptions<TOptionsFields extends readonly CommandOptionFiel
       : {
           type: getOptionParseType(field),
         };
+
+    if (isNegatableOption(field)) {
+      config[negationName(field.name)] = { type: "boolean" };
+    }
   }
 
   return config;
@@ -428,6 +453,20 @@ function detectDuplicateOption(
 
       if (field) {
         return createDuplicateOptionError(field);
+      }
+
+      // Check if this is a duplicate negation (e.g. --no-color --no-color)
+      const negatedField = options.find(
+        (option) => isNegatableOption(option) && negationName(option.name) === token.name,
+      );
+
+      if (negatedField) {
+        return {
+          ok: false,
+          error: {
+            message: `Duplicate option "--${negationName(negatedField.name)}" is not supported`,
+          },
+        };
       }
     }
   }
@@ -518,6 +557,16 @@ export async function parseCommandArgs<
 
   for (const field of command.options) {
     const rawValue = parsed.values[field.name];
+    const negated = isNegatableOption(field) ? parsed.values[negationName(field.name)] : undefined;
+
+    if (rawValue !== undefined && negated !== undefined) {
+      return createConflictingOptionError(field);
+    }
+
+    if (negated !== undefined) {
+      parsedOptions[field.name] = false;
+      continue;
+    }
 
     // Values returned by `parseArgs` have already been tokenized and matched to this option.
     if (rawValue !== undefined) {

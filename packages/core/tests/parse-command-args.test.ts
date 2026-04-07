@@ -313,6 +313,126 @@ describe("error cases: invalid values", () => {
   });
 });
 
+describe("negatable boolean options", () => {
+  test("parseCommandArgs uses default true when neither --flag nor --no-flag is provided", async () => {
+    const command = defineCommand({
+      options: [{ name: "color", type: "boolean", default: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, []);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { color: true },
+        rawArgs: [],
+      },
+    });
+  });
+
+  test("parseCommandArgs sets value to true when --flag is provided", async () => {
+    const command = defineCommand({
+      options: [{ name: "color", type: "boolean", default: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--color"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { color: true },
+        rawArgs: ["--color"],
+      },
+    });
+  });
+
+  test("parseCommandArgs sets value to false when --no-flag is provided", async () => {
+    const command = defineCommand({
+      options: [{ name: "color", type: "boolean", default: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--no-color"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { color: false },
+        rawArgs: ["--no-color"],
+      },
+    });
+  });
+
+  test("parseCommandArgs fails when both --flag and --no-flag are provided", async () => {
+    const command = defineCommand({
+      options: [{ name: "color", type: "boolean", default: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--color", "--no-color"]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        message: 'Conflicting options: "--color" and "--no-color" cannot be used together',
+      },
+    });
+  });
+
+  test("parseCommandArgs rejects duplicate --no-flag", async () => {
+    const command = defineCommand({
+      options: [{ name: "color", type: "boolean", default: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--no-color", "--no-color"]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        message: 'Duplicate option "--no-color" is not supported',
+      },
+    });
+  });
+
+  test("parseCommandArgs does not generate --no-flag for boolean options without default true", async () => {
+    const command = defineCommand({
+      options: [{ name: "force", type: "boolean" }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--no-force"]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        message: 'Unknown option "--no-force"',
+      },
+    });
+  });
+
+  test("parseCommandArgs supports --no-flag with kebab-case option names", async () => {
+    const command = defineCommand({
+      options: [{ name: "dry-run", type: "boolean", default: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--no-dry-run"]);
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        options: { "dry-run": false, dryRun: false },
+      },
+    });
+  });
+});
+
 describe("parseArgs edge cases", () => {
   test("parseCommandArgs respects the -- separator", async () => {
     const command = defineCommand({

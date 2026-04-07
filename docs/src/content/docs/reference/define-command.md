@@ -103,7 +103,7 @@ Help text shown in `--help` output.
 
 Options declared as `--name` flags.
 
-Each entry is either a **primitive field** or a **schema field**, with the same base properties as `args` plus the following additional properties. Primitive boolean options always default to `false`, even when `required` and `default` are omitted.
+Each entry is either a **primitive field** or a **schema field**, with the same base properties as `args` plus the following additional properties. Primitive boolean options always default to `false`, even when `required` and `default` are omitted. When a primitive boolean option sets `default: true`, a `--no-<name>` flag is automatically generated so users can override the default. See [Negatable boolean options](#negatable-boolean-options) for details.
 
 #### `short`
 
@@ -184,3 +184,28 @@ Framework output API. Use `output.log()` for stdout and `output.error()` for std
 ## Kebab-case field names
 
 Fields with hyphenated names (e.g. `dry-run`) are accessible by both the original name and its camelCase equivalent (`dryRun`) on the `ctx.args` and `ctx.options` objects. This is enforced at the type level.
+
+## Negatable boolean options
+
+When a primitive boolean option has `default: true`, Rune automatically generates a `--no-<name>` flag that sets the value to `false`.
+
+```ts
+export default defineCommand({
+  options: [{ name: "color", type: "boolean", default: true }],
+  run({ options }) {
+    console.log(options.color); // true by default, false with --no-color
+  },
+});
+```
+
+The `--help` output shows both forms:
+
+```
+Options:
+  --color, --no-color
+  -h, --help           Show help
+```
+
+`--<name>` and `--no-<name>` cannot be used together — doing so produces an error. Defining a separate option whose name matches the generated negation (e.g. an option named `no-color` alongside a negatable `color` option) is also rejected at definition time.
+
+This feature only applies to primitive boolean options with an explicit `default: true`. Schema-backed fields are not affected because their default values cannot be inspected at definition time.

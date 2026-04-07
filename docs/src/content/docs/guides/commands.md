@@ -110,6 +110,44 @@ export default defineCommand({
 
 This mapping is also enforced at the type level, so both forms get full autocompletion.
 
+## Negatable Boolean Options
+
+When a primitive boolean option has `default: true`, Rune automatically generates a `--no-<name>` flag so users can override the default:
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  options: [
+    {
+      name: "color",
+      type: "boolean",
+      default: true,
+      description: "Colorize output",
+    },
+  ],
+  run({ options }) {
+    console.log(options.color);
+  },
+});
+```
+
+```bash
+$ my-cli          # options.color → true (default)
+$ my-cli --color     # options.color → true
+$ my-cli --no-color  # options.color → false
+```
+
+The `--help` output shows both forms together:
+
+```
+Options:
+  --color, --no-color  Colorize output
+  -h, --help           Show help
+```
+
+Using `--color` and `--no-color` together in the same invocation is an error.
+
 ## Aliases
 
 Commands and groups can define aliases as alternative names. When an alias is set, the command can be invoked by either its original name or any of its aliases.
