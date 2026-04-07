@@ -3404,10 +3404,6 @@ packages:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
 
-  smol-toml@1.6.0:
-    resolution: {integrity: sha512-4zemZi0HvTnYwLfrpk/CF9LOd9Lt87kAt50GnqhMpyF9U3poDAP2+iukq2bZsO/ufegbYehBkqINbsWxj4l4cw==}
-    engines: {node: '>= 18'}
-
   smol-toml@1.6.1:
     resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
     engines: {node: '>= 18'}
@@ -3918,7 +3914,7 @@ snapshots:
       remark-smartypants: 3.0.2
       retext-smartypants: 6.2.0
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       unified: 11.0.5
       unist-util-remove-position: 5.0.0
       unist-util-visit: 5.1.0
@@ -5339,7 +5335,7 @@ snapshots:
       rehype: 13.0.2
       semver: 7.7.4
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       svgo: 4.0.1
       tinyclip: 0.1.12
       tinyexec: 1.0.4
@@ -7374,8 +7370,6 @@ snapshots:
       unicode-emoji-modifier-base: 1.0.0
 
   slash@3.0.0: {}
-
-  smol-toml@1.6.0: {}
 
   smol-toml@1.6.1: {}
 

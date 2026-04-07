@@ -252,3 +252,41 @@ describe("type-level duplicate and collision detection", () => {
     });
   });
 });
+
+describe("type-level compound validation errors", () => {
+  test("multiple validators firing simultaneously do not collapse to plain never", () => {
+    // Empty duplicate names: triggers both ValidateFieldNames (empty name) and
+    // ValidateUniqueNames (duplicate name). Each should produce its own
+    // ErrorMessage instead of collapsing to never.
+    void ((input: {
+      args: [{ name: ""; type: "string" }, { name: ""; type: "string" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error invalid + duplicate arg name (compound error)
+      defineCommand(input);
+    });
+
+    // Required-after-optional with duplicate names: triggers both
+    // ValidateArgOrder and ValidateUniqueNames on args.
+    void ((input: {
+      args: [{ name: "x"; type: "string" }, { name: "x"; type: "string"; required: true }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error invalid order + duplicate arg name (compound error)
+      defineCommand(input);
+    });
+
+    // Duplicate option name + duplicate short: triggers both
+    // ValidateUniqueNames and ValidateDuplicateShortNames on options.
+    void ((input: {
+      options: [
+        { name: "force"; type: "boolean"; short: "f" },
+        { name: "force"; type: "boolean"; short: "f" },
+      ];
+      run: () => void;
+    }) => {
+      // @ts-expect-error duplicate name + duplicate short (compound error)
+      defineCommand(input);
+    });
+  });
+});
