@@ -17,7 +17,7 @@ catalog:
   astro: 6.1.1
   astro-og: 0.3.2
   esbuild: 0.27.4
-  knip: 6.1.0
+  knip: 6.3.0
   pkg-pr-new: 0.0.66
   publint: 0.3.18
   sharp: 0.34.5
