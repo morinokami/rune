@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.19
+
+### Patch Changes
+
+- [#68](https://github.com/morinokami/rune/pull/68) [`78d1da8`](https://github.com/morinokami/rune/commit/78d1da81dd60843748cd1dfa5ea3a2bf23ef8b25) Thanks [@morinokami](https://github.com/morinokami)! - fix: align runCommand stderr output with actual CLI behavior
+
+- [#66](https://github.com/morinokami/rune/pull/66) [`fc79c5c`](https://github.com/morinokami/rune/commit/fc79c5ca2bdd8acc134003be26e0f848f89e8176) Thanks [@morinokami](https://github.com/morinokami)! - fix: surface descriptive error messages for type-level constraint violations
+
 ## 0.0.18
 
 ### Patch Changes
