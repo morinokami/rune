@@ -16,7 +16,7 @@ catalog:
   "@typescript/native-preview": 7.0.0-dev.20260329.1
   astro: 6.1.1
   astro-og: 0.3.2
-  esbuild: 0.27.4
+  esbuild: 0.28.0
   knip: 6.3.0
   pkg-pr-new: 0.0.66
   publint: 0.3.18
