@@ -36,7 +36,7 @@ describe("execution", () => {
     expect(result).toEqual({
       exitCode: 1,
       stdout: "",
-      stderr: "",
+      stderr: "boom\n",
       error: {
         kind: "internal",
         message: "boom",
@@ -63,7 +63,7 @@ describe("execution", () => {
     expect(result).toEqual({
       exitCode: 7,
       stdout: "",
-      stderr: "",
+      stderr: "Config file was not found\nHint: Create rune.config.ts\n",
       error: {
         kind: "config/not-found",
         message: "Config file was not found",
@@ -244,6 +244,50 @@ describe("json mode", () => {
     const result = await runCommand(command, ["--json", "--name", "rune"]);
 
     expect(result.data).toEqual({ rawArgs: ["--json", "--name", "rune"] });
+  });
+
+  test("runCommand does not write human error to stderr in json mode for CommandError", async () => {
+    const command = defineCommand({
+      json: true,
+      async run() {
+        throw new CommandError({
+          kind: "not-found",
+          message: "Resource not found",
+          hint: "Check the ID",
+        });
+      },
+    });
+
+    const result = await runCommand(command, ["--json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(result.error).toEqual({
+      kind: "not-found",
+      message: "Resource not found",
+      hint: "Check the ID",
+      exitCode: 1,
+    });
+  });
+
+  test("runCommand does not write human error to stderr in json mode for parse failure", async () => {
+    const command = defineCommand({
+      json: true,
+      args: [{ name: "id", type: "string", required: true }],
+      async run() {
+        return { ok: true };
+      },
+    });
+
+    const result = await runCommand(command, ["--json"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(result.error).toEqual({
+      kind: "invalid-arguments",
+      message: "Missing required argument:\n\n  id",
+      exitCode: 1,
+    });
   });
 
   test("runCommand does not extract --json after -- terminator", async () => {
