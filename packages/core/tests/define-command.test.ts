@@ -159,8 +159,8 @@ describe("argument ordering", () => {
 
   test("defineCommand rejects required arg after optional arg", () => {
     expect(() =>
+      // @ts-expect-error required arg after optional arg is a type error
       defineCommand({
-        // @ts-expect-error required arg after optional arg is a type error
         args: [
           { name: "source", type: "string" },
           { name: "target", type: "string", required: true },
@@ -172,8 +172,8 @@ describe("argument ordering", () => {
 
   test("defineCommand rejects required arg after arg with default", () => {
     expect(() =>
+      // @ts-expect-error required arg after arg with default is a type error
       defineCommand({
-        // @ts-expect-error required arg after arg with default is a type error
         args: [
           { name: "source", type: "string", default: "." },
           { name: "target", type: "string", required: true },
@@ -210,8 +210,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects options whose camelCase aliases collide (kebab first)", () => {
     expect(() =>
+      // @ts-expect-error camelCase alias collision
       defineCommand({
-        // @ts-expect-error camelCase alias collision
         options: [
           { name: "foo-bar", type: "string" },
           { name: "fooBar", type: "string" },
@@ -223,8 +223,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects options whose camelCase aliases collide (camel first)", () => {
     expect(() =>
+      // @ts-expect-error camelCase alias collision
       defineCommand({
-        // @ts-expect-error camelCase alias collision
         options: [
           { name: "fooBar", type: "string" },
           { name: "foo-bar", type: "string" },
@@ -236,8 +236,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects args whose camelCase aliases collide", () => {
     expect(() =>
+      // @ts-expect-error camelCase alias collision
       defineCommand({
-        // @ts-expect-error camelCase alias collision
         args: [
           { name: "my-arg", type: "string", required: true },
           { name: "myArg", type: "string" },
@@ -249,8 +249,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects hyphenated arg names with consecutive hyphens", () => {
     expect(() =>
+      // @ts-expect-error invalid hyphenated name
       defineCommand({
-        // @ts-expect-error invalid hyphenated name
         args: [{ name: "my--arg", type: "string" }],
         async run() {},
       }),
@@ -259,8 +259,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects hyphenated arg names with leading hyphen", () => {
     expect(() =>
+      // @ts-expect-error invalid hyphenated name
       defineCommand({
-        // @ts-expect-error invalid hyphenated name
         args: [{ name: "-arg", type: "string" }],
         async run() {},
       }),
@@ -278,8 +278,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects empty option name", () => {
     expect(() =>
+      // @ts-expect-error empty name
       defineCommand({
-        // @ts-expect-error empty name
         options: [{ name: "", type: "string" }],
         async run() {},
       }),
@@ -288,8 +288,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects empty argument name", () => {
     expect(() =>
+      // @ts-expect-error empty name
       defineCommand({
-        // @ts-expect-error empty name
         args: [{ name: "", type: "string" }],
         async run() {},
       }),
@@ -298,8 +298,8 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects option name starting with a hyphen", () => {
     expect(() =>
+      // @ts-expect-error invalid hyphenated name
       defineCommand({
-        // @ts-expect-error invalid hyphenated name
         options: [{ name: "-verbose", type: "boolean" }],
         async run() {},
       }),
@@ -330,8 +330,8 @@ describe("name and short name validation", () => {
 describe("uniqueness and field shape validation", () => {
   test("defineCommand rejects duplicate option names", () => {
     expect(() =>
+      // @ts-expect-error duplicate option name
       defineCommand({
-        // @ts-expect-error duplicate option name
         options: [
           { name: "force", type: "boolean" },
           { name: "force", type: "boolean" },
@@ -343,8 +343,8 @@ describe("uniqueness and field shape validation", () => {
 
   test("defineCommand rejects duplicate option short names", () => {
     expect(() =>
+      // @ts-expect-error duplicate short name
       defineCommand({
-        // @ts-expect-error duplicate short name
         options: [
           { name: "force", type: "boolean", short: "f" },
           { name: "file", type: "string", short: "f" },
@@ -356,8 +356,8 @@ describe("uniqueness and field shape validation", () => {
 
   test("defineCommand rejects duplicate argument names", () => {
     expect(() =>
+      // @ts-expect-error duplicate argument name
       defineCommand({
-        // @ts-expect-error duplicate argument name
         args: [
           { name: "source", type: "string", required: true },
           { name: "source", type: "string" },

@@ -253,21 +253,31 @@ type HasDuplicateShort<
 
 // ---------------------------------------------------------------------------
 // Composed validators — each returns `unknown` on success or
-// `{ readonly args/options: never }` on failure. All bail out to `unknown`
-// for non-tuple (widened) arrays via the IsTuple guard.
+// `{ readonly args/options: ErrorMessage<"..."> }` on failure, where the
+// descriptive string literal surfaces in the compiler diagnostic. All bail
+// out to `unknown` for non-tuple (widened) arrays via the IsTuple guard.
 // ---------------------------------------------------------------------------
+
+/** Branded string type that is unassignable from any value, surfacing `TMessage` in compiler errors. */
+type ErrorMessage<TMessage extends string> = TMessage & {
+  readonly __brand: "FieldValidationError";
+};
 
 export type ValidateFieldNames<TArgs, TOpts> = (TArgs extends readonly NamedField[]
   ? IsTuple<TArgs> extends true
     ? HasInvalidFieldName<TArgs> extends true
-      ? { readonly args: never }
+      ? {
+          readonly __invalidArgName: ErrorMessage<"ERROR: Invalid argument name. Names must be non-empty and must not start/end with hyphens or contain consecutive hyphens.">;
+        }
       : unknown
     : unknown
   : unknown) &
   (TOpts extends readonly NamedField[]
     ? IsTuple<TOpts> extends true
       ? HasInvalidFieldName<TOpts> extends true
-        ? { readonly options: never }
+        ? {
+            readonly __invalidOptionName: ErrorMessage<"ERROR: Invalid option name. Names must be non-empty and must not start/end with hyphens or contain consecutive hyphens.">;
+          }
         : unknown
       : unknown
     : unknown);
@@ -275,14 +285,18 @@ export type ValidateFieldNames<TArgs, TOpts> = (TArgs extends readonly NamedFiel
 export type ValidateUniqueNames<TArgs, TOpts> = (TArgs extends readonly NamedField[]
   ? IsTuple<TArgs> extends true
     ? HasDuplicateOrCollidingName<TArgs> extends true
-      ? { readonly args: never }
+      ? {
+          readonly __duplicateArgName: ErrorMessage<"ERROR: Duplicate argument names. Each argument must have a unique name (including camelCase aliases).">;
+        }
       : unknown
     : unknown
   : unknown) &
   (TOpts extends readonly NamedField[]
     ? IsTuple<TOpts> extends true
       ? HasDuplicateOrCollidingName<TOpts> extends true
-        ? { readonly options: never }
+        ? {
+            readonly __duplicateOptionName: ErrorMessage<"ERROR: Duplicate option names. Each option must have a unique name (including camelCase aliases).">;
+          }
         : unknown
       : unknown
     : unknown);
@@ -290,7 +304,9 @@ export type ValidateUniqueNames<TArgs, TOpts> = (TArgs extends readonly NamedFie
 export type ValidateDuplicateShortNames<TOpts> = TOpts extends readonly CommandOptionField[]
   ? IsTuple<TOpts> extends true
     ? HasDuplicateShort<TOpts> extends true
-      ? { readonly options: never }
+      ? {
+          readonly __duplicateShort: ErrorMessage<"ERROR: Duplicate short aliases. Each option must use a unique single-letter short alias.">;
+        }
       : unknown
     : unknown
   : unknown;
@@ -381,12 +397,15 @@ type IsValidArgOrder<
       : IsValidArgOrder<TTail, false>
   : true;
 
-// When arg ordering is invalid, intersects to make `args` accept `never`.
-// For non-tuple (widened) arrays, bails out to `unknown` and defers to runtime.
+// When arg ordering is invalid, intersects to make `args` unassignable with a
+// descriptive message. For non-tuple (widened) arrays, bails out to `unknown`
+// and defers to runtime.
 export type ValidateArgOrder<TArgs> = TArgs extends readonly CommandArgField[]
   ? IsTuple<TArgs> extends true
     ? IsValidArgOrder<TArgs> extends false
-      ? { readonly args: never }
+      ? {
+          readonly __invalidArgOrder: ErrorMessage<"ERROR: Invalid argument order. Required arguments must come before optional ones.">;
+        }
       : unknown
     : unknown
   : unknown;
