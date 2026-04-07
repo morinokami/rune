@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.21
+
+### Patch Changes
+
+- [#76](https://github.com/morinokami/rune/pull/76) [`f0747c5`](https://github.com/morinokami/rune/commit/f0747c526f967d1d0bbb75731136a32f30f6f81e) Thanks [@morinokami](https://github.com/morinokami)! - feat: auto-generate --no-<name> for boolean options with default true
+
 ## 0.0.20
 
 ### Patch Changes
