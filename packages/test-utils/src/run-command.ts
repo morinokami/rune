@@ -6,6 +6,20 @@ import {
   type DefinedCommand,
 } from "@rune-cli/core";
 
+function renderHumanError(error: CommandFailure): string {
+  const lines = [error.message];
+
+  if (error.hint) {
+    lines.push(`Hint: ${error.hint}`);
+  }
+
+  return lines.join("\n");
+}
+
+function ensureTrailingNewline(text: string): string {
+  return text.endsWith("\n") ? text : `${text}\n`;
+}
+
 export interface RunCommandContext {
   /** Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`. */
   readonly cwd?: string;
@@ -106,8 +120,12 @@ export async function runCommand(
     },
   });
 
-  if (!result.parseOk && result.error) {
-    stderrChunks.push(result.error.message);
+  if (!result.jsonMode && result.error) {
+    const rendered = renderHumanError(result.error);
+
+    if (rendered !== "") {
+      stderrChunks.push(ensureTrailingNewline(rendered));
+    }
   }
 
   return {
