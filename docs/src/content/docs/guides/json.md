@@ -76,6 +76,17 @@ export default defineCommand({
 
 Only output written through the framework's `output` API is suppressed in JSON mode. Output written directly via `console.log()` or `process.stdout.write()` is not suppressed and will corrupt the JSON payload. Always use `output.log()` and `output.error()` for command output.
 
+## Why `output.log()` Matters
+
+Rune's output helpers are not just a style preference:
+
+- `output.log()` is the normal way to write human-readable stdout from a command.
+- `output.error()` writes to stderr and is not suppressed by `--json`.
+- `runCommand()` can capture output written through these helpers in tests.
+- For commands with `json: true`, Rune suppresses `output.log()` when `--json` is passed so stdout contains only the JSON payload.
+
+If you write directly with `console.log()` or `process.stdout.write()`, Rune cannot suppress that output in JSON mode.
+
 If `run()` does not return an explicit value (i.e. returns `undefined`), the JSON output will be `null`.
 
 :::note

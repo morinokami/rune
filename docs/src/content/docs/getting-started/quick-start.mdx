@@ -42,6 +42,8 @@ export default defineCommand({
 
 You define a command by passing an object to `defineCommand()` and default-exporting the result. The `run` function is where your command logic lives. Writing to stdout via `output.log` allows `runCommand` to capture the output during testing.
 
+Using `output.log()` instead of `console.log()` also matters when you later enable `json: true`: Rune can suppress `output.log()` in `--json` mode so stdout stays machine-readable. See the [JSON Output](/guides/json/) guide for details.
+
 You already verified this works during [installation](/getting-started/installation/), but let's run it again:
 
 <Tabs syncKey="pkg">

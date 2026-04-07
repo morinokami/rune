@@ -42,6 +42,8 @@ export default defineCommand({
 
 `defineCommand()` にオブジェクトを渡し、返り値をデフォルトエクスポートすることでコマンドを定義します。`run` 関数がコマンドの実体です。`output.log` を通じて標準出力に書き込むことで、テスト時に `runCommand` で出力をキャプチャできるようになります。
 
+また、後で `json: true` を有効にした場合にも `output.log()` を使うことが重要です。Rune は `--json` モードで `output.log()` を抑制できるため、stdout を機械可読な JSON のみに保てます。詳しくは [JSON 出力](/ja/guides/json/) ガイドを参照してください。
+
 [インストール](/ja/getting-started/installation/)のステップで動作確認は済んでいますが、改めて実行してみます:
 
 <Tabs syncKey="pkg">

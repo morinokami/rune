@@ -76,6 +76,17 @@ export default defineCommand({
 
 JSON モードの抑制対象はフレームワークの `output` API のみです。`console.log()` や `process.stdout.write()` で直接書き込まれた出力は抑制されず、JSON ペイロードに混入する原因になります。コマンドの出力には `output.log()` と `output.error()` を使用してください。
 
+## `output.log()` が重要な理由
+
+Rune の出力ヘルパーは単なる書き方の好みではありません:
+
+- `output.log()` は人間向けの標準出力を書くための通常の方法です。
+- `output.error()` は stderr に書き込み、`--json` でも抑制されません。
+- テストでは `runCommand()` がこれらのヘルパー経由の出力をキャプチャできます。
+- `json: true` のコマンドでは、`--json` が渡されたときに Rune が `output.log()` を抑制し、stdout を JSON ペイロードのみに保ちます。
+
+`console.log()` や `process.stdout.write()` で直接書き込むと、JSON モードでもその出力を Rune は抑制できません。
+
 `run()` が明示的な値を返さなかった場合（戻り値が `undefined` の場合）、JSON 出力は `null` になります。
 
 :::note

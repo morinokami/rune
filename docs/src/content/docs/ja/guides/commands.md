@@ -28,9 +28,9 @@ export default defineCommand({
       type: "boolean",
     },
   ],
-  run({ args, options }) {
+  run({ args, options, output }) {
     const greeting = `Hello, ${args.name}!`;
-    console.log(options.loud ? greeting.toUpperCase() : greeting);
+    output.log(options.loud ? greeting.toUpperCase() : greeting);
   },
 });
 ```
@@ -58,6 +58,8 @@ $ my-cli foo --loud
 HELLO, FOO!
 ```
 
+通常の標準出力には `output.log()`、標準エラー出力には `output.error()` を使用してください。これにより `runCommand()` で出力をテストしやすくなり、`json: true` のコマンドを `--json` 付きで実行したときには人間向けの stdout を Rune が抑制できるようになります。詳しくは [JSON 出力](/ja/guides/json/) ガイドを参照してください。
+
 ## コマンドファイルの種類
 
 `src/commands` 以下に配置するファイルの種類によって、コマンドとしての登録のされ方が変わります。
@@ -67,6 +69,20 @@ HELLO, FOO!
 ディレクトリに `index.ts` を置くと、そのディレクトリパス自体が実行可能なコマンドになります。たとえば `src/commands/project/index.ts` は `your-cli project` として実行できます。
 
 `src/commands/index.ts` はルートコマンド（引数なしで CLI を実行したとき）に対応します。
+
+たとえば次のファイルは、引数なしで `your-cli` を実行したときの挙動を定義します:
+
+```ts
+// src/commands/index.ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Show the default workspace summary",
+  run({ output }) {
+    output.log("workspace summary");
+  },
+});
+```
 
 ### その他の `.ts` ファイル
 
@@ -90,6 +106,49 @@ export default defineGroup({
 この例では、`your-cli project` を実行すると、説明文とサブコマンドの一覧を含むヘルプが表示されます。
 
 `_group.ts` と `index.ts` は同じディレクトリに共存できません。ディレクトリパス自体を実行可能にしたい場合は `index.ts` を、サブコマンドのグループとしてのみ機能させたい場合は `_group.ts` を使用してください。
+
+### `index.ts` と `_group.ts` の選び方
+
+ディレクトリパス自体を実行可能なコマンドにしたい場合は `index.ts` を使い、子コマンドを整理するためのヘルプ専用ノードにしたい場合は `_group.ts` を使います。
+
+| こうしたい場合 | 使うもの |
+|---|---|
+| 引数なしの `your-cli` で何かを実行したい | `src/commands/index.ts` |
+| `your-cli project` 自体も実行可能にしつつ、`your-cli project create` のような子コマンドも持たせたい | `src/commands/project/index.ts` |
+| `your-cli project` は `create` や `list` を束ねるだけのヘルプ用ノードにしたい | `src/commands/project/_group.ts` |
+| `your-cli hello` のような子を持たない単純な leaf command を定義したい | `src/commands/hello.ts` または `src/commands/hello/index.ts` |
+
+目安としては、実行可能なコマンドには `index.ts`、ヘルプ専用の親ノードには `_group.ts` を選ぶのが自然です。
+
+## 完全な `--help` 出力の例
+
+次の構成では、ルートコマンド、ヘルプ専用グループ、2 つの leaf command が組み合わさっています:
+
+```text
+src/commands/
+  index.ts
+  project/
+    _group.ts
+    create.ts
+    list.ts
+```
+
+このとき `your-cli project --help` は、次のような出力になります:
+
+```text
+Manage projects
+
+Usage: your-cli project <command>
+
+Subcommands:
+  create  Create a project
+  list    List projects
+
+Options:
+  -h, --help  Show help
+```
+
+`_group.ts` で定義したグループではこのように、グループの説明文は `Description:` セクション見出しなしで `Usage:` の前にそのまま表示され、実行時には一致した leaf command モジュールだけが読み込まれます。
 
 ## kebab-case のフィールド名
 
