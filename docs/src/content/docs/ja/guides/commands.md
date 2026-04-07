@@ -110,6 +110,44 @@ export default defineCommand({
 
 この対応は型レベルでも保証されており、どちらの形式でも補完が効きます。
 
+## 否定形の boolean オプション
+
+プリミティブの boolean オプションに `default: true` を設定すると、Rune は `--no-<name>` フラグを自動生成し、デフォルト値を上書きできるようにします:
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  options: [
+    {
+      name: "color",
+      type: "boolean",
+      default: true,
+      description: "Colorize output",
+    },
+  ],
+  run({ options }) {
+    console.log(options.color);
+  },
+});
+```
+
+```bash
+$ my-cli             # options.color → true（デフォルト）
+$ my-cli --color     # options.color → true
+$ my-cli --no-color  # options.color → false
+```
+
+`--help` 出力には両方の形式がまとめて表示されます:
+
+```
+Options:
+  --color, --no-color  Colorize output
+  -h, --help           Show help
+```
+
+`--color` と `--no-color` を同時に指定するとエラーになります。
+
 ## エイリアス
 
 コマンドやグループには、エイリアス（別名）を設定できます。エイリアスを定義すると、元のコマンド名に加えて別名でも同じコマンドを呼び出せるようになります。

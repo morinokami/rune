@@ -368,6 +368,33 @@ describe("uniqueness and field shape validation", () => {
   });
 });
 
+describe("negation collision validation", () => {
+  test("defineCommand rejects option named no-X when X is a negatable boolean option", () => {
+    expect(() =>
+      // @ts-expect-error negation collision
+      defineCommand({
+        options: [
+          { name: "color", type: "boolean", default: true },
+          { name: "no-color", type: "string" },
+        ],
+        async run() {},
+      }),
+    ).toThrow('Option "no-color" conflicts with the automatic negation of boolean option "color".');
+  });
+
+  test("defineCommand allows no-X option when X is not negatable", () => {
+    expect(() =>
+      defineCommand({
+        options: [
+          { name: "color", type: "boolean" },
+          { name: "no-color", type: "string" },
+        ],
+        async run() {},
+      }),
+    ).not.toThrow();
+  });
+});
+
 describe("widened input pass-through", () => {
   test("widened option arrays with camelCase collision pass type check and are caught at runtime", () => {
     const fields: readonly CommandOptionField[] = [

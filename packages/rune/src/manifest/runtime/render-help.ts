@@ -45,8 +45,13 @@ function formatArgumentLabel(field: CommandArgField): string {
   return `${field.name}${formatTypeHint(field)}`;
 }
 
+function isNegatableOption(field: CommandOptionField): boolean {
+  return !isSchemaField(field) && field.type === "boolean" && field.default === true;
+}
+
 function formatOptionLabel(field: CommandOptionField): string {
-  const longOptionLabel = `--${field.name}${formatTypeHint(field)}`;
+  const negationSuffix = isNegatableOption(field) ? `, --no-${field.name}` : "";
+  const longOptionLabel = `--${field.name}${formatTypeHint(field)}${negationSuffix}`;
 
   if (!field.short) {
     return longOptionLabel;

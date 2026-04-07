@@ -253,6 +253,42 @@ describe("type-level duplicate and collision detection", () => {
   });
 });
 
+describe("type-level negation collision detection", () => {
+  test("defineCommand rejects option named no-X when X is a negatable boolean at compile time", () => {
+    void ((input: {
+      options: [
+        { name: "color"; type: "boolean"; default: true },
+        { name: "no-color"; type: "string" },
+      ];
+      run: () => void;
+    }) => {
+      // @ts-expect-error negation collision
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand allows no-X option when X is boolean without default true", () => {
+    void ((input: {
+      options: [{ name: "color"; type: "boolean" }, { name: "no-color"; type: "string" }];
+      run: () => void;
+    }) => {
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand allows no-X option when X is boolean with default false", () => {
+    void ((input: {
+      options: [
+        { name: "color"; type: "boolean"; default: false },
+        { name: "no-color"; type: "string" },
+      ];
+      run: () => void;
+    }) => {
+      defineCommand(input);
+    });
+  });
+});
+
 describe("type-level compound validation errors", () => {
   test("multiple validators firing simultaneously do not collapse to plain never", () => {
     // Empty duplicate names: triggers both ValidateFieldNames (empty name) and

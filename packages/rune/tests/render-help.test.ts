@@ -241,6 +241,36 @@ describe("command help", () => {
     expect(help).toContain("-h, --help  Show help");
   });
 
+  test("renderCommandHelp shows --no-flag for boolean options with default true", async () => {
+    const command = defineCommand({
+      description: "Deploy the application",
+      options: [
+        { name: "color", type: "boolean", default: true, description: "Colorize output" },
+        { name: "force", type: "boolean", short: "f", description: "Force deploy" },
+      ],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+
+    expect(help).toContain("--color, --no-color  Colorize output");
+    expect(help).not.toContain("--no-force");
+    expect(help).toContain("-f, --force  Force deploy");
+  });
+
+  test("renderCommandHelp shows short, --flag, --no-flag for negatable option with short", async () => {
+    const command = defineCommand({
+      options: [{ name: "color", type: "boolean", default: true, short: "c" }],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+
+    expect(help).toContain("-c, --color, --no-color");
+  });
+
   test("renderCommandHelp shows examples section when examples are provided", async () => {
     const command = defineCommand({
       description: "Deploy the application",
