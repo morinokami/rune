@@ -63,9 +63,9 @@ export default defineCommand({
   description: "Greet someone",
   args: [{ name: "name", type: "string", required: true }],
   options: [{ name: "loud", type: "boolean", short: "l" }],
-  run({ args, options }) {
+  run({ args, options, output }) {
     const greeting = `Hello, ${args.name}!`;
-    console.log(options.loud ? greeting.toUpperCase() : greeting);
+    output.log(options.loud ? greeting.toUpperCase() : greeting);
   },
 });
 ```
