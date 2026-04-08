@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.8
+
+### Patch Changes
+
+- [#78](https://github.com/morinokami/rune/pull/78) [`71bbfd7`](https://github.com/morinokami/rune/commit/71bbfd7792220cd14c62bdf59d025f0d50f6df7b) Thanks [@morinokami](https://github.com/morinokami)! - feat(create-rune-app): support non-interactive mode
+
 ## 0.0.7
 
 ### Patch Changes
