@@ -110,3 +110,29 @@ Run the `create rune-app` command and answer a few prompts to quickly scaffold a
    ```
 
 </Steps>
+
+## Non-interactive mode
+
+Pass the `--yes` (`-y`) flag to skip all interactive prompts and use default values. This also happens automatically in non-TTY environments such as CI pipelines or agent-driven workflows.
+
+```sh
+npx create-rune-app my-cli --yes
+```
+
+You can fine-tune the behavior with additional options:
+
+| Option | Default | Description |
+|---|---|---|
+| `--yes` / `-y` | `false` | Skip all prompts |
+| `--install` / `--no-install` | `true` | Install dependencies |
+| `--git` / `--no-git` | `true` | Initialize a git repository |
+
+```sh
+# Skip dependency installation
+npx create-rune-app my-cli --yes --no-install
+
+# Skip git initialization
+npx create-rune-app my-cli --yes --no-git
+```
+
+These options also work in interactive mode — any explicitly provided flag will skip its corresponding prompt.

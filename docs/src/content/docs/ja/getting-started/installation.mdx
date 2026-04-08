@@ -110,3 +110,29 @@ import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
    ```
 
 </Steps>
+
+## 非対話モード
+
+`--yes`（`-y`）フラグを渡すか、TTY のない環境（CI やエージェントなど）で実行すると、対話プロンプトをスキップしてデフォルト値で実行されます。
+
+```sh
+npx create-rune-app my-cli --yes
+```
+
+個別の動作はオプションで制御できます。
+
+| オプション | デフォルト | 説明 |
+|---|---|---|
+| `--yes` / `-y` | `false` | すべてのプロンプトをスキップ |
+| `--install` / `--no-install` | `true` | 依存関係のインストール |
+| `--git` / `--no-git` | `true` | git リポジトリの初期化 |
+
+```sh
+# 依存関係のインストールをスキップ
+npx create-rune-app my-cli --yes --no-install
+
+# git の初期化をスキップ
+npx create-rune-app my-cli --yes --no-git
+```
+
+対話モードでもこれらのオプションを渡すと、該当するプロンプトが省略されます。
