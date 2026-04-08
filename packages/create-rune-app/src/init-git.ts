@@ -43,9 +43,22 @@ function findNearestExistingAncestor(filePath: string): string {
   return current;
 }
 
-export function isGitInitAvailable(projectRoot: string): boolean {
+export type GitInitAvailability =
+  | { ok: true }
+  | { ok: false; reason: "git-not-installed" | "inside-existing-repo" };
+
+export function checkGitInitAvailability(projectRoot: string): GitInitAvailability {
+  if (!isGitInstalled()) {
+    return { ok: false, reason: "git-not-installed" };
+  }
+
   const ancestor = findNearestExistingAncestor(projectRoot);
-  return isGitInstalled() && !isInsideGitRepository(ancestor);
+
+  if (isInsideGitRepository(ancestor)) {
+    return { ok: false, reason: "inside-existing-repo" };
+  }
+
+  return { ok: true };
 }
 
 export function tryGitInit(projectRoot: string): boolean {
@@ -69,7 +82,10 @@ export function tryGitInit(projectRoot: string): boolean {
   } catch {
     if (didInit) {
       try {
-        rmSync(path.join(projectRoot, ".git"), { recursive: true, force: true });
+        rmSync(path.join(projectRoot, ".git"), {
+          recursive: true,
+          force: true,
+        });
       } catch {
         // Ignore cleanup errors.
       }

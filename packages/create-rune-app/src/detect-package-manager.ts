@@ -1,3 +1,5 @@
+import { spawn } from "node:child_process";
+
 export interface PackageManager {
   readonly name: string;
   readonly installCommand: string;
@@ -42,4 +44,50 @@ export function detectPackageManager(): PackageManager {
         runCommand: (script, args) => `npm run ${script} -- ${args}`,
       };
   }
+}
+
+export function installDependencies(pm: PackageManager, projectRoot: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const stdoutChunks: Uint8Array[] = [];
+    const stderrChunks: Uint8Array[] = [];
+    const childProcess = spawn(pm.name, pm.installArgs, {
+      cwd: projectRoot,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    childProcess.stdout?.on("data", (chunk: Uint8Array) => {
+      stdoutChunks.push(chunk);
+    });
+    childProcess.stderr?.on("data", (chunk: Uint8Array) => {
+      stderrChunks.push(chunk);
+    });
+    childProcess.once("error", reject);
+    childProcess.once("close", (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      const capturedOutput = Buffer.concat([...stderrChunks, ...stdoutChunks])
+        .toString("utf8")
+        .trim();
+
+      if (signal !== null) {
+        reject(
+          new Error(
+            capturedOutput ||
+              `Dependency installation with ${pm.name} was interrupted by signal ${signal}.`,
+          ),
+        );
+        return;
+      }
+
+      reject(
+        new Error(
+          capturedOutput ||
+            `Dependency installation with ${pm.name} failed with exit code ${code ?? "unknown"}.`,
+        ),
+      );
+    });
+  });
 }
