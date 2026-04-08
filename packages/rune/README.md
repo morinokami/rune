@@ -29,14 +29,14 @@ my-cli/
 Run your CLI directly from source:
 
 ```bash
-npx rune run -- hello
+npm run start -- hello
 # => hello from my-cli
 ```
 
 Build for production:
 
 ```bash
-npx rune build
+npm run build
 ```
 
 ## Defining Commands
