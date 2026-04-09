@@ -49,6 +49,28 @@ function isNegatableOption(field: CommandOptionField): boolean {
   return !isSchemaField(field) && field.type === "boolean" && field.default === true;
 }
 
+function formatDefaultSuffix(
+  field: CommandArgField | CommandOptionField,
+  kind: "arg" | "option",
+): string {
+  if (isSchemaField(field)) return "";
+  if (field.default === undefined) return "";
+  if (kind === "option" && field.type === "boolean") return "";
+
+  const formatted =
+    typeof field.default === "string" ? JSON.stringify(field.default) : String(field.default);
+
+  return `(default: ${formatted})`;
+}
+
+function joinDescription(description: string | undefined, suffix: string): string | undefined {
+  if (description && suffix) return `${description} ${suffix}`;
+  if (description) return description;
+  if (suffix) return suffix;
+
+  return undefined;
+}
+
 function formatOptionLabel(field: CommandOptionField): string {
   const negationSuffix = isNegatableOption(field) ? `, --no-${field.name}` : "";
   const longOptionLabel = `--${field.name}${formatTypeHint(field)}${negationSuffix}`;
@@ -184,7 +206,7 @@ export async function renderCommandHelp(
       `Arguments:\n${formatSectionEntries(
         command.args.map((field) => ({
           label: formatArgumentLabel(field),
-          description: field.description,
+          description: joinDescription(field.description, formatDefaultSuffix(field, "arg")),
         })),
       )}`,
     );
@@ -193,7 +215,7 @@ export async function renderCommandHelp(
   const optionEntries = [
     ...command.options.map((field) => ({
       label: formatOptionLabel(field),
-      description: field.description,
+      description: joinDescription(field.description, formatDefaultSuffix(field, "option")),
     })),
     ...(command.json
       ? [{ label: "--json", description: "Output structured results as JSON" }]

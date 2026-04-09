@@ -69,6 +69,7 @@ Primitive types: `"string"` | `"number"` | `"boolean"`
 
 - `required: true` makes the field mandatory
 - `default` provides a fallback value and makes the field always present in `ctx`
+- Primitive defaults are shown in `--help`, except for boolean options
 - Primitive boolean options default to `false` even without an explicit `default`
 - `short` (options only): single ASCII letter for shorthand (e.g. `-f`). The short name `"h"` is reserved for `--help`
 
