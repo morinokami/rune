@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.9
+
+### Patch Changes
+
+- [#82](https://github.com/morinokami/rune/pull/82) [`3a5e0c6`](https://github.com/morinokami/rune/commit/3a5e0c6a3321eea91e32edf1282532b5b6c922b3) Thanks [@morinokami](https://github.com/morinokami)! - feat(create-rune-app): support `.` to scaffold into the current directory
+
 ## 0.0.8
 
 ### Patch Changes
