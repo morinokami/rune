@@ -271,6 +271,94 @@ describe("command help", () => {
     expect(help).toContain("-c, --color, --no-color");
   });
 
+  test("renderCommandHelp shows default values for string and number options", async () => {
+    const command = defineCommand({
+      description: "Create a project",
+      options: [
+        { name: "name", type: "string", default: "my-project", description: "Project name" },
+        { name: "retries", type: "number", default: 3, description: "Retry count" },
+        { name: "force", type: "boolean", description: "Force overwrite" },
+      ],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["project", "create"], "mycli");
+
+    expect(help).toContain('--name <string>  Project name (default: "my-project")');
+    expect(help).toContain("--retries <number>  Retry count (default: 3)");
+    expect(help).not.toContain("Force overwrite (default:");
+  });
+
+  test("renderCommandHelp does not show default suffix for boolean options", async () => {
+    const command = defineCommand({
+      description: "Deploy",
+      options: [
+        { name: "color", type: "boolean", default: true, description: "Colorize output" },
+        { name: "verbose", type: "boolean", default: false, description: "Verbose output" },
+      ],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+
+    expect(help).not.toContain("(default:");
+  });
+
+  test("renderCommandHelp shows default values for arguments", async () => {
+    const command = defineCommand({
+      description: "Greet someone",
+      args: [{ name: "name", type: "string", default: "world", description: "Who to greet" }],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["greet"], "mycli");
+
+    expect(help).toContain('name <string>  Who to greet (default: "world")');
+  });
+
+  test("renderCommandHelp shows default for boolean positional arguments", async () => {
+    const command = defineCommand({
+      description: "Toggle feature",
+      args: [{ name: "enabled", type: "boolean", default: true, description: "Enable flag" }],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["toggle"], "mycli");
+
+    expect(help).toContain("enabled  Enable flag (default: true)");
+  });
+
+  test("renderCommandHelp escapes quotes in string default values", async () => {
+    const command = defineCommand({
+      description: "Test escaping",
+      options: [{ name: "sep", type: "string", default: 'a"b', description: "Separator" }],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["test"], "mycli");
+
+    expect(help).toContain('(default: "a\\"b")');
+  });
+
+  test("renderCommandHelp shows default without extra spaces when description is absent", async () => {
+    const command = defineCommand({
+      description: "Count items",
+      options: [{ name: "count", type: "number", default: 1 }],
+      async run() {},
+    });
+
+    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
+    const help = await renderCommandHelp(command, ["count"], "mycli");
+
+    expect(help).toContain("--count <number>  (default: 1)");
+    expect(help).not.toContain("   (default:");
+  });
+
   test("renderCommandHelp shows examples section when examples are provided", async () => {
     const command = defineCommand({
       description: "Deploy the application",
