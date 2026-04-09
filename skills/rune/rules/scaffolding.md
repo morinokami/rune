@@ -11,6 +11,13 @@ yarn create rune-app my-cli
 bun create rune-app my-cli
 ```
 
+To scaffold into the current directory (must be empty):
+
+```bash
+npm create rune-app@latest .
+pnpm create rune-app .
+```
+
 ### Options
 
 | Option         | Short | Default | Description                                   |
@@ -29,6 +36,9 @@ Activates when `--yes` is passed or stdin is not a TTY (CI, agent-driven workflo
 # Defaults: install deps + init git
 create-rune-app my-cli --yes
 
+# Scaffold into the current directory
+create-rune-app . --yes
+
 # Skip install and git
 create-rune-app my-cli --yes --no-install --no-git
 ```
@@ -37,13 +47,14 @@ In non-interactive mode:
 
 - Project name is **required** as an argument (fails with `missing-project-name` error if omitted)
 - Target directory must **not** already exist (fails with `directory-exists` error)
+- When `.` is used, the current directory must be **empty** (fails with `directory-not-empty` error)
 - All defaults or explicitly-passed flags are used without prompting
 
 ### Interactive mode
 
 Default when running in a TTY without `--yes`. Prompts for:
 
-1. **Project name** (if not provided as argument) — validates non-empty and directory available
+1. **Project name** (if not provided as argument; skipped when `.` is used) — validates non-empty and directory available
 2. **Install dependencies** (unless `--install` or `--no-install` explicitly passed)
 3. **Initialize git** (unless `--git` or `--no-git` explicitly passed, or git is unavailable / already in a repo)
 
