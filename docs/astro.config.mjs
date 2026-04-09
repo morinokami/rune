@@ -52,6 +52,9 @@ export default defineConfig({
         { slug: "index" },
         {
           label: "Getting Started",
+          translations: {
+            ja: "最初の一歩",
+          },
           items: [
             { slug: "getting-started/installation" },
             { slug: "getting-started/quick-start" },
@@ -59,6 +62,9 @@ export default defineConfig({
         },
         {
           label: "Guides",
+          translations: {
+            ja: "ガイド",
+          },
           items: [
             { slug: "guides/routing" },
             { slug: "guides/commands" },
@@ -71,6 +77,9 @@ export default defineConfig({
         },
         {
           label: "Reference",
+          translations: {
+            ja: "リファレンス",
+          },
           items: [
             { slug: "reference/define-command" },
             { slug: "reference/define-group" },

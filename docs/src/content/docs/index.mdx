@@ -1,6 +1,44 @@
 ---
 title: Introduction
-description: Rune is an agent-friendly CLI framework built around the concept of file-based command routing.
+description: Rune is an agent-native CLI framework for building agent-native CLIs.
 ---
 
-WIP
+Rune is an agent-native CLI framework for building agent-native CLIs. It is designed not only to be easy for humans to use, but also to let agents build CLIs with Rune easily and to ensure the resulting CLIs are automatically agent-friendly.
+
+:::note
+Rune is currently experimental. APIs and behavior may change.
+:::
+
+## Features
+
+### File-based Command Routing
+
+In Rune, the file structure under `src/commands` determines the CLI's command tree. An `index.ts` file makes its directory path executable as a command, while other `.ts` files become subcommands.
+
+There is no manifest to maintain by hand. You can understand the entire CLI structure at a glance just by looking at the directory layout. At runtime, only the matched command module is loaded, so no unnecessary code is loaded.
+
+### Type-safe Command Definitions
+
+Types for arguments and options are inferred from the definition you pass to `defineCommand()`. There is no need to write complex type annotations manually.
+
+Mistakes such as placing an optional argument before a required one, duplicating short option names, or creating a name collision with `--no-<name>` flags are caught at definition time. Hyphenated field names can also be accessed in camelCase, with type safety and autocompletion preserved.
+
+### Test Utilities
+
+`runCommand()` lets you test commands in-process without spawning a child process. It runs the full command execution as-is, including argument parsing, type coercion, validation, and default value resolution. You can assert directly on the result's `exitCode`, `stdout`, `stderr`, `error`, and `data`, making command tests fast and reliable.
+
+### JSON Output
+
+Setting `json: true` in `defineCommand()` enables a built-in `--json` flag. When the flag is passed, the command's return value is written to stdout as structured JSON.
+
+In this mode, human-readable stdout from `output.log()` is automatically suppressed, while `output.error()` continues to write to stderr so diagnostic messages are not lost. Without `--json`, the command behaves as a normal text CLI, so a single implementation can serve both humans and machines.
+
+### Automatic Help Generation
+
+Help output for `--help` is generated automatically from a command's `description`, `args`, `options`, and `examples`. Argument descriptions, short options, negation flags, and subcommand listings are all included, so there is no help text to maintain separately.
+
+### Structured Errors
+
+`CommandError` lets you define structured errors with `kind`, `message`, `hint`, and `details`. In normal execution, they are displayed in a human-friendly format; in `--json` mode, they are emitted as machine-readable error information.
+
+{/* ### Agent Skills */}
