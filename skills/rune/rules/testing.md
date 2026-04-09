@@ -1,0 +1,154 @@
+# Testing Commands
+
+## Import
+
+```ts
+import { runCommand } from "@rune-cli/rune/test";
+```
+
+`runCommand()` works with any test runner (Vitest, Jest, Node.js built-in test runner).
+
+## runCommand()
+
+Exercises a command through Rune's real parse-and-execute pipeline in-process — no child process is spawned.
+
+```ts
+async function runCommand(
+  command: DefinedCommand,
+  argv?: string[],
+  context?: RunCommandContext,
+): Promise<CommandExecutionResult>;
+```
+
+The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, required/default handling, and duplicate detection all run exactly as in a real invocation.
+
+Top-level CLI behavior (command routing, help rendering) is **not** included. `runCommand()` tests only the resolved command itself.
+
+## CommandExecutionResult
+
+| Property   | Type                          | Description                                                           |
+| ---------- | ----------------------------- | --------------------------------------------------------------------- |
+| `exitCode` | `number`                      | `0` for success, non-zero for failure                                 |
+| `stdout`   | `string`                      | Captured `output.log()` output                                        |
+| `stderr`   | `string`                      | Captured `output.error()` output and error messages                   |
+| `error`    | `CommandFailure \| undefined` | Structured error (`kind`, `message`, `hint?`, `details?`, `exitCode`) |
+| `data`     | `unknown`                     | Return value from `run()` when `json: true`                           |
+
+## Testing patterns
+
+### Basic
+
+```ts
+import { runCommand } from "@rune-cli/rune/test";
+import { expect, test } from "vitest";
+import greeting from "../src/commands/index";
+
+test("greets by name", async () => {
+  const result = await runCommand(greeting, ["world"]);
+
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toBe("Hello, world!\n");
+});
+
+test("greets loudly with --loud flag", async () => {
+  const result = await runCommand(greeting, ["world", "--loud"]);
+
+  expect(result.stdout).toBe("HELLO, WORLD!\n");
+});
+```
+
+### Errors
+
+```ts
+import { defineCommand, CommandError } from "@rune-cli/rune";
+import { runCommand } from "@rune-cli/rune/test";
+
+const command = defineCommand({
+  run() {
+    throw new CommandError({
+      kind: "config/not-found",
+      message: "Config file was not found",
+      hint: "Create rune.config.ts",
+      exitCode: 7,
+    });
+  },
+});
+
+test("returns structured error", async () => {
+  const result = await runCommand(command);
+
+  expect(result.exitCode).toBe(7);
+  expect(result.error).toEqual({
+    kind: "config/not-found",
+    message: "Config file was not found",
+    hint: "Create rune.config.ts",
+    exitCode: 7,
+  });
+});
+```
+
+Unexpected (non-CommandError) exceptions are wrapped with `kind: "internal"`.
+
+### JSON mode
+
+```ts
+const command = defineCommand({
+  json: true,
+  run({ output }) {
+    output.log("suppressed with --json");
+    return { items: [1, 2, 3] };
+  },
+});
+
+test("returns structured data with --json", async () => {
+  const result = await runCommand(command, ["--json"]);
+
+  expect(result.stdout).toBe("");
+  expect(result.data).toEqual({ items: [1, 2, 3] });
+});
+
+test("data is populated even without --json", async () => {
+  const result = await runCommand(command);
+
+  expect(result.stdout).toBe("suppressed with --json\n");
+  expect(result.data).toEqual({ items: [1, 2, 3] });
+});
+```
+
+`result.data` is populated regardless of `--json`. The flag controls only whether `output.log()` is suppressed.
+
+### Validation errors
+
+```ts
+const command = defineCommand({
+  args: [{ name: "id", type: "string", required: true }],
+  async run(ctx) {
+    ctx.output.log(ctx.args.id);
+  },
+});
+
+test("rejects missing required argument", async () => {
+  const result = await runCommand(command, []);
+
+  expect(result.exitCode).toBe(1);
+  expect(result.error?.kind).toBe("invalid-arguments");
+});
+```
+
+### Context injection
+
+Override `ctx.cwd` without changing `process.cwd()`:
+
+```ts
+const command = defineCommand({
+  run({ cwd, output }) {
+    output.log(cwd);
+  },
+});
+
+test("uses injected cwd", async () => {
+  const result = await runCommand(command, [], { cwd: "/tmp/test-project" });
+
+  expect(result.stdout).toBe("/tmp/test-project\n");
+});
+```
