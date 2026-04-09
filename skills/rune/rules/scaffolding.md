@@ -11,7 +11,7 @@ yarn create rune-app my-cli
 bun create rune-app my-cli
 ```
 
-To scaffold into the current directory (must be empty):
+To scaffold into the current directory (must not contain files that conflict with the template):
 
 ```bash
 npm create rune-app@latest .
@@ -47,7 +47,7 @@ In non-interactive mode:
 
 - Project name is **required** as an argument (fails with `missing-project-name` error if omitted)
 - Target directory must **not** already exist (fails with `directory-exists` error)
-- When `.` is used, the current directory must be **empty** (fails with `directory-not-empty` error)
+- When `.` is used, the current directory must not contain files that conflict with the template (fails with `directory-has-conflicts` error)
 - All defaults or explicitly-passed flags are used without prompting
 
 ### Interactive mode
