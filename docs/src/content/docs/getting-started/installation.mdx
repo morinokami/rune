@@ -72,6 +72,31 @@ Run the `create rune-app` command and answer a few prompts to quickly scaffold a
      </TabItem>
    </Tabs>
 
+   To scaffold into the current directory, pass `.` instead of a project name. The directory must be empty.
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     pnpm create rune-app .
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     npm create rune-app@latest .
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     yarn create rune-app .
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     bun create rune-app .
+     ```
+     </TabItem>
+   </Tabs>
+
 2. **Run a command**
 
    Navigate to your project directory and run the starter `hello` command to verify everything works.
@@ -117,6 +142,9 @@ Pass the `--yes` (`-y`) flag to skip all interactive prompts and use default val
 
 ```sh
 npx create-rune-app my-cli --yes
+
+# Or scaffold into the current directory
+npx create-rune-app . --yes
 ```
 
 You can fine-tune the behavior with additional options:

@@ -1,6 +1,6 @@
 import { cancel, confirm, group, intro, isCancel, log, outro, tasks, text } from "@clack/prompts";
 import { CommandError, defineCommand } from "@rune-cli/rune";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { styleText } from "node:util";
 
@@ -28,6 +28,12 @@ type ProvidedProjectState =
       readonly kind: "available";
       readonly name: string;
       readonly root: string;
+    }
+  | {
+      // "." was provided — scaffold into the current directory.
+      readonly kind: "current-dir";
+      readonly name: string;
+      readonly root: string;
     };
 
 function getProvidedProjectState(
@@ -41,6 +47,10 @@ function getProvidedProjectState(
   }
 
   const root = path.resolve(cwd, name);
+
+  if (name === "." || name === "./") {
+    return { kind: "current-dir", name, root };
+  }
 
   if (existsSync(root)) {
     return { kind: "existing", name, root };
@@ -118,6 +128,14 @@ async function runNonInteractive({ args, cwd, options, output }: Ctx): Promise<v
     });
   }
 
+  if (provided.kind === "current-dir" && readdirSync(provided.root).length > 0) {
+    throw new CommandError({
+      kind: "directory-not-empty",
+      message: `Target directory is not empty: ${provided.root}`,
+      hint: "Remove existing files or choose an empty directory",
+    });
+  }
+
   output.log(`Scaffolding project: ${provided.name}`);
   const scaffolded = await scaffoldProject(provided.name, cwd);
 
@@ -155,12 +173,16 @@ async function runNonInteractive({ args, cwd, options, output }: Ctx): Promise<v
     }
   }
 
-  const displayProjectPath =
-    path.relative(cwd, scaffolded.projectRoot) || path.basename(scaffolded.projectRoot);
+  const isCwd = provided.kind === "current-dir";
+  const displayProjectPath = isCwd
+    ? "."
+    : path.relative(cwd, scaffolded.projectRoot) || path.basename(scaffolded.projectRoot);
 
   output.log(`Done. Project created at ${displayProjectPath}`);
   output.log("Next steps:");
-  output.log(`  $ cd ${displayProjectPath}`);
+  if (!isCwd) {
+    output.log(`  $ cd ${displayProjectPath}`);
+  }
   if (!options.install) {
     output.log(`  $ ${pm.installCommand}`);
   }
@@ -174,6 +196,13 @@ async function runInteractive({ args, cwd, options, output, rawArgs }: Ctx): Pro
 
   if (provided.kind === "existing") {
     log.warn(`Target directory already exists: ${provided.root}`);
+  }
+  if (provided.kind === "current-dir") {
+    if (readdirSync(provided.root).length > 0) {
+      cancel(`Target directory is not empty: ${provided.root}`);
+      throw new CommandError({ kind: "canceled", message: "" });
+    }
+    log.step("Scaffolding in current directory");
   }
   if (provided.kind === "available") {
     log.step(`Project name: ${provided.name}`);
@@ -196,7 +225,7 @@ async function runInteractive({ args, cwd, options, output, rawArgs }: Ctx): Pro
     shouldInitGit: boolean;
   }>({
     projectName: async (): Promise<string> => {
-      if (provided.kind === "available") {
+      if (provided.kind === "available" || provided.kind === "current-dir") {
         return provided.name;
       }
 
@@ -267,7 +296,10 @@ async function runInteractive({ args, cwd, options, output, rawArgs }: Ctx): Pro
   const projectRoot = path.resolve(cwd, promptAnswers.projectName);
 
   const projectName = promptAnswers.projectName;
-  const displayProjectPath = path.relative(cwd, projectRoot) || path.basename(projectRoot);
+  const isCwd = provided.kind === "current-dir";
+  const displayProjectPath = isCwd
+    ? "."
+    : path.relative(cwd, projectRoot) || path.basename(projectRoot);
   const shouldInstallDependencies = promptAnswers.shouldInstallDependencies;
   const shouldInitGit = promptAnswers.shouldInitGit;
   let scaffoldedProject: Awaited<ReturnType<typeof scaffoldProject>> | undefined;
@@ -308,7 +340,9 @@ async function runInteractive({ args, cwd, options, output, rawArgs }: Ctx): Pro
 
   outro(`Rune project is ready at ${displayProjectPath}`);
   output.log("Next steps:");
-  output.log(`  $ cd ${displayProjectPath}`);
+  if (!isCwd) {
+    output.log(`  $ cd ${displayProjectPath}`);
+  }
   if (!shouldInstallDependencies) {
     output.log(`  $ ${pm.installCommand}`);
   }

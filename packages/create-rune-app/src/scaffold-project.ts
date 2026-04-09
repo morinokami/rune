@@ -39,14 +39,24 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
+async function isEmptyDir(dirPath: string): Promise<boolean> {
+  const entries = await fs.readdir(dirPath);
+  return entries.length === 0;
+}
+
 // Creates a minimal Rune project starter in a new directory.
 export async function scaffoldProject(
   projectName: string,
   cwd: string = process.cwd(),
 ): Promise<ScaffoldedProject> {
+  const currentDir = projectName === "." || projectName === "./";
   const projectRoot = path.resolve(cwd, projectName);
 
-  if (await pathExists(projectRoot)) {
+  if (currentDir) {
+    if (!(await isEmptyDir(projectRoot))) {
+      throw new Error(`Target directory is not empty: ${projectRoot}`);
+    }
+  } else if (await pathExists(projectRoot)) {
     throw new Error(`Target directory already exists: ${projectRoot}`);
   }
 
@@ -56,6 +66,7 @@ export async function scaffoldProject(
   await downloadTemplate(GITHUB_TEMPLATE, {
     dir: ".",
     cwd: projectRoot,
+    ...(currentDir && { force: true }),
   });
 
   // Post-process: update package.json with the actual project name and CLI binary name.

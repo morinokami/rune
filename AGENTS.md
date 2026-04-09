@@ -33,9 +33,9 @@ TypeScript-first, agent-friendly CLI framework. Directory structure maps directl
 - Preserve the manifest-routing invariant: at runtime, only the matched leaf command module should be loaded.
 - TypeScript-first: do not add runtime checks for constraints already enforced by the type system (e.g. required properties, discriminated unions). Reserve runtime validation for domain rules that types cannot express, such as string format, uniqueness, or ordering.
 
-## Documentation
+## Documentation & Skills
 
-- When changing public API behavior, update the corresponding documentation in `docs/src/content/docs/` for both English and Japanese (`ja/`) versions.
+- When changing public API behavior, update the corresponding documentation in `docs/src/content/docs/` for both English and Japanese (`ja/`) versions, and the relevant skills in `skills/`.
 
 ## Testing
 

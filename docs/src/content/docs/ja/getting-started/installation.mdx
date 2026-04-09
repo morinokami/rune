@@ -72,6 +72,31 @@ import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
      </TabItem>
    </Tabs>
 
+   プロジェクト名の代わりに `.` を渡すと、現在のディレクトリにプロジェクトを作成できます。ディレクトリは空である必要があります。
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+     ```sh
+     pnpm create rune-app .
+     ```
+     </TabItem>
+     <TabItem label="npm">
+     ```sh
+     npm create rune-app@latest .
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     yarn create rune-app .
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     bun create rune-app .
+     ```
+     </TabItem>
+   </Tabs>
+
 2. **コマンドの実行**
 
    プロジェクトディレクトリに移動し、スターターに含まれる `hello` コマンドを実行して動作を確認します。
@@ -117,6 +142,9 @@ import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ```sh
 npx create-rune-app my-cli --yes
+
+# 現在のディレクトリにプロジェクトを作成する場合
+npx create-rune-app . --yes
 ```
 
 個別の動作はオプションで制御できます。
