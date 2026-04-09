@@ -39,9 +39,19 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
-async function isEmptyDir(dirPath: string): Promise<boolean> {
-  const entries = await fs.readdir(dirPath);
-  return entries.length === 0;
+// Top-level entries produced by the starter template.
+const TEMPLATE_ENTRIES = [".gitignore", "package.json", "tsconfig.json", "src", "tests"];
+
+export async function findConflictingEntries(dirPath: string): Promise<readonly string[]> {
+  const conflicts: string[] = [];
+
+  for (const entry of TEMPLATE_ENTRIES) {
+    if (await pathExists(path.join(dirPath, entry))) {
+      conflicts.push(entry);
+    }
+  }
+
+  return conflicts;
 }
 
 // Creates a minimal Rune project starter in a new directory.
@@ -53,8 +63,10 @@ export async function scaffoldProject(
   const projectRoot = path.resolve(cwd, projectName);
 
   if (currentDir) {
-    if (!(await isEmptyDir(projectRoot))) {
-      throw new Error(`Target directory is not empty: ${projectRoot}`);
+    const conflicts = await findConflictingEntries(projectRoot);
+
+    if (conflicts.length > 0) {
+      throw new Error(`Target directory contains conflicting files: ${conflicts.join(", ")}`);
     }
   } else if (await pathExists(projectRoot)) {
     throw new Error(`Target directory already exists: ${projectRoot}`);

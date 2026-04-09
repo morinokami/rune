@@ -1,12 +1,12 @@
 import { cancel, confirm, group, intro, isCancel, log, outro, tasks, text } from "@clack/prompts";
 import { CommandError, defineCommand } from "@rune-cli/rune";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { styleText } from "node:util";
 
 import { detectPackageManager, installDependencies } from "../detect-package-manager.ts";
 import { checkGitInitAvailability, tryGitInit } from "../init-git.ts";
-import { scaffoldProject } from "../scaffold-project.ts";
+import { findConflictingEntries, scaffoldProject } from "../scaffold-project.ts";
 
 const INTRO_TITLE = styleText(["bgCyan", "black", "bold"], "Create Rune App");
 
@@ -128,12 +128,16 @@ async function runNonInteractive({ args, cwd, options, output }: Ctx): Promise<v
     });
   }
 
-  if (provided.kind === "current-dir" && readdirSync(provided.root).length > 0) {
-    throw new CommandError({
-      kind: "directory-not-empty",
-      message: `Target directory is not empty: ${provided.root}`,
-      hint: "Remove existing files or choose an empty directory",
-    });
+  if (provided.kind === "current-dir") {
+    const conflicts = await findConflictingEntries(provided.root);
+
+    if (conflicts.length > 0) {
+      throw new CommandError({
+        kind: "directory-has-conflicts",
+        message: `Target directory contains conflicting files: ${conflicts.join(", ")}`,
+        hint: "Remove conflicting files or choose a different directory",
+      });
+    }
   }
 
   output.log(`Scaffolding project: ${provided.name}`);
@@ -198,10 +202,13 @@ async function runInteractive({ args, cwd, options, output, rawArgs }: Ctx): Pro
     log.warn(`Target directory already exists: ${provided.root}`);
   }
   if (provided.kind === "current-dir") {
-    if (readdirSync(provided.root).length > 0) {
-      cancel(`Target directory is not empty: ${provided.root}`);
+    const conflicts = await findConflictingEntries(provided.root);
+
+    if (conflicts.length > 0) {
+      cancel(`Target directory contains conflicting files: ${conflicts.join(", ")}`);
       throw new CommandError({ kind: "canceled", message: "" });
     }
+
     log.step("Scaffolding in current directory");
   }
   if (provided.kind === "available") {
