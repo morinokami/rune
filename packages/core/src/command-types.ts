@@ -363,6 +363,65 @@ export type ValidateNegationCollision<TOpts> = TOpts extends readonly CommandOpt
     : unknown
   : unknown;
 
+// ---------------------------------------------------------------------------
+// Reserved option name / short name detection
+// ---------------------------------------------------------------------------
+
+// Option names always reserved by the framework.
+type AlwaysReservedOptionName = "help";
+
+// Option names reserved only when `json: true` is set.
+type JsonReservedOptionName = "json";
+
+// Short names always reserved by the framework (-h for help).
+type ReservedShortName = "h";
+
+type HasReservedOptionName<
+  TFields extends readonly CommandOptionField[],
+  TReserved extends string = AlwaysReservedOptionName,
+> = TFields extends readonly [infer H, ...infer T extends readonly CommandOptionField[]]
+  ? H extends { readonly name: infer N extends string }
+    ? string extends N
+      ? HasReservedOptionName<T, TReserved>
+      : N extends TReserved
+        ? true
+        : HasReservedOptionName<T, TReserved>
+    : HasReservedOptionName<T, TReserved>
+  : false;
+
+type HasReservedShortName<TFields extends readonly CommandOptionField[]> =
+  TFields extends readonly [infer H, ...infer T extends readonly CommandOptionField[]]
+    ? H extends { readonly short: infer S extends string }
+      ? SingleLetter extends S
+        ? HasReservedShortName<T>
+        : S extends ReservedShortName
+          ? true
+          : HasReservedShortName<T>
+      : HasReservedShortName<T>
+    : false;
+
+export type ValidateReservedNames<
+  TOpts,
+  TJson extends boolean = false,
+> = TOpts extends readonly CommandOptionField[]
+  ? IsTuple<TOpts> extends true
+    ? HasReservedOptionName<
+        TOpts,
+        TJson extends true
+          ? AlwaysReservedOptionName | JsonReservedOptionName
+          : AlwaysReservedOptionName
+      > extends true
+      ? {
+          readonly __reservedOptionName: ErrorMessage<"ERROR: Option name conflicts with a framework-reserved flag (--help, or --json when json mode is enabled).">;
+        }
+      : HasReservedShortName<TOpts> extends true
+        ? {
+            readonly __reservedShortName: ErrorMessage<"ERROR: Short name conflicts with a framework-reserved flag (-h).">;
+          }
+        : unknown
+    : unknown
+  : unknown;
+
 // Pulls the declared field name out of a field definition and includes a
 // camelCase alias so kebab-case fields can be accessed with either casing.
 type FieldName<TField> = TField extends { readonly name: infer TName extends string }

@@ -70,7 +70,7 @@ Primitive types: `"string"` | `"number"` | `"boolean"`
 - `required: true` makes the field mandatory
 - `default` provides a fallback value and makes the field always present in `ctx`
 - Primitive boolean options default to `false` even without an explicit `default`
-- `short` (options only): single ASCII letter for shorthand (e.g. `-f`)
+- `short` (options only): single ASCII letter for shorthand (e.g. `-f`). The short name `"h"` is reserved for `--help`
 
 ### Schema fields
 
@@ -279,3 +279,4 @@ Unhandled non-CommandError exceptions are wrapped with `kind: "internal"`.
 - **Schema validation contract**: use `schema["~standard"].validate(value)`, not library-specific `.parse()` or `.safeParse()`.
 - **Hyphenated arg names**: must follow the same rules as option names — start with a letter, single internal hyphens only.
 - **Field name collisions**: a kebab-case name and its camelCase equivalent cannot coexist (e.g. `dry-run` and `dryRun` in the same command).
+- **Reserved names**: the option name `"help"` and short name `"h"` are reserved by the framework. When `json: true`, the option name `"json"` is also reserved.

@@ -8,6 +8,7 @@ import type {
   ValidateDuplicateShortNames,
   ValidateFieldNames,
   ValidateNegationCollision,
+  ValidateReservedNames,
   ValidateUniqueNames,
 } from "./command-types";
 
@@ -101,6 +102,25 @@ function validateNegationCollisions(options: readonly CommandOptionField[]): voi
           `Option "${negName}" conflicts with the automatic negation of boolean option "${field.name}".`,
         );
       }
+    }
+  }
+}
+
+const RESERVED_OPTION_NAMES = new Set(["help"]);
+const RESERVED_SHORT_NAMES = new Set(["h"]);
+
+function validateReservedNames(options: readonly CommandOptionField[], json: boolean): void {
+  for (const field of options) {
+    if (RESERVED_OPTION_NAMES.has(field.name) || (json && field.name === "json")) {
+      throw new Error(
+        `Option name "${field.name}" is reserved by the framework. The --${field.name} flag is built-in.`,
+      );
+    }
+
+    if (field.short !== undefined && RESERVED_SHORT_NAMES.has(field.short)) {
+      throw new Error(
+        `Short name "${field.short}" for option "${field.name}" is reserved by the framework.`,
+      );
     }
   }
 }
@@ -242,7 +262,8 @@ export function defineCommand<
     ValidateFieldNames<TArgsFields, TOptionsFields> &
     ValidateUniqueNames<TArgsFields, TOptionsFields> &
     ValidateDuplicateShortNames<TOptionsFields> &
-    ValidateNegationCollision<TOptionsFields>,
+    ValidateNegationCollision<TOptionsFields> &
+    ValidateReservedNames<TOptionsFields, TJson>,
 ): DefinedCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>,
@@ -263,6 +284,7 @@ export function defineCommand<
     validateOptionNames(input.options);
     validateOptionShortNames(input.options);
     validateNegationCollisions(input.options);
+    validateReservedNames(input.options, (input as { json?: boolean }).json === true);
   }
 
   const command = {
