@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.22
+
+### Patch Changes
+
+- [#88](https://github.com/morinokami/rune/pull/88) [`3fbb00e`](https://github.com/morinokami/rune/commit/3fbb00e6d93480c53d6f4b2423acfb5d134241b9) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): show default values in --help output
+
+- [#86](https://github.com/morinokami/rune/pull/86) [`ee8878d`](https://github.com/morinokami/rune/commit/ee8878d7147cb50302635972e81d5dc39e4e0827) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): reject reserved option names in defineCommand
+
 ## 0.0.21
 
 ### Patch Changes
