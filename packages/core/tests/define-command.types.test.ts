@@ -289,6 +289,66 @@ describe("type-level negation collision detection", () => {
   });
 });
 
+describe("type-level reserved name detection", () => {
+  test("defineCommand rejects reserved option name help at compile time", () => {
+    void ((input: { options: [{ name: "help"; type: "boolean" }]; run: () => void }) => {
+      // @ts-expect-error reserved option name
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand allows version option at compile time", () => {
+    void ((input: { options: [{ name: "version"; type: "string" }]; run: () => void }) => {
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand rejects reserved short name h at compile time", () => {
+    void ((input: {
+      options: [{ name: "header"; type: "string"; short: "h" }];
+      run: () => void;
+    }) => {
+      // @ts-expect-error reserved short name
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand allows -V short name at compile time", () => {
+    void ((input: {
+      options: [{ name: "verbose"; type: "boolean"; short: "V" }];
+      run: () => void;
+    }) => {
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand rejects json option when json mode is enabled at compile time", () => {
+    void ((input: {
+      json: true;
+      options: [{ name: "json"; type: "boolean" }];
+      run: () => unknown;
+    }) => {
+      // @ts-expect-error reserved option name in json mode
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand allows json option when json mode is not enabled at compile time", () => {
+    void ((input: { options: [{ name: "json"; type: "boolean" }]; run: () => void }) => {
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand allows non-reserved short names at compile time", () => {
+    void ((input: {
+      options: [{ name: "verbose"; type: "boolean"; short: "v" }];
+      run: () => void;
+    }) => {
+      defineCommand(input);
+    });
+  });
+});
+
 describe("type-level compound validation errors", () => {
   test("multiple validators firing simultaneously do not collapse to plain never", () => {
     // Empty duplicate names: triggers both ValidateFieldNames (empty name) and

@@ -105,12 +105,14 @@ Options declared as `--name` flags.
 
 Each entry is either a **primitive field** or a **schema field**, with the same base properties as `args` plus the following additional properties. Primitive boolean options always default to `false`, even when `required` and `default` are omitted. When a primitive boolean option sets `default: true`, a `--no-<name>` flag is automatically generated so users can override the default. See [Negatable boolean options](#negatable-boolean-options) for details.
 
+The option name `"help"` is reserved by the framework and cannot be used. When `json: true` is set, the name `"json"` is also reserved because the framework manages the built-in `--json` flag.
+
 #### `short`
 
 - **Type:** Single ASCII letter
 - **Optional**
 
-Single-character shorthand (e.g. `"f"` for `--force` -> `-f`). Must be unique across all options.
+Single-character shorthand (e.g. `"f"` for `--force` -> `-f`). Must be unique across all options. The short name `"h"` is reserved for the built-in `--help` flag and cannot be used.
 
 #### `flag`
 

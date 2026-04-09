@@ -395,6 +395,77 @@ describe("negation collision validation", () => {
   });
 });
 
+describe("reserved name validation", () => {
+  test("defineCommand rejects option named help", () => {
+    expect(() =>
+      // @ts-expect-error reserved option name
+      defineCommand({
+        options: [{ name: "help", type: "boolean" }],
+        async run() {},
+      }),
+    ).toThrow('Option name "help" is reserved by the framework.');
+  });
+
+  test("defineCommand rejects short name h", () => {
+    expect(() =>
+      // @ts-expect-error reserved short name
+      defineCommand({
+        options: [{ name: "header", type: "string", short: "h" }],
+        async run() {},
+      }),
+    ).toThrow('Short name "h" for option "header" is reserved by the framework.');
+  });
+
+  test("defineCommand allows version option on non-root commands", () => {
+    expect(() =>
+      defineCommand({
+        options: [{ name: "version", type: "string" }],
+        async run() {},
+      }),
+    ).not.toThrow();
+  });
+
+  test("defineCommand allows -V short name", () => {
+    expect(() =>
+      defineCommand({
+        options: [{ name: "verbose", type: "boolean", short: "V" }],
+        async run() {},
+      }),
+    ).not.toThrow();
+  });
+
+  test("defineCommand rejects json option when json mode is enabled", () => {
+    expect(() =>
+      // @ts-expect-error reserved option name in json mode
+      defineCommand({
+        json: true,
+        options: [{ name: "json", type: "boolean" }],
+        async run() {
+          return {};
+        },
+      }),
+    ).toThrow('Option name "json" is reserved by the framework.');
+  });
+
+  test("defineCommand allows json option when json mode is not enabled", () => {
+    expect(() =>
+      defineCommand({
+        options: [{ name: "json", type: "boolean" }],
+        async run() {},
+      }),
+    ).not.toThrow();
+  });
+
+  test("defineCommand allows non-reserved short names", () => {
+    expect(() =>
+      defineCommand({
+        options: [{ name: "verbose", type: "boolean", short: "v" }],
+        async run() {},
+      }),
+    ).not.toThrow();
+  });
+});
+
 describe("widened input pass-through", () => {
   test("widened option arrays with camelCase collision pass type check and are caught at runtime", () => {
     const fields: readonly CommandOptionField[] = [
@@ -433,6 +504,26 @@ describe("widened input pass-through", () => {
     const fields: readonly CommandArgField[] = [{ name: "", type: "string" }];
 
     expect(() => defineCommand({ args: fields, run() {} })).toThrow(/Invalid argument name/);
+  });
+
+  test("widened option arrays with reserved names pass type check and are caught at runtime", () => {
+    const fields: readonly CommandOptionField[] = [{ name: "help", type: "boolean" }];
+
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/reserved by the framework/);
+  });
+
+  test("widened option arrays with reserved short names pass type check and are caught at runtime", () => {
+    const fields: readonly CommandOptionField[] = [{ name: "header", type: "string", short: "h" }];
+
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/reserved by the framework/);
+  });
+
+  test("widened option arrays with json name in json mode pass type check and are caught at runtime", () => {
+    const fields: readonly CommandOptionField[] = [{ name: "json", type: "boolean" }];
+
+    expect(() => defineCommand({ json: true, options: fields, run: () => ({}) })).toThrow(
+      /reserved by the framework/,
+    );
   });
 
   test("tuple with widened member names does not trigger false positive", () => {
