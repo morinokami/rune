@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.10
+
+### Patch Changes
+
+- [#84](https://github.com/morinokami/rune/pull/84) [`82cd562`](https://github.com/morinokami/rune/commit/82cd562ff3a523fd44288b7738a2c8e16a98f701) Thanks [@morinokami](https://github.com/morinokami)! - fix(create-rune-app): check template conflicts instead of emptiness for `.`
+
 ## 0.0.9
 
 ### Patch Changes
