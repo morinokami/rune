@@ -1,0 +1,35 @@
+---
+title: エージェントスキル
+description: Rune のエージェントスキルをインストールする方法について学ぶ。
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+[エージェントスキル](https://agentskills.io/home)は、AI エージェントに手順書やルールといったドメイン知識を与えるためのオープンフォーマットです。Rune は公式のスキルを提供しており、これをプロジェクトにインストールすることで、エージェントがルーティングやコマンド定義、テストといった Rune の作法をオンデマンドに参照できるようになります。
+
+## インストール
+
+以下のコマンドにより、Rune のスキルをプロジェクトに追加できます:
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  pnpm dlx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  npx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  yarn dlx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  bunx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+</Tabs>

@@ -41,4 +41,8 @@ Help output for `--help` is generated automatically from a command's `descriptio
 
 `CommandError` lets you define structured errors with `kind`, `message`, `hint`, and `details`. In normal execution, they are displayed in a human-friendly format; in `--json` mode, they are emitted as machine-readable error information.
 
-{/* ### Agent Skills */}
+### Agent Skills
+
+Rune provides an official [Agent Skill](https://agentskills.io/home), an open format for giving AI agents procedural knowledge and project-specific context they can load on demand. The format is supported by multiple AI development tools.
+
+By adding the Rune skill to your project, agents gain on-demand access to Rune-specific knowledge such as file-based routing conventions, `defineCommand()` usage, and testing patterns. This allows agents to work on Rune projects more accurately and efficiently.

@@ -1,0 +1,35 @@
+---
+title: Agent Skills
+description: Learn how to install the Rune agent skill.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+[Agent Skills](https://agentskills.io/home) are an open format for giving AI agents domain knowledge such as procedures and rules. Rune provides an official skill that, once installed in your project, lets agents reference Rune conventions around routing, command definitions, and testing on demand.
+
+## Installation
+
+You can add the Rune skill to your project with the following commands:
+
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  pnpm dlx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  npx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  yarn dlx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  bunx skills add https://github.com/morinokami/rune --skill rune
+  ```
+  </TabItem>
+</Tabs>

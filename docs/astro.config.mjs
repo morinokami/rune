@@ -71,7 +71,7 @@ export default defineConfig({
             { slug: "guides/testing" },
             { slug: "guides/json" },
             // { slug: "guides/standard-schema" },
-            // { slug: "guides/skills" },
+            { slug: "guides/skills" },
             // { slug: "guides/deployment" },
           ],
         },
