@@ -13,6 +13,7 @@ import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
   resolveCommandsDirectory,
+  resolveConfigPath,
   resolveDistDirectory,
   resolveProjectPath,
   resolveSourceDirectory,
@@ -24,6 +25,7 @@ import { writeStderrLine, writeStdout } from "./write-result";
 // ---------------------------------------------------------------------------
 
 const BUILD_CLI_FILENAME = "cli.mjs";
+const BUILD_CONFIG_FILENAME = "config.mjs";
 const BUILD_MANIFEST_FILENAME = "manifest.json";
 const RUNE_PACKAGE_NAME = "@rune-cli/rune";
 
@@ -152,7 +154,13 @@ function renderBuiltCliEntry(
   cliName: string,
   version: string | undefined,
   runtimeImportPath: string,
+  hasConfig: boolean,
 ): string {
+  const configLine = hasConfig
+    ? `const configPath = fileURLToPath(new URL("./${BUILD_CONFIG_FILENAME}", distDirectoryUrl));\n`
+    : "";
+  const configOption = hasConfig ? "\n  configPath," : "";
+
   return `import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -175,12 +183,12 @@ const runtimeManifest = {
       : node,
   ),
 };
-process.exitCode = await runManifestCommand({
+${configLine}process.exitCode = await runManifestCommand({
   manifest: runtimeManifest,
   rawArgs: process.argv.slice(2),
   cliName,
   version,
-  cwd: process.cwd(),
+  cwd: process.cwd(),${configOption}
 });
 `;
 }
@@ -294,18 +302,45 @@ async function buildCommandEntries(
   });
 }
 
+async function buildConfigEntry(
+  projectRoot: string,
+  distDirectory: string,
+  configPath: string,
+): Promise<void> {
+  const tsconfig = await resolveBuildTsconfig(projectRoot);
+
+  await build({
+    absWorkingDir: projectRoot,
+    entryPoints: [configPath],
+    outfile: path.join(distDirectory, BUILD_CONFIG_FILENAME),
+    bundle: true,
+    format: "esm",
+    platform: "node",
+    target: BUILD_TARGET,
+    tsconfig,
+    logLevel: "silent",
+    write: true,
+  });
+}
+
 async function buildCliEntry(
   projectRoot: string,
   distDirectory: string,
   cliName: string,
   version: string | undefined,
+  hasConfig: boolean,
 ): Promise<void> {
   const runtimeHelperEntryPath = await resolveRuntimeHelperEntryPath();
 
   await build({
     absWorkingDir: projectRoot,
     stdin: {
-      contents: renderBuiltCliEntry(cliName, version, `./${path.basename(runtimeHelperEntryPath)}`),
+      contents: renderBuiltCliEntry(
+        cliName,
+        version,
+        `./${path.basename(runtimeHelperEntryPath)}`,
+        hasConfig,
+      ),
       loader: "ts",
       resolveDir: path.dirname(runtimeHelperEntryPath),
       sourcefile: "rune-built-cli-entry.ts",
@@ -353,12 +388,20 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
     const sourceManifest = await generateCommandManifest({ commandsDirectory });
     const builtManifest = createBuiltManifest(sourceManifest, sourceDirectory);
     const cliInfo = await readProjectCliInfo(projectRoot);
+    const configPath = await resolveConfigPath(projectRoot);
 
     await rm(distDirectory, { recursive: true, force: true });
     await writeBuiltRuntimeFiles(distDirectory, builtManifest);
     await Promise.all([
       buildCommandEntries(projectRoot, sourceDirectory, distDirectory, sourceManifest),
-      buildCliEntry(projectRoot, distDirectory, cliInfo.name, cliInfo.version),
+      buildCliEntry(
+        projectRoot,
+        distDirectory,
+        cliInfo.name,
+        cliInfo.version,
+        configPath !== undefined,
+      ),
+      ...(configPath ? [buildConfigEntry(projectRoot, distDirectory, configPath)] : []),
       copyBuiltAssets(sourceDirectory, distDirectory),
     ]);
 

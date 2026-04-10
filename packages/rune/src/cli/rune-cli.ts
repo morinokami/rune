@@ -231,7 +231,7 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   const route = resolveCommandRoute(manifest, options.argv);
 
   if (route.kind === "unknown") {
-    const helpData = buildUnknownCommandHelpData(route, "rune", getRuneVersion());
+    const helpData = buildUnknownCommandHelpData(route, "rune", manifest, getRuneVersion());
     await writeStderrLine(renderDefaultHelp(helpData));
     return 1;
   }

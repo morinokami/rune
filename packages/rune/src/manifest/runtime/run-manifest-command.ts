@@ -15,6 +15,9 @@ export interface RunManifestCommandOptions {
   readonly cwd?: string | undefined;
   // Overrides the default file-based module loader, mainly for testing.
   readonly loadCommand?: LoadCommandFn | undefined;
+  // Path to the rune.config.ts (or built config.mjs) module. Loaded lazily
+  // only when help rendering is needed.
+  readonly configPath?: string | undefined;
 }
 
 function ensureTrailingNewline(text: string): string {
@@ -111,6 +114,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
         cliName: options.cliName,
         version: options.version,
         loadCommand: options.loadCommand,
+        configPath: options.configPath,
       });
 
       if (route.kind === "unknown") {

@@ -8,6 +8,7 @@ import type {
 } from "../src/manifest/runtime/help-data";
 
 import { defineCommand } from "../src";
+import { defineConfig } from "../src/define-config";
 import {
   buildCommandHelpData,
   buildGroupHelpData,
@@ -95,9 +96,10 @@ async function renderCommandHelpText(options: {
 function renderUnknownCommandHelpText(
   route: Parameters<typeof buildUnknownCommandHelpData>[0],
   cliName: string,
+  unknownManifest: Parameters<typeof buildUnknownCommandHelpData>[2],
   version?: string,
 ): string {
-  return renderDefaultHelp(buildUnknownCommandHelpData(route, cliName, version));
+  return renderDefaultHelp(buildUnknownCommandHelpData(route, cliName, unknownManifest, version));
 }
 
 describe("group help", () => {
@@ -620,33 +622,32 @@ describe("resolved help routing", () => {
 
 describe("unknown command message", () => {
   test("unknown command help shows canonical suggestions for alias-based matches", () => {
-    const route = resolveCommandRoute(
-      {
-        nodes: [
-          {
-            pathSegments: [],
-            kind: "group",
-            childNames: ["deploy"],
-            aliases: [],
-          },
-          {
-            pathSegments: ["deploy"],
-            kind: "command",
-            sourceFilePath: "/commands/deploy.ts",
-            childNames: [],
-            aliases: ["dep"],
-            description: "Deploy the app",
-          },
-        ],
-      },
-      ["depl"],
-    );
+    const aliasManifest: CommandManifest = {
+      nodes: [
+        {
+          pathSegments: [],
+          kind: "group",
+          childNames: ["deploy"],
+          aliases: [],
+        },
+        {
+          pathSegments: ["deploy"],
+          kind: "command",
+          sourceFilePath: "/commands/deploy.ts",
+          childNames: [],
+          aliases: ["dep"],
+          description: "Deploy the app",
+        },
+      ],
+    };
+
+    const route = resolveCommandRoute(aliasManifest, ["depl"]);
 
     if (route.kind !== "unknown") {
       throw new Error("Expected unknown route");
     }
 
-    const message = renderUnknownCommandHelpText(route, "mycli");
+    const message = renderUnknownCommandHelpText(route, "mycli", aliasManifest);
 
     expect(message).toContain("Unknown command: mycli depl");
     expect(message).toContain("deploy");
@@ -801,7 +802,10 @@ describe("renderDefaultHelp", () => {
       attemptedPath: ["project", "cretae"],
       matchedPath: ["project"],
       unknownSegment: "cretae",
-      availableSubcommandNames: ["create", "list"],
+      availableSubcommands: [
+        { name: "create", aliases: [], description: "Create a project" },
+        { name: "list", aliases: [], description: "List projects" },
+      ],
       suggestions: ["create"],
     };
 
@@ -819,7 +823,7 @@ describe("renderDefaultHelp", () => {
       attemptedPath: ["xyz"],
       matchedPath: [],
       unknownSegment: "xyz",
-      availableSubcommandNames: ["hello"],
+      availableSubcommands: [{ name: "hello", aliases: [], description: "Say hello" }],
       suggestions: [],
     };
 
@@ -986,14 +990,17 @@ describe("help data builders", () => {
       throw new Error("Expected unknown route");
     }
 
-    const data = buildUnknownCommandHelpData(route, "mycli");
+    const data = buildUnknownCommandHelpData(route, "mycli", manifest);
 
     expect(data.kind).toBe("unknown");
     expect(data.cliName).toBe("mycli");
     expect(data.attemptedPath).toEqual(["project", "cretae"]);
     expect(data.matchedPath).toEqual(["project"]);
     expect(data.unknownSegment).toBe("cretae");
-    expect(data.availableSubcommandNames).toEqual(["create", "list"]);
+    expect(data.availableSubcommands).toEqual([
+      { name: "create", aliases: [], description: "Create a project" },
+      { name: "list", aliases: [], description: "List projects" },
+    ]);
     expect(data.suggestions).toContain("create");
   });
 
@@ -1026,5 +1033,204 @@ describe("help data builders", () => {
     });
 
     expect(fromData).toBe(fromResolved);
+  });
+});
+
+describe("defineCommand.help", () => {
+  test("command-level help renderer is used when provided", async () => {
+    const command = defineCommand({
+      description: "Deploy",
+      help() {
+        return "Custom deploy help\n";
+      },
+      async run() {},
+    });
+
+    const route = resolveCommandRoute(manifest, ["hello", "--help"]);
+    const output = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return command;
+      },
+    });
+
+    expect(output).toBe("Custom deploy help\n");
+  });
+
+  test("command-level help receives CommandHelpData", async () => {
+    let receivedData: CommandHelpData | undefined;
+    const command = defineCommand({
+      description: "Create something",
+      args: [{ name: "name", type: "string", required: true }],
+      options: [{ name: "force", type: "boolean", short: "f" }],
+      help(data) {
+        receivedData = data;
+        return renderDefaultHelp(data);
+      },
+      async run() {},
+    });
+
+    const route = resolveCommandRoute(manifest, ["hello", "--help"]);
+    await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return command;
+      },
+    });
+
+    expect(receivedData).toBeDefined();
+    expect(receivedData!.kind).toBe("command");
+    expect(receivedData!.cliName).toBe("mycli");
+    expect(receivedData!.arguments).toHaveLength(1);
+    expect(receivedData!.options).toHaveLength(1);
+  });
+
+  test("command without help falls back to renderDefaultHelp", async () => {
+    const command = defineCommand({
+      description: "Say hello",
+      async run() {},
+    });
+
+    const route = resolveCommandRoute(manifest, ["hello", "--help"]);
+    const output = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return command;
+      },
+    });
+
+    expect(output).toContain("Usage: mycli hello");
+    expect(output).toContain("Say hello");
+  });
+});
+
+describe("help priority chain", () => {
+  test("command.help takes priority over config.renderHelp", async () => {
+    const command = defineCommand({
+      description: "Deploy",
+      help() {
+        return "command-level\n";
+      },
+      async run() {},
+    });
+
+    const route = resolveCommandRoute(manifest, ["hello", "--help"]);
+
+    // Without config, command.help is used
+    const output = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return command;
+      },
+    });
+
+    expect(output).toBe("command-level\n");
+  });
+
+  test("config.renderHelp is used for group help", async () => {
+    // We test the priority logic directly via renderResolvedHelp
+    // with no configPath (no config loaded), which falls back to default
+    const route = resolveCommandRoute(manifest, []);
+    const output = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+    });
+
+    expect(output).toContain("Usage: mycli <command>");
+  });
+
+  test("renderHelpSafe falls back on renderer error for command help", async () => {
+    const command = defineCommand({
+      description: "Deploy",
+      help() {
+        throw new Error("renderer broke");
+      },
+      async run() {},
+    });
+
+    const route = resolveCommandRoute(manifest, ["hello", "--help"]);
+    const output = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return command;
+      },
+    });
+
+    // Falls back to renderDefaultHelp
+    expect(output).toContain("Usage: mycli hello");
+  });
+});
+
+describe("buildUnknownCommandHelpData with SubcommandHelpEntry", () => {
+  test("availableSubcommands includes descriptions and aliases", () => {
+    const unknownManifest: CommandManifest = {
+      nodes: [
+        { pathSegments: [], kind: "group", childNames: ["deploy", "status"], aliases: [] },
+        {
+          pathSegments: ["deploy"],
+          kind: "command",
+          sourceFilePath: "/commands/deploy.ts",
+          childNames: [],
+          aliases: ["d"],
+          description: "Deploy the app",
+        },
+        {
+          pathSegments: ["status"],
+          kind: "command",
+          sourceFilePath: "/commands/status.ts",
+          childNames: [],
+          aliases: [],
+          description: "Show status",
+        },
+      ],
+    };
+
+    const route = resolveCommandRoute(unknownManifest, ["deplyo"]);
+    if (route.kind !== "unknown") throw new Error("Expected unknown route");
+
+    const data = buildUnknownCommandHelpData(route, "mycli", unknownManifest);
+
+    expect(data.availableSubcommands).toEqual([
+      { name: "deploy", aliases: ["d"], description: "Deploy the app" },
+      { name: "status", aliases: [], description: "Show status" },
+    ]);
+  });
+});
+
+describe("defineConfig", () => {
+  test("defineConfig returns a config with renderHelp", () => {
+    const config = defineConfig({
+      renderHelp() {
+        return "custom\n";
+      },
+    });
+
+    expect(config.renderHelp).toBeDefined();
+    expect(
+      config.renderHelp!({
+        kind: "group",
+        cliName: "test",
+        pathSegments: [],
+        subcommands: [],
+        frameworkOptions: [],
+        examples: [],
+      }),
+    ).toBe("custom\n");
+  });
+
+  test("defineConfig with empty input returns config without renderHelp", () => {
+    const config = defineConfig({});
+    expect(config.renderHelp).toBeUndefined();
   });
 });

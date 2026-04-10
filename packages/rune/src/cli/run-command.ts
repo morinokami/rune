@@ -10,6 +10,7 @@ import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
   resolveCommandsDirectory,
+  resolveConfigPath,
   resolveProjectPath,
 } from "../project/project-files";
 import { isVersionFlag } from "./flags";
@@ -64,12 +65,15 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
     const manifest = await generateCommandManifest({ commandsDirectory });
     await writeRunManifest(projectRoot, serializeCommandManifest(manifest));
 
+    const configPath = await resolveConfigPath(projectRoot);
+
     return runManifestCommand({
       manifest,
       rawArgs: options.rawArgs,
       cliName: cliInfo.name,
       version: cliInfo.version,
       cwd: options.cwd,
+      configPath,
     });
   } catch (error) {
     await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune run");

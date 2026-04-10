@@ -8,6 +8,7 @@ import path from "node:path";
 const SOURCE_DIRECTORY_NAME = "src";
 const COMMANDS_DIRECTORY_NAME = path.join(SOURCE_DIRECTORY_NAME, "commands");
 const DIST_DIRECTORY_NAME = "dist";
+const CONFIG_FILENAME = "rune.config.ts";
 
 interface ProjectPackageJson {
   readonly bin?: string | Readonly<Record<string, string>> | undefined;
@@ -90,6 +91,21 @@ export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCl
   }
 
   return { name: path.basename(projectRoot) };
+}
+
+export async function resolveConfigPath(projectRoot: string): Promise<string | undefined> {
+  const configPath = path.join(projectRoot, CONFIG_FILENAME);
+
+  try {
+    const stats = await stat(configPath);
+    return stats.isFile() ? configPath : undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
+  }
 }
 
 export async function assertCommandsDirectoryExists(commandsDirectory: string): Promise<void> {

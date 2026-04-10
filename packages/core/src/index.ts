@@ -18,5 +18,17 @@ export type {
   SchemaOptionField,
 } from "./command-types";
 export type { DefineGroupInput, DefinedGroup } from "./define-group";
+export type {
+  ArgumentHelpEntry,
+  CommandHelpData,
+  FrameworkOptionHelpEntry,
+  OptionHelpEntry,
+  PrimitiveArgumentHelpEntry,
+  PrimitiveOptionHelpEntry,
+  SchemaArgumentHelpEntry,
+  SchemaOptionHelpEntry,
+  SubcommandHelpEntry,
+  UserOptionHelpEntry,
+} from "./help-data-types";
 export type { CommandOutput, OutputSink } from "./output";
 export type { RunCommandPipelineInput, RunCommandPipelineResult } from "./run-command-pipeline";

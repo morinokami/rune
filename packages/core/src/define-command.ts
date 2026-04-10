@@ -294,6 +294,7 @@ export function defineCommand<
     examples: (input.examples ?? []) as readonly string[],
     args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,
     options: (input.options ?? []) as NormalizeFields<TOptionsFields, CommandOptionField>,
+    help: input.help,
     run: input.run,
   };
 

@@ -3,10 +3,12 @@ import type { ResolveCommandRouteResult } from "./resolve-command-route";
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
+import { loadRuneConfigSafe } from "./config-loader";
 import {
   buildCommandHelpData,
   buildGroupHelpData,
   buildUnknownCommandHelpData,
+  type HelpData,
   type SubcommandHelpEntry,
 } from "./help-data";
 import { renderDefaultHelp } from "./render-help";
@@ -17,6 +19,7 @@ export interface RenderResolvedHelpOptions {
   readonly cliName: string;
   readonly version?: string | undefined;
   readonly loadCommand?: LoadCommandFn | undefined;
+  readonly configPath?: string | undefined;
 }
 
 function resolveChildSubcommands(
@@ -38,11 +41,30 @@ function resolveChildSubcommands(
   });
 }
 
+function renderHelpSafe<T extends HelpData>(render: (data: T) => string, data: T): string {
+  try {
+    return render(data);
+  } catch {
+    process.stderr.write(
+      "Warning: Custom help renderer threw an error. Using default help renderer.\n",
+    );
+    return renderDefaultHelp(data);
+  }
+}
+
 // Resolves a routed help request into the appropriate help text.
 export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Promise<string> {
+  const config = options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined;
+
   if (options.route.kind === "unknown") {
-    const data = buildUnknownCommandHelpData(options.route, options.cliName, options.version);
-    return renderDefaultHelp(data);
+    const data = buildUnknownCommandHelpData(
+      options.route,
+      options.cliName,
+      options.manifest,
+      options.version,
+    );
+    const render = config?.renderHelp ?? renderDefaultHelp;
+    return renderHelpSafe(render, data);
   }
 
   if (options.route.kind === "group") {
@@ -52,7 +74,8 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
       cliName: options.cliName,
       version: options.version,
     });
-    return renderDefaultHelp(data);
+    const render = config?.renderHelp ?? renderDefaultHelp;
+    return renderHelpSafe(render, data);
   }
 
   const loadCommand = options.loadCommand ?? defaultLoadCommand;
@@ -72,5 +95,6 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
     subcommands,
   });
 
-  return renderDefaultHelp(data);
+  const render = command.help ?? config?.renderHelp ?? renderDefaultHelp;
+  return renderHelpSafe(render, data);
 }
