@@ -1,5 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
+import type { CommandHelpData } from "./help-data-types";
 import type { CommandOutput } from "./output";
 
 // Primitive field kinds supported by Rune without an external schema.
@@ -603,6 +604,12 @@ export interface DefineCommandInput<
    */
   readonly options?: TOptionsFields;
   /**
+   * Custom help renderer for this command. When provided, this function is
+   * called instead of the default renderer when `--help` is requested.
+   * Receives the structured {@link CommandHelpData} for this command.
+   */
+  readonly help?: ((data: CommandHelpData) => string) | undefined;
+  /**
    * The function executed when this command is invoked.
    * Receives a {@link CommandContext} with fully parsed `args` and `options`.
    *
@@ -629,6 +636,7 @@ export interface DefinedCommand<
   readonly examples: readonly string[];
   readonly args: TArgsFields;
   readonly options: TOptionsFields;
+  readonly help?: ((data: CommandHelpData) => string) | undefined;
   readonly run: (
     ctx: CommandContext<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>,
   ) => TJson extends true ? unknown : void | Promise<void>;

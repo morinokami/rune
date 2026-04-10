@@ -1,32 +1,31 @@
 export { CommandError, defineCommand, defineGroup } from "@rune-cli/core";
 export type {
+  ArgumentHelpEntry,
   CommandArgField,
   CommandContext,
+  CommandHelpData,
   CommandOptionField,
   CommandOutput,
   DefineGroupInput,
   DefinedCommand,
   DefinedGroup,
+  FrameworkOptionHelpEntry,
+  OptionHelpEntry,
+  PrimitiveArgumentHelpEntry,
   PrimitiveFieldType,
   PrimitiveArgField,
   PrimitiveOptionField,
-  SchemaArgField,
-  SchemaOptionField,
-} from "@rune-cli/core";
-
-export { renderDefaultHelp } from "./manifest/runtime/render-help";
-export type {
-  ArgumentHelpEntry,
-  CommandHelpData,
-  FrameworkOptionHelpEntry,
-  GroupHelpData,
-  HelpData,
-  OptionHelpEntry,
-  PrimitiveArgumentHelpEntry,
   PrimitiveOptionHelpEntry,
+  SchemaArgField,
   SchemaArgumentHelpEntry,
+  SchemaOptionField,
   SchemaOptionHelpEntry,
   SubcommandHelpEntry,
-  UnknownCommandHelpData,
   UserOptionHelpEntry,
-} from "./manifest/runtime/help-data";
+} from "@rune-cli/core";
+
+export { defineConfig } from "./define-config";
+export type { RuneConfig, RuneConfigInput } from "./define-config";
+
+export { renderDefaultHelp } from "./manifest/runtime/render-help";
+export type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./manifest/runtime/help-data";

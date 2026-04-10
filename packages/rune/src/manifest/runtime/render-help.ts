@@ -2,13 +2,12 @@ import type {
   ArgumentHelpEntry,
   CommandHelpData,
   FrameworkOptionHelpEntry,
-  GroupHelpData,
-  HelpData,
   PrimitiveOptionHelpEntry,
   SchemaOptionHelpEntry,
   SubcommandHelpEntry,
-  UnknownCommandHelpData,
-} from "./help-data";
+} from "@rune-cli/core";
+
+import type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./help-data";
 
 // ---------------------------------------------------------------------------
 // Formatting helpers

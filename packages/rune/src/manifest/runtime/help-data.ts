@@ -1,3 +1,13 @@
+import type {
+  ArgumentHelpEntry,
+  CommandHelpData,
+  FrameworkOptionHelpEntry,
+  PrimitiveArgumentHelpEntry,
+  PrimitiveOptionHelpEntry,
+  SubcommandHelpEntry,
+  UserOptionHelpEntry,
+} from "@rune-cli/core";
+
 import {
   isSchemaField,
   type CommandArgField,
@@ -16,71 +26,7 @@ import type { UnknownCommandRoute } from "./resolve-command-route";
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 
 // ---------------------------------------------------------------------------
-// Public types – subcommands
-// ---------------------------------------------------------------------------
-
-export interface SubcommandHelpEntry {
-  readonly name: string;
-  readonly aliases: readonly string[];
-  readonly description?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Public types – arguments (discriminated via `type`)
-// ---------------------------------------------------------------------------
-
-export interface PrimitiveArgumentHelpEntry {
-  readonly name: string;
-  readonly type: "string" | "number" | "boolean";
-  readonly description?: string;
-  readonly default?: string | number | boolean;
-  readonly required: boolean;
-}
-
-export interface SchemaArgumentHelpEntry {
-  readonly name: string;
-  readonly type: undefined;
-  readonly description?: string;
-  readonly required: boolean;
-}
-
-export type ArgumentHelpEntry = PrimitiveArgumentHelpEntry | SchemaArgumentHelpEntry;
-
-// ---------------------------------------------------------------------------
-// Public types – options (discriminated via `type` / `framework`)
-// ---------------------------------------------------------------------------
-
-export interface PrimitiveOptionHelpEntry {
-  readonly name: string;
-  readonly short?: string;
-  readonly type: "string" | "number" | "boolean";
-  readonly description?: string;
-  readonly default?: string | number | boolean;
-  readonly required: boolean;
-  readonly negatable: boolean;
-}
-
-export interface SchemaOptionHelpEntry {
-  readonly name: string;
-  readonly short?: string;
-  readonly type: undefined;
-  readonly description?: string;
-  readonly required: boolean;
-  readonly negatable: false;
-}
-
-export interface FrameworkOptionHelpEntry {
-  readonly name: string;
-  readonly short?: string;
-  readonly description: string;
-}
-
-export type UserOptionHelpEntry = PrimitiveOptionHelpEntry | SchemaOptionHelpEntry;
-
-export type OptionHelpEntry = UserOptionHelpEntry | FrameworkOptionHelpEntry;
-
-// ---------------------------------------------------------------------------
-// Public types – HelpData
+// Public types – HelpData (rune-specific, includes group and unknown)
 // ---------------------------------------------------------------------------
 
 export interface GroupHelpData {
@@ -101,28 +47,6 @@ export interface GroupHelpData {
   readonly examples: readonly string[];
 }
 
-export interface CommandHelpData {
-  readonly kind: "command";
-  /** CLI binary name (e.g. `"mycli"`). */
-  readonly cliName: string;
-  /** Command path segments (e.g. `["deploy", "create"]`). */
-  readonly pathSegments: readonly string[];
-  /** CLI version string (e.g. `"1.0.0"`), if known. */
-  readonly cliVersion?: string;
-  /** One-line description of the command. */
-  readonly description?: string;
-  /** Direct subcommands, in manifest-defined order. */
-  readonly subcommands: readonly SubcommandHelpEntry[];
-  /** Positional arguments, in definition order. */
-  readonly arguments: readonly ArgumentHelpEntry[];
-  /** User-defined options, in definition order. */
-  readonly options: readonly UserOptionHelpEntry[];
-  /** Framework-managed options (e.g. `--help`, `--json`). */
-  readonly frameworkOptions: readonly FrameworkOptionHelpEntry[];
-  /** Usage examples. */
-  readonly examples: readonly string[];
-}
-
 export interface UnknownCommandHelpData {
   readonly kind: "unknown";
   /** CLI binary name (e.g. `"mycli"`). */
@@ -135,8 +59,8 @@ export interface UnknownCommandHelpData {
   readonly matchedPath: readonly string[];
   /** The specific token that did not match any child command. */
   readonly unknownSegment: string;
-  /** Names of all valid subcommands under the matched node. */
-  readonly availableSubcommandNames: readonly string[];
+  /** All valid subcommands under the matched node, with descriptions and aliases. */
+  readonly availableSubcommands: readonly SubcommandHelpEntry[];
   /** Close matches, sorted by Damerau-Levenshtein distance (max 3). */
   readonly suggestions: readonly string[];
 }
@@ -310,8 +234,14 @@ export async function buildCommandHelpData(
 export function buildUnknownCommandHelpData(
   route: UnknownCommandRoute,
   cliName: string,
+  manifest: CommandManifest,
   version?: string,
 ): UnknownCommandHelpData {
+  const availableSubcommands = resolveSubcommandHelpEntries(manifest, {
+    pathSegments: route.matchedPath as CommandManifestPath,
+    childNames: route.availableChildNames,
+  });
+
   return {
     kind: "unknown",
     cliName,
@@ -319,9 +249,7 @@ export function buildUnknownCommandHelpData(
     attemptedPath: [...route.attemptedPath],
     matchedPath: [...route.matchedPath],
     unknownSegment: route.unknownSegment,
-    // Names only for now. If custom renderers need descriptions/aliases,
-    // this could be upgraded to SubcommandHelpEntry[] (requires manifest access).
-    availableSubcommandNames: [...route.availableChildNames],
+    availableSubcommands,
     suggestions: [...route.suggestions],
   };
 }
