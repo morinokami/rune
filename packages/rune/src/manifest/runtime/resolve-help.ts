@@ -1,3 +1,5 @@
+import type { SubcommandHelpEntry } from "@rune-cli/core";
+
 import type { CommandManifest, CommandManifestPath } from "../manifest-types";
 import type { ResolveCommandRouteResult } from "./resolve-command-route";
 
@@ -9,7 +11,6 @@ import {
   buildGroupHelpData,
   buildUnknownCommandHelpData,
   type HelpData,
-  type SubcommandHelpEntry,
 } from "./help-data";
 import { renderDefaultHelp } from "./render-help";
 

@@ -1,3 +1,13 @@
+import type {
+  ArgumentHelpEntry,
+  CommandHelpData,
+  FrameworkOptionHelpEntry,
+  PrimitiveArgumentHelpEntry,
+  PrimitiveOptionHelpEntry,
+  SubcommandHelpEntry,
+  UserOptionHelpEntry,
+} from "@rune-cli/core";
+
 import {
   isSchemaField,
   type CommandArgField,
@@ -14,30 +24,6 @@ import type {
 import type { UnknownCommandRoute } from "./resolve-command-route";
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
-
-// Re-export all help data types from core so existing consumers are unaffected.
-export type {
-  ArgumentHelpEntry,
-  CommandHelpData,
-  FrameworkOptionHelpEntry,
-  OptionHelpEntry,
-  PrimitiveArgumentHelpEntry,
-  PrimitiveOptionHelpEntry,
-  SchemaArgumentHelpEntry,
-  SchemaOptionHelpEntry,
-  SubcommandHelpEntry,
-  UserOptionHelpEntry,
-} from "@rune-cli/core";
-
-import type {
-  ArgumentHelpEntry,
-  CommandHelpData,
-  FrameworkOptionHelpEntry,
-  PrimitiveArgumentHelpEntry,
-  PrimitiveOptionHelpEntry,
-  SubcommandHelpEntry,
-  UserOptionHelpEntry,
-} from "@rune-cli/core";
 
 // ---------------------------------------------------------------------------
 // Public types – HelpData (rune-specific, includes group and unknown)

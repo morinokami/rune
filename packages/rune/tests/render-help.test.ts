@@ -1,11 +1,9 @@
+import type { CommandHelpData } from "@rune-cli/core";
+
 import { describe, expect, test } from "vite-plus/test";
 
 import type { CommandManifest, CommandManifestGroupNode } from "../src/manifest/manifest-types";
-import type {
-  CommandHelpData,
-  GroupHelpData,
-  UnknownCommandHelpData,
-} from "../src/manifest/runtime/help-data";
+import type { GroupHelpData, UnknownCommandHelpData } from "../src/manifest/runtime/help-data";
 
 import { defineCommand } from "../src";
 import { defineConfig } from "../src/define-config";
