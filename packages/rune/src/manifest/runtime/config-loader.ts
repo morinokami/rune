@@ -14,14 +14,14 @@ export async function loadRuneConfigSafe(configPath: string): Promise<RuneConfig
 
     if (!module.default || !isRuneConfig(module.default)) {
       process.stderr.write(
-        "Warning: rune.config.ts does not export a valid defineConfig() default export. Using default help renderer.\n",
+        "Warning: rune.config.ts does not export a valid defineConfig() default export.\n",
       );
       return undefined;
     }
 
     return module.default;
   } catch {
-    process.stderr.write("Warning: Failed to load rune.config.ts. Using default help renderer.\n");
+    process.stderr.write("Warning: Failed to load rune.config.ts.\n");
     return undefined;
   }
 }
