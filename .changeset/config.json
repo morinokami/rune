@@ -7,5 +7,6 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["my-cli"]
+  "ignore": [],
+  "privatePackages": { "version": false, "tag": false }
 }
