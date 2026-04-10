@@ -13,3 +13,20 @@ export type {
   SchemaArgField,
   SchemaOptionField,
 } from "@rune-cli/core";
+
+export { renderDefaultHelp } from "./manifest/runtime/render-help";
+export type {
+  ArgumentHelpEntry,
+  CommandHelpData,
+  FrameworkOptionHelpEntry,
+  GroupHelpData,
+  HelpData,
+  OptionHelpEntry,
+  PrimitiveArgumentHelpEntry,
+  PrimitiveOptionHelpEntry,
+  SchemaArgumentHelpEntry,
+  SchemaOptionHelpEntry,
+  SubcommandHelpEntry,
+  UnknownCommandHelpData,
+  UserOptionHelpEntry,
+} from "./manifest/runtime/help-data";

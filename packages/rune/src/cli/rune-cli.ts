@@ -1,5 +1,6 @@
 import runePackageJson from "../../package.json" with { type: "json" };
-import { renderUnknownCommandMessage } from "../manifest/runtime/render-help";
+import { buildUnknownCommandHelpData } from "../manifest/runtime/help-data";
+import { renderDefaultHelp } from "../manifest/runtime/render-help";
 import { resolveCommandRoute } from "../manifest/runtime/resolve-command-route";
 import { renderResolvedHelp } from "../manifest/runtime/resolve-help";
 import { runBuildCommand } from "./build-command";
@@ -230,7 +231,8 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   const route = resolveCommandRoute(manifest, options.argv);
 
   if (route.kind === "unknown") {
-    await writeStderrLine(renderUnknownCommandMessage(route, "rune"));
+    const helpData = buildUnknownCommandHelpData(route, "rune", getRuneVersion());
+    await writeStderrLine(renderDefaultHelp(helpData));
     return 1;
   }
 

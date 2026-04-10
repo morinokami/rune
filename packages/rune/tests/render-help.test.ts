@@ -1,9 +1,19 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import type { CommandManifest } from "../src/manifest/manifest-types";
+import type { CommandManifest, CommandManifestGroupNode } from "../src/manifest/manifest-types";
+import type {
+  CommandHelpData,
+  GroupHelpData,
+  UnknownCommandHelpData,
+} from "../src/manifest/runtime/help-data";
 
 import { defineCommand } from "../src";
-import { renderGroupHelp, renderUnknownCommandMessage } from "../src/manifest/runtime/render-help";
+import {
+  buildCommandHelpData,
+  buildGroupHelpData,
+  buildUnknownCommandHelpData,
+} from "../src/manifest/runtime/help-data";
+import { renderDefaultHelp } from "../src/manifest/runtime/render-help";
 import { resolveCommandRoute } from "../src/manifest/runtime/resolve-command-route";
 import { renderResolvedHelp } from "../src/manifest/runtime/resolve-help";
 
@@ -64,15 +74,41 @@ const manifest: CommandManifest = {
   ],
 };
 
+function renderGroupHelpText(options: {
+  readonly manifest: CommandManifest;
+  readonly node: CommandManifestGroupNode;
+  readonly cliName: string;
+  readonly version?: string;
+}): string {
+  return renderDefaultHelp(buildGroupHelpData(options));
+}
+
+async function renderCommandHelpText(options: {
+  readonly command: Parameters<typeof buildCommandHelpData>[0]["command"];
+  readonly pathSegments: Parameters<typeof buildCommandHelpData>[0]["pathSegments"];
+  readonly cliName: string;
+  readonly version?: string;
+}): Promise<string> {
+  return renderDefaultHelp(await buildCommandHelpData(options));
+}
+
+function renderUnknownCommandHelpText(
+  route: Parameters<typeof buildUnknownCommandHelpData>[0],
+  cliName: string,
+  version?: string,
+): string {
+  return renderDefaultHelp(buildUnknownCommandHelpData(route, cliName, version));
+}
+
 describe("group help", () => {
-  test("renderGroupHelp lists child commands using manifest metadata only", () => {
+  test("group help lists child commands using manifest metadata only", () => {
     const userGroup = manifest.nodes[5];
 
     if (userGroup.kind !== "group") {
       throw new Error("Expected user node to be a group");
     }
 
-    const help = renderGroupHelp({ manifest, node: userGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({ manifest, node: userGroup, cliName: "mycli" });
 
     expect(help).toContain("Usage: mycli user <command>");
     expect(help).toContain("delete  Delete a user");
@@ -80,33 +116,38 @@ describe("group help", () => {
     expect(help).not.toContain("--version");
   });
 
-  test("renderGroupHelp shows --version for the root group when version is set", () => {
+  test("group help shows --version for the root group when version is set", () => {
     const rootGroup = manifest.nodes[0];
 
     if (rootGroup.kind !== "group") {
       throw new Error("Expected root node to be a group");
     }
 
-    const help = renderGroupHelp({ manifest, node: rootGroup, cliName: "mycli", version: "1.0.0" });
+    const help = renderGroupHelpText({
+      manifest,
+      node: rootGroup,
+      cliName: "mycli",
+      version: "1.0.0",
+    });
 
     expect(help).toContain("-V, --version");
     expect(help).toContain("-h, --help");
   });
 
-  test("renderGroupHelp does not show --version for the root group when version is not set", () => {
+  test("group help does not show --version for the root group when version is not set", () => {
     const rootGroup = manifest.nodes[0];
 
     if (rootGroup.kind !== "group") {
       throw new Error("Expected root node to be a group");
     }
 
-    const help = renderGroupHelp({ manifest, node: rootGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({ manifest, node: rootGroup, cliName: "mycli" });
 
     expect(help).not.toContain("--version");
     expect(help).toContain("-h, --help");
   });
 
-  test("renderGroupHelp shows description above usage when present", () => {
+  test("group help shows description above usage when present", () => {
     const manifestWithGroupDescription: CommandManifest = {
       nodes: [
         {
@@ -141,7 +182,7 @@ describe("group help", () => {
       throw new Error("Expected group node");
     }
 
-    const help = renderGroupHelp({
+    const help = renderGroupHelpText({
       manifest: manifestWithGroupDescription,
       node: groupNode,
       cliName: "mycli",
@@ -157,20 +198,20 @@ describe("group help", () => {
     expect(help).toContain("list  List projects");
   });
 
-  test("renderGroupHelp omits description section when not present", () => {
+  test("group help omits description section when not present", () => {
     const userGroup = manifest.nodes[5];
 
     if (userGroup.kind !== "group") {
       throw new Error("Expected user node to be a group");
     }
 
-    const help = renderGroupHelp({ manifest, node: userGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({ manifest, node: userGroup, cliName: "mycli" });
 
     const lines = help.split("\n");
     expect(lines[0]).toBe("Usage: mycli user <command>");
   });
 
-  test("renderGroupHelp shows aliases next to child command names", () => {
+  test("group help shows aliases next to child command names", () => {
     const aliasManifest: CommandManifest = {
       nodes: [
         {
@@ -211,7 +252,11 @@ describe("group help", () => {
       throw new Error("Expected root node to be a group");
     }
 
-    const help = renderGroupHelp({ manifest: aliasManifest, node: rootGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({
+      manifest: aliasManifest,
+      node: rootGroup,
+      cliName: "mycli",
+    });
 
     expect(help).toContain("deploy (d)  Deploy the app");
     expect(help).toContain("project (p)  Manage projects");
@@ -219,7 +264,7 @@ describe("group help", () => {
 });
 
 describe("command help", () => {
-  test("renderCommandHelp includes usage, description, args, and options", async () => {
+  test("command help includes usage, description, args, and options", async () => {
     const command = defineCommand({
       description: "Create a project",
       args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
@@ -230,8 +275,11 @@ describe("command help", () => {
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["project", "create"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["project", "create"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain("Usage: mycli project create <id> [options]");
     expect(help).toContain("Description:\n  Create a project");
@@ -241,7 +289,7 @@ describe("command help", () => {
     expect(help).toContain("-h, --help  Show help");
   });
 
-  test("renderCommandHelp shows --no-flag for boolean options with default true", async () => {
+  test("command help shows --no-flag for boolean options with default true", async () => {
     const command = defineCommand({
       description: "Deploy the application",
       options: [
@@ -251,27 +299,33 @@ describe("command help", () => {
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["deploy"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain("--color, --no-color  Colorize output");
     expect(help).not.toContain("--no-force");
     expect(help).toContain("-f, --force  Force deploy");
   });
 
-  test("renderCommandHelp shows short, --flag, --no-flag for negatable option with short", async () => {
+  test("command help shows short, --flag, --no-flag for negatable option with short", async () => {
     const command = defineCommand({
       options: [{ name: "color", type: "boolean", default: true, short: "c" }],
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["deploy"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain("-c, --color, --no-color");
   });
 
-  test("renderCommandHelp shows default values for string and number options", async () => {
+  test("command help shows default values for string and number options", async () => {
     const command = defineCommand({
       description: "Create a project",
       options: [
@@ -282,15 +336,18 @@ describe("command help", () => {
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["project", "create"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["project", "create"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain('--name <string>  Project name (default: "my-project")');
     expect(help).toContain("--retries <number>  Retry count (default: 3)");
     expect(help).not.toContain("Force overwrite (default:");
   });
 
-  test("renderCommandHelp does not show default suffix for boolean options", async () => {
+  test("command help does not show default suffix for boolean options", async () => {
     const command = defineCommand({
       description: "Deploy",
       options: [
@@ -300,93 +357,110 @@ describe("command help", () => {
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["deploy"],
+      cliName: "mycli",
+    });
 
     expect(help).not.toContain("(default:");
   });
 
-  test("renderCommandHelp shows default values for arguments", async () => {
+  test("command help shows default values for arguments", async () => {
     const command = defineCommand({
       description: "Greet someone",
       args: [{ name: "name", type: "string", default: "world", description: "Who to greet" }],
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["greet"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["greet"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain('name <string>  Who to greet (default: "world")');
   });
 
-  test("renderCommandHelp shows default for boolean positional arguments", async () => {
+  test("command help shows default for boolean positional arguments", async () => {
     const command = defineCommand({
       description: "Toggle feature",
       args: [{ name: "enabled", type: "boolean", default: true, description: "Enable flag" }],
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["toggle"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["toggle"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain("enabled  Enable flag (default: true)");
   });
 
-  test("renderCommandHelp escapes quotes in string default values", async () => {
+  test("command help escapes quotes in string default values", async () => {
     const command = defineCommand({
       description: "Test escaping",
       options: [{ name: "sep", type: "string", default: 'a"b', description: "Separator" }],
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["test"], "mycli");
+    const help = await renderCommandHelpText({ command, pathSegments: ["test"], cliName: "mycli" });
 
     expect(help).toContain('(default: "a\\"b")');
   });
 
-  test("renderCommandHelp shows default without extra spaces when description is absent", async () => {
+  test("command help shows default without extra spaces when description is absent", async () => {
     const command = defineCommand({
       description: "Count items",
       options: [{ name: "count", type: "number", default: 1 }],
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["count"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["count"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain("--count <number>  (default: 1)");
     expect(help).not.toContain("   (default:");
   });
 
-  test("renderCommandHelp shows examples section when examples are provided", async () => {
+  test("command help shows examples section when examples are provided", async () => {
     const command = defineCommand({
       description: "Deploy the application",
       examples: ["mycli deploy --env production", "mycli deploy --dry-run"],
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["deploy"],
+      cliName: "mycli",
+    });
 
     expect(help).toContain("Examples:");
     expect(help).toContain("  $ mycli deploy --env production");
     expect(help).toContain("  $ mycli deploy --dry-run");
   });
 
-  test("renderCommandHelp omits examples section when no examples are provided", async () => {
+  test("command help omits examples section when no examples are provided", async () => {
     const command = defineCommand({
       description: "Deploy the application",
       async run() {},
     });
 
-    const { renderCommandHelp } = await import("../src/manifest/runtime/render-help");
-    const help = await renderCommandHelp(command, ["deploy"], "mycli");
+    const help = await renderCommandHelpText({
+      command,
+      pathSegments: ["deploy"],
+      cliName: "mycli",
+    });
 
     expect(help).not.toContain("Examples:");
   });
 
-  test("renderGroupHelp shows examples section when examples are present on group node", () => {
+  test("group help shows examples section when examples are present on group node", () => {
     const manifestWithExamples: CommandManifest = {
       nodes: [
         {
@@ -422,7 +496,7 @@ describe("command help", () => {
       throw new Error("Expected group node");
     }
 
-    const help = renderGroupHelp({
+    const help = renderGroupHelpText({
       manifest: manifestWithExamples,
       node: groupNode,
       cliName: "mycli",
@@ -433,14 +507,14 @@ describe("command help", () => {
     expect(help).toContain("  $ mycli project list --all");
   });
 
-  test("renderGroupHelp omits examples section when no examples are present", () => {
+  test("group help omits examples section when no examples are present", () => {
     const userGroup = manifest.nodes[5];
 
     if (userGroup.kind !== "group") {
       throw new Error("Expected user node to be a group");
     }
 
-    const help = renderGroupHelp({ manifest, node: userGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({ manifest, node: userGroup, cliName: "mycli" });
 
     expect(help).not.toContain("Examples:");
   });
@@ -545,7 +619,7 @@ describe("resolved help routing", () => {
 });
 
 describe("unknown command message", () => {
-  test("renderUnknownCommandMessage shows canonical suggestions for alias-based matches", () => {
+  test("unknown command help shows canonical suggestions for alias-based matches", () => {
     const route = resolveCommandRoute(
       {
         nodes: [
@@ -572,9 +646,385 @@ describe("unknown command message", () => {
       throw new Error("Expected unknown route");
     }
 
-    const message = renderUnknownCommandMessage(route, "mycli");
+    const message = renderUnknownCommandHelpText(route, "mycli");
 
     expect(message).toContain("Unknown command: mycli depl");
     expect(message).toContain("deploy");
+  });
+});
+
+describe("renderDefaultHelp", () => {
+  test("renders group help from HelpData", () => {
+    const data: GroupHelpData = {
+      kind: "group",
+      cliName: "mycli",
+      pathSegments: [],
+      cliVersion: "1.0.0",
+      subcommands: [
+        { name: "hello", aliases: [], description: "Say hello" },
+        { name: "deploy", aliases: ["d"], description: "Deploy the app" },
+      ],
+      frameworkOptions: [
+        { name: "help", short: "h", description: "Show help" },
+        { name: "version", short: "V", description: "Show the version number" },
+      ],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("Usage: mycli <command>");
+    expect(help).toContain("hello  Say hello");
+    expect(help).toContain("deploy (d)  Deploy the app");
+    expect(help).toContain("-h, --help  Show help");
+    expect(help).toContain("-V, --version  Show the version number");
+  });
+
+  test("renders command help from HelpData", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["create"],
+      description: "Create a project",
+      subcommands: [],
+      arguments: [
+        { name: "id", type: "string", description: "Project identifier", required: true },
+      ],
+      options: [
+        {
+          name: "name",
+          type: "string",
+          description: "Project name",
+          default: "my-project",
+          required: false,
+          negatable: false,
+        },
+        {
+          name: "force",
+          short: "f",
+          type: "boolean",
+          description: "Force overwrite",
+          required: false,
+          negatable: false,
+        },
+      ],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: ["mycli create my-app"],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("Usage: mycli create <id> [options]");
+    expect(help).toContain("Description:\n  Create a project");
+    expect(help).toContain("id <string>  Project identifier");
+    expect(help).toContain('--name <string>  Project name (default: "my-project")');
+    expect(help).toContain("-f, --force  Force overwrite");
+    expect(help).toContain("-h, --help  Show help");
+    expect(help).toContain("  $ mycli create my-app");
+  });
+
+  test("renders command help with negatable option from HelpData", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["deploy"],
+      subcommands: [],
+      arguments: [],
+      options: [
+        {
+          name: "color",
+          short: "c",
+          type: "boolean",
+          default: true,
+          description: "Colorize output",
+          required: false,
+          negatable: true,
+        },
+      ],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("-c, --color, --no-color  Colorize output");
+  });
+
+  test("renders command help with schema option from HelpData", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["run"],
+      subcommands: [],
+      arguments: [{ name: "target", type: undefined, description: "Build target", required: true }],
+      options: [
+        {
+          name: "mode",
+          type: undefined,
+          description: "Build mode",
+          required: false,
+          negatable: false as const,
+        },
+      ],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("Usage: mycli run <target> [options]");
+    expect(help).toContain("  target  Build target");
+    expect(help).toContain("  --mode  Build mode");
+  });
+
+  test("renders command help without [options] when only framework options exist", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["status"],
+      subcommands: [],
+      arguments: [],
+      options: [],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toBe("Usage: mycli status\n\nOptions:\n  -h, --help  Show help\n");
+  });
+
+  test("renders unknown command help from HelpData", () => {
+    const data: UnknownCommandHelpData = {
+      kind: "unknown",
+      cliName: "mycli",
+      attemptedPath: ["project", "cretae"],
+      matchedPath: ["project"],
+      unknownSegment: "cretae",
+      availableSubcommandNames: ["create", "list"],
+      suggestions: ["create"],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("Unknown command: mycli project cretae");
+    expect(help).toContain("Did you mean?");
+    expect(help).toContain("  create");
+  });
+
+  test("renders unknown command help without suggestions", () => {
+    const data: UnknownCommandHelpData = {
+      kind: "unknown",
+      cliName: "mycli",
+      attemptedPath: ["xyz"],
+      matchedPath: [],
+      unknownSegment: "xyz",
+      availableSubcommandNames: ["hello"],
+      suggestions: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toBe("Unknown command: mycli xyz\n");
+    expect(help).not.toContain("Did you mean?");
+  });
+});
+
+describe("help data builders", () => {
+  test("buildGroupHelpData produces correct shape for root group with version", () => {
+    const rootGroup = manifest.nodes[0] as CommandManifestGroupNode;
+    const data = buildGroupHelpData({
+      manifest,
+      node: rootGroup,
+      cliName: "mycli",
+      version: "1.0.0",
+    });
+
+    expect(data.kind).toBe("group");
+    expect(data.cliName).toBe("mycli");
+    expect(data.pathSegments).toEqual([]);
+    expect(data.cliVersion).toBe("1.0.0");
+    expect(data.subcommands).toEqual([
+      { name: "hello", aliases: [], description: "Say hello" },
+      { name: "project", aliases: [], description: "Project commands" },
+      { name: "user", aliases: [], description: undefined },
+    ]);
+    expect(data.frameworkOptions).toHaveLength(2);
+    expect(data.frameworkOptions[0]).toEqual({
+      name: "help",
+      short: "h",
+      description: "Show help",
+    });
+    expect(data.frameworkOptions[1]).toEqual({
+      name: "version",
+      short: "V",
+      description: "Show the version number",
+    });
+  });
+
+  test("buildGroupHelpData omits version option for non-root group", () => {
+    const userGroup = manifest.nodes[5] as CommandManifestGroupNode;
+    const data = buildGroupHelpData({ manifest, node: userGroup, cliName: "mycli" });
+
+    expect(data.cliName).toBe("mycli");
+    expect(data.pathSegments).toEqual(["user"]);
+    expect(data.cliVersion).toBeUndefined();
+    expect(data.frameworkOptions).toHaveLength(1);
+    expect(data.frameworkOptions[0]).toMatchObject({ name: "help" });
+  });
+
+  test("buildGroupHelpData resolves child aliases", () => {
+    const aliasManifest: CommandManifest = {
+      nodes: [
+        { pathSegments: [], kind: "group", childNames: ["deploy"], aliases: [] },
+        {
+          pathSegments: ["deploy"],
+          kind: "command",
+          sourceFilePath: "/commands/deploy.ts",
+          childNames: [],
+          aliases: ["d", "dep"],
+          description: "Deploy the app",
+        },
+      ],
+    };
+
+    const rootGroup = aliasManifest.nodes[0] as CommandManifestGroupNode;
+    const data = buildGroupHelpData({ manifest: aliasManifest, node: rootGroup, cliName: "mycli" });
+
+    expect(data.subcommands[0]).toEqual({
+      name: "deploy",
+      aliases: ["d", "dep"],
+      description: "Deploy the app",
+    });
+  });
+
+  test("buildCommandHelpData produces correct argument and option entries", async () => {
+    const command = defineCommand({
+      description: "Create a project",
+      args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
+      options: [
+        { name: "name", type: "string", required: true, description: "Project name" },
+        { name: "color", type: "boolean", default: true, description: "Colorize output" },
+      ],
+      json: true,
+      async run() {},
+    });
+
+    const data = await buildCommandHelpData({
+      command,
+      pathSegments: ["project", "create"],
+      cliName: "mycli",
+    });
+
+    expect(data.kind).toBe("command");
+    expect(data.cliName).toBe("mycli");
+    expect(data.pathSegments).toEqual(["project", "create"]);
+    expect(data.description).toBe("Create a project");
+
+    // Argument: primitive with required
+    expect(data.arguments).toHaveLength(1);
+    expect(data.arguments[0]).toEqual({
+      name: "id",
+      type: "string",
+      description: "Project identifier",
+      required: true,
+    });
+
+    // User options (no framework entries mixed in)
+    expect(data.options).toHaveLength(2);
+    expect(data.options[0]).toMatchObject({
+      name: "name",
+      type: "string",
+      required: true,
+      negatable: false,
+    });
+    expect(data.options[1]).toMatchObject({
+      name: "color",
+      type: "boolean",
+      default: true,
+      negatable: true,
+    });
+
+    // Framework options: --json and --help
+    expect(data.frameworkOptions).toHaveLength(2);
+    expect(data.frameworkOptions[0]).toEqual({
+      name: "json",
+      description: "Output structured results as JSON",
+    });
+    expect(data.frameworkOptions[1]).toEqual({
+      name: "help",
+      short: "h",
+      description: "Show help",
+    });
+  });
+
+  test("buildCommandHelpData includes subcommands when provided", async () => {
+    const command = defineCommand({
+      description: "Project commands",
+      async run() {},
+    });
+
+    const subcommands = [
+      { name: "create", aliases: ["c"], description: "Create a project" },
+      { name: "list", aliases: [], description: "List projects" },
+    ];
+
+    const data = await buildCommandHelpData({
+      command,
+      pathSegments: ["project"],
+      cliName: "mycli",
+      subcommands,
+    });
+
+    expect(data.subcommands).toEqual(subcommands);
+  });
+
+  test("buildUnknownCommandHelpData preserves all route data", () => {
+    const route = resolveCommandRoute(manifest, ["project", "cretae"]);
+
+    if (route.kind !== "unknown") {
+      throw new Error("Expected unknown route");
+    }
+
+    const data = buildUnknownCommandHelpData(route, "mycli");
+
+    expect(data.kind).toBe("unknown");
+    expect(data.cliName).toBe("mycli");
+    expect(data.attemptedPath).toEqual(["project", "cretae"]);
+    expect(data.matchedPath).toEqual(["project"]);
+    expect(data.unknownSegment).toBe("cretae");
+    expect(data.availableSubcommandNames).toEqual(["create", "list"]);
+    expect(data.suggestions).toContain("create");
+  });
+
+  test("buildCommandHelpData + renderDefaultHelp matches renderResolvedHelp", async () => {
+    const route = resolveCommandRoute(manifest, ["project", "create", "--help"]);
+    const command = defineCommand({
+      description: "Create a project",
+      args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
+      options: [
+        { name: "name", type: "string", default: "my-project", description: "Project name" },
+        { name: "force", type: "boolean", short: "f", description: "Force overwrite" },
+      ],
+      async run() {},
+    });
+
+    const fromData = renderDefaultHelp(
+      await buildCommandHelpData({
+        command,
+        pathSegments: ["project", "create"],
+        cliName: "mycli",
+      }),
+    );
+    const fromResolved = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return command;
+      },
+    });
+
+    expect(fromData).toBe(fromResolved);
   });
 });

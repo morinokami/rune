@@ -1,25 +1,20 @@
-import {
-  isSchemaField,
-  type CommandArgField,
-  type CommandOptionField,
-  type DefinedCommand,
-} from "@rune-cli/core";
-
 import type {
-  CommandManifest,
-  CommandManifestGroupNode,
-  CommandManifestPath,
-} from "../manifest-types";
-import type { UnknownCommandRoute } from "./resolve-command-route";
+  ArgumentHelpEntry,
+  CommandHelpData,
+  FrameworkOptionHelpEntry,
+  GroupHelpData,
+  HelpData,
+  PrimitiveOptionHelpEntry,
+  SchemaOptionHelpEntry,
+  SubcommandHelpEntry,
+  UnknownCommandHelpData,
+} from "./help-data";
 
-import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
+// ---------------------------------------------------------------------------
+// Formatting helpers
+// ---------------------------------------------------------------------------
 
-export interface CommandHelpSubcommandEntry {
-  readonly label: string;
-  readonly description?: string | undefined;
-}
-
-function formatCommandName(cliName: string, pathSegments: CommandManifestPath): string {
+function formatCommandName(cliName: string, pathSegments: readonly string[]): string {
   return pathSegments.length === 0 ? cliName : `${cliName} ${pathSegments.join(" ")}`;
 }
 
@@ -35,30 +30,22 @@ function formatExamplesSection(examples: readonly string[]): string {
   return `Examples:\n${examples.map((example) => `  $ ${example}`).join("\n")}`;
 }
 
-function formatTypeHint(field: CommandArgField | CommandOptionField): string {
-  if (isSchemaField(field)) return "";
-  if (field.type === "boolean") return "";
-  return ` <${field.type}>`;
+function formatSubcommandLabel(entry: SubcommandHelpEntry): string {
+  const aliasSuffix = entry.aliases.length > 0 ? ` (${entry.aliases.join(", ")})` : "";
+  return `${entry.name}${aliasSuffix}`;
 }
 
-function formatArgumentLabel(field: CommandArgField): string {
-  return `${field.name}${formatTypeHint(field)}`;
+function formatArgumentLabel(entry: ArgumentHelpEntry): string {
+  if (entry.type === undefined || entry.type === "boolean") return entry.name;
+  return `${entry.name} <${entry.type}>`;
 }
 
-function isNegatableOption(field: CommandOptionField): boolean {
-  return !isSchemaField(field) && field.type === "boolean" && field.default === true;
-}
-
-function formatDefaultSuffix(
-  field: CommandArgField | CommandOptionField,
-  kind: "arg" | "option",
-): string {
-  if (isSchemaField(field)) return "";
-  if (field.default === undefined) return "";
-  if (kind === "option" && field.type === "boolean") return "";
+function formatArgumentDefaultSuffix(entry: ArgumentHelpEntry): string {
+  if (entry.type === undefined) return "";
+  if (!("default" in entry) || entry.default === undefined) return "";
 
   const formatted =
-    typeof field.default === "string" ? JSON.stringify(field.default) : String(field.default);
+    typeof entry.default === "string" ? JSON.stringify(entry.default) : String(entry.default);
 
   return `(default: ${formatted})`;
 }
@@ -71,177 +58,153 @@ function joinDescription(description: string | undefined, suffix: string): strin
   return undefined;
 }
 
-function formatOptionLabel(field: CommandOptionField): string {
-  const negationSuffix = isNegatableOption(field) ? `, --no-${field.name}` : "";
-  const longOptionLabel = `--${field.name}${formatTypeHint(field)}${negationSuffix}`;
-
-  if (!field.short) {
-    return longOptionLabel;
-  }
-
-  return `-${field.short}, ${longOptionLabel}`;
+function formatUsageArguments(entries: readonly ArgumentHelpEntry[]): string {
+  return entries.map((entry) => (entry.required ? `<${entry.name}>` : `[${entry.name}]`)).join(" ");
 }
 
-async function isFieldRequired(field: CommandArgField | CommandOptionField): Promise<boolean> {
-  if (!isSchemaField(field)) {
-    return field.required === true && field.default === undefined;
-  }
+function formatUserOptionLabel(entry: PrimitiveOptionHelpEntry | SchemaOptionHelpEntry): string {
+  const typeHint = entry.type !== undefined && entry.type !== "boolean" ? ` <${entry.type}>` : "";
+  const negationSuffix = entry.negatable ? `, --no-${entry.name}` : "";
+  const longLabel = `--${entry.name}${typeHint}${negationSuffix}`;
 
-  const omittedValidation = await field.schema["~standard"].validate(undefined);
-  return !("value" in omittedValidation);
+  return entry.short ? `-${entry.short}, ${longLabel}` : longLabel;
 }
 
-async function formatUsageArguments(fields: readonly CommandArgField[]): Promise<string> {
-  const usageParts: string[] = [];
+function formatUserOptionDefaultSuffix(
+  entry: PrimitiveOptionHelpEntry | SchemaOptionHelpEntry,
+): string {
+  if (entry.type === undefined) return "";
+  if (!("default" in entry) || entry.default === undefined) return "";
+  if (entry.type === "boolean") return "";
 
-  for (const field of fields) {
-    const required = await isFieldRequired(field);
-    usageParts.push(required ? `<${field.name}>` : `[${field.name}]`);
-  }
+  const formatted =
+    typeof entry.default === "string" ? JSON.stringify(entry.default) : String(entry.default);
 
-  return usageParts.join(" ");
+  return `(default: ${formatted})`;
 }
 
-function getOptionUsageSuffix(fields: readonly CommandOptionField[]): string {
-  return fields.length === 0 ? "" : "[options]";
-}
+// ---------------------------------------------------------------------------
+// Internal renderers
+// ---------------------------------------------------------------------------
 
-export interface RenderGroupHelpOptions {
-  readonly manifest: CommandManifest;
-  readonly node: CommandManifestGroupNode;
-  readonly cliName: string;
-  readonly version?: string | undefined;
-}
-
-// Renders help for a command group using only manifest metadata.
-export function renderGroupHelp(options: RenderGroupHelpOptions): string {
-  const { manifest, node, cliName, version } = options;
-  const nodeMap = createCommandManifestNodeMap(manifest);
-  const entries = node.childNames.map((childName) => {
-    const childNode =
-      nodeMap[commandManifestPathToKey([...node.pathSegments, childName] as CommandManifestPath)];
-    const aliasSuffix =
-      childNode && childNode.aliases.length > 0 ? ` (${childNode.aliases.join(", ")})` : "";
-
-    return {
-      label: `${childName}${aliasSuffix}`,
-      description: childNode?.description,
-    };
-  });
-  const commandName = formatCommandName(cliName, node.pathSegments);
+function renderGroupHelpFromData(data: GroupHelpData): string {
   const parts: string[] = [];
 
-  if (node.description) {
-    parts.push(node.description);
+  if (data.description) {
+    parts.push(data.description);
   }
 
+  const commandName = formatCommandName(data.cliName, data.pathSegments);
   parts.push(`Usage: ${commandName} <command>`);
 
-  if (entries.length > 0) {
-    parts.push(`Subcommands:\n${formatSectionEntries(entries)}`);
+  if (data.subcommands.length > 0) {
+    parts.push(
+      `Subcommands:\n${formatSectionEntries(
+        data.subcommands.map((entry) => ({
+          label: formatSubcommandLabel(entry),
+          description: entry.description,
+        })),
+      )}`,
+    );
   }
 
-  const isRoot = node.pathSegments.length === 0;
-  const optionEntries = [
-    { label: "-h, --help", description: "Show help" },
-    ...(isRoot && version
-      ? [{ label: "-V, --version", description: "Show the version number" }]
-      : []),
-  ];
+  const optionEntries = data.frameworkOptions.map((entry) => ({
+    label: formatFrameworkOptionLabel(entry),
+    description: entry.description,
+  }));
 
   parts.push(`Options:\n${formatSectionEntries(optionEntries)}`);
 
-  if (node.examples && node.examples.length > 0) {
-    parts.push(formatExamplesSection(node.examples));
+  if (data.examples.length > 0) {
+    parts.push(formatExamplesSection(data.examples));
   }
 
   return `${parts.join("\n\n")}\n`;
 }
 
-export interface RenderCommandHelpOptions {
-  readonly command: DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>;
-  readonly pathSegments: CommandManifestPath;
-  readonly cliName: string;
-  readonly subcommands?: readonly CommandHelpSubcommandEntry[] | undefined;
+function formatFrameworkOptionLabel(entry: FrameworkOptionHelpEntry): string {
+  return entry.short ? `-${entry.short}, --${entry.name}` : `--${entry.name}`;
 }
 
-// Renders help for a resolved executable command.
-export async function renderCommandHelp(
-  commandOrOptions:
-    | DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>
-    | RenderCommandHelpOptions,
-  pathSegments?: CommandManifestPath,
-  cliName?: string,
-): Promise<string> {
-  const opts: RenderCommandHelpOptions =
-    "command" in commandOrOptions
-      ? commandOrOptions
-      : { command: commandOrOptions, pathSegments: pathSegments!, cliName: cliName! };
-
-  const { command, subcommands } = opts;
-  const usageArguments = await formatUsageArguments(command.args);
-  const optionUsageSuffix = getOptionUsageSuffix(command.options);
-  const subcommandUsageSuffix = subcommands && subcommands.length > 0 ? "[command]" : "";
-  const usageParts = [
-    formatCommandName(opts.cliName, opts.pathSegments),
-    subcommandUsageSuffix,
-    usageArguments,
-    optionUsageSuffix,
-  ]
+function renderCommandHelpFromData(data: CommandHelpData): string {
+  const usageArguments = formatUsageArguments(data.arguments);
+  const optionUsageSuffix = data.options.length > 0 ? "[options]" : "";
+  const subcommandUsageSuffix = data.subcommands.length > 0 ? "[command]" : "";
+  const commandName = formatCommandName(data.cliName, data.pathSegments);
+  const usageParts = [commandName, subcommandUsageSuffix, usageArguments, optionUsageSuffix]
     .filter((part) => part.length > 0)
     .join(" ");
 
   const parts = [`Usage: ${usageParts}`];
 
-  if (command.description) {
-    parts.push(`Description:\n  ${command.description}`);
+  if (data.description) {
+    parts.push(`Description:\n  ${data.description}`);
   }
 
-  if (subcommands && subcommands.length > 0) {
-    parts.push(`Subcommands:\n${formatSectionEntries(subcommands)}`);
+  if (data.subcommands.length > 0) {
+    parts.push(
+      `Subcommands:\n${formatSectionEntries(
+        data.subcommands.map((entry) => ({
+          label: formatSubcommandLabel(entry),
+          description: entry.description,
+        })),
+      )}`,
+    );
   }
 
-  if (command.args.length > 0) {
+  if (data.arguments.length > 0) {
     parts.push(
       `Arguments:\n${formatSectionEntries(
-        command.args.map((field) => ({
-          label: formatArgumentLabel(field),
-          description: joinDescription(field.description, formatDefaultSuffix(field, "arg")),
+        data.arguments.map((entry) => ({
+          label: formatArgumentLabel(entry),
+          description: joinDescription(entry.description, formatArgumentDefaultSuffix(entry)),
         })),
       )}`,
     );
   }
 
   const optionEntries = [
-    ...command.options.map((field) => ({
-      label: formatOptionLabel(field),
-      description: joinDescription(field.description, formatDefaultSuffix(field, "option")),
+    ...data.options.map((entry) => ({
+      label: formatUserOptionLabel(entry),
+      description: joinDescription(entry.description, formatUserOptionDefaultSuffix(entry)),
     })),
-    ...(command.json
-      ? [{ label: "--json", description: "Output structured results as JSON" }]
-      : []),
-    {
-      label: "-h, --help",
-      description: "Show help",
-    },
+    ...data.frameworkOptions.map((entry) => ({
+      label: formatFrameworkOptionLabel(entry),
+      description: entry.description,
+    })),
   ];
 
   parts.push(`Options:\n${formatSectionEntries(optionEntries)}`);
 
-  if (command.examples.length > 0) {
-    parts.push(formatExamplesSection(command.examples));
+  if (data.examples.length > 0) {
+    parts.push(formatExamplesSection(data.examples));
   }
 
   return `${parts.join("\n\n")}\n`;
 }
 
-// Renders a scoped unknown-command message with sibling-only suggestions.
-export function renderUnknownCommandMessage(route: UnknownCommandRoute, cliName: string): string {
-  const parts = [`Unknown command: ${formatCommandName(cliName, route.attemptedPath)}`];
+function renderUnknownHelpFromData(data: UnknownCommandHelpData): string {
+  const commandName = formatCommandName(data.cliName, data.attemptedPath);
+  const parts = [`Unknown command: ${commandName}`];
 
-  if (route.suggestions.length > 0) {
-    parts.push(`Did you mean?\n${route.suggestions.map((name) => `  ${name}`).join("\n")}`);
+  if (data.suggestions.length > 0) {
+    parts.push(`Did you mean?\n${data.suggestions.map((name) => `  ${name}`).join("\n")}`);
   }
 
   return `${parts.join("\n\n")}\n`;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export function renderDefaultHelp(data: HelpData): string {
+  switch (data.kind) {
+    case "group":
+      return renderGroupHelpFromData(data);
+    case "command":
+      return renderCommandHelpFromData(data);
+    case "unknown":
+      return renderUnknownHelpFromData(data);
+  }
 }
