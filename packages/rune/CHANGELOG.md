@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.25
+
+### Patch Changes
+
+- [#94](https://github.com/morinokami/rune/pull/94) [`28dd456`](https://github.com/morinokami/rune/commit/28dd4566043c02aff48250ab707866ade5cee427) Thanks [@morinokami](https://github.com/morinokami)! - refactor(rune): minimize public API surface
+
 ## 0.0.24
 
 ### Patch Changes
