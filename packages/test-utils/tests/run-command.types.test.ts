@@ -20,5 +20,30 @@ test("runCommand accepts concrete command types", () => {
 
   const result = runCommand(command, ["u-100", "--display-name", "Ava"]);
 
-  expectTypeOf(result).toEqualTypeOf<Promise<CommandExecutionResult>>();
+  expectTypeOf(result).toEqualTypeOf<Promise<CommandExecutionResult<undefined>>>();
+});
+
+test("runCommand infers result.data from json-enabled commands", async () => {
+  const command = defineCommand({
+    json: true,
+    run() {
+      return { items: [1, 2, 3] };
+    },
+  });
+
+  const result = await runCommand(command, ["--json"]);
+
+  expectTypeOf(result.data).toEqualTypeOf<{ items: number[] } | undefined>();
+});
+
+test("runCommand exposes undefined data for non-json commands", async () => {
+  const command = defineCommand({
+    run({ output }) {
+      output.log("ok");
+    },
+  });
+
+  const result = await runCommand(command);
+
+  expectTypeOf(result.data).toEqualTypeOf<undefined>();
 });

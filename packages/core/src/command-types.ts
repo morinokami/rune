@@ -612,6 +612,7 @@ export interface DefineCommandInput<
   TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
   TJson extends boolean = false,
+  TRunResult = unknown,
 > {
   /** One-line summary shown in `--help` output. */
   readonly description?: string | undefined;
@@ -668,7 +669,7 @@ export interface DefineCommandInput<
       InferNamedFields<NormalizeFields<TOptionsFields, CommandOptionField>, true>,
       InferNamedFields<NormalizeFields<TArgsFields, CommandArgField>>
     >,
-  ) => TJson extends true ? unknown : void | Promise<void>;
+  ) => TJson extends true ? TRunResult : void | Promise<void>;
 }
 
 // The normalized command object returned by `defineCommand`.
@@ -676,6 +677,7 @@ export interface DefinedCommand<
   TArgsFields extends readonly CommandArgField[] = readonly [],
   TOptionsFields extends readonly CommandOptionField[] = readonly [],
   TJson extends boolean = boolean,
+  TCommandData = TJson extends true ? unknown : undefined,
 > {
   readonly description?: string | undefined;
   readonly json: TJson;
@@ -686,7 +688,7 @@ export interface DefinedCommand<
   readonly help?: ((data: CommandHelpData) => string) | undefined;
   readonly run: (
     ctx: CommandContext<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>,
-  ) => TJson extends true ? unknown : void | Promise<void>;
+  ) => TJson extends true ? TCommandData | Promise<TCommandData> : void | Promise<void>;
 }
 
 // Extracts the inferred options object from a defined command.
@@ -698,3 +700,13 @@ export type InferCommandOptions<TCommand> =
 // Extracts the inferred args object from a defined command.
 export type InferCommandArgs<TCommand> =
   TCommand extends DefinedCommand<infer TArgsFields, any> ? InferNamedFields<TArgsFields> : never;
+
+// Extracts the inferred JSON payload type from a defined command.
+export type InferCommandData<TCommand> = TCommand extends {
+  readonly json: true;
+  readonly run: (...args: any[]) => infer TRunResult;
+}
+  ? Awaited<TRunResult>
+  : TCommand extends { readonly json: boolean }
+    ? undefined
+    : never;

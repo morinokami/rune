@@ -19,7 +19,7 @@ Because no child process is spawned, tests run fast. The result is returned as a
 - `stdout`: captured standard output
 - `stderr`: captured standard error output
 - `error`: structured error information if the command failed
-- `data`: return value from `run()` when the command uses `json: true`
+- `data`: return value from `run()` when the command uses `json: true` (typed from the command's `run()` return value)
 
 ## Basic Testing
 

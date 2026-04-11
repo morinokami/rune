@@ -28,8 +28,10 @@ function runCommand(
   command: DefinedCommand,
   argv?: string[],
   context?: RunCommandContext,
-): Promise<CommandExecutionResult>
+): Promise<CommandExecutionResult<TCommandData>>
 ```
+
+`TCommandData` is inferred from the passed command. For `json: true` commands it matches the `run()` return type; otherwise it is `undefined`.
 
 ### Parameters
 
@@ -91,9 +93,9 @@ Structured error information, if the command failed.
 
 #### `data`
 
-- **Type:** `unknown`
+- **Type:** `TCommandData | undefined`
 
-Return value from `run()` when the command uses `json: true`. This is populated regardless of whether `--json` is passed; the `--json` flag controls whether `output.log()` is suppressed, not whether `data` is captured.
+Return value from `run()` when the command uses `json: true`. `TCommandData` is inferred from the passed command's `run()` return type. This is populated regardless of whether `--json` is passed; the `--json` flag controls whether `output.log()` is suppressed, not whether `data` is captured.
 
 ## Examples
 

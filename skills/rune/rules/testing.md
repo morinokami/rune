@@ -17,8 +17,10 @@ async function runCommand(
   command: DefinedCommand,
   argv?: string[],
   context?: RunCommandContext,
-): Promise<CommandExecutionResult>;
+): Promise<CommandExecutionResult<TCommandData>>;
 ```
+
+`TCommandData` is inferred from the passed command: it matches the `run()` return type for `json: true` commands and is `undefined` otherwise.
 
 The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, required/default handling, and duplicate detection all run exactly as in a real invocation.
 
@@ -32,7 +34,7 @@ Top-level CLI behavior (command routing, help rendering) is **not** included. `r
 | `stdout`   | `string`                      | Captured `output.log()` output                                        |
 | `stderr`   | `string`                      | Captured `output.error()` output and error messages                   |
 | `error`    | `CommandFailure \| undefined` | Structured error (`kind`, `message`, `hint?`, `details?`, `exitCode`) |
-| `data`     | `unknown`                     | Return value from `run()` when `json: true`                           |
+| `data`     | `TCommandData \| undefined`   | Return value from `run()` when `json: true`, inferred from `run()`    |
 
 ## Testing patterns
 
@@ -103,6 +105,7 @@ const command = defineCommand({
 test("returns structured data with --json", async () => {
   const result = await runCommand(command, ["--json"]);
 
+  // result.data is typed as { items: number[] } | undefined
   expect(result.stdout).toBe("");
   expect(result.data).toEqual({ items: [1, 2, 3] });
 });

@@ -4,6 +4,7 @@ import {
   type CommandFailure,
   type CommandOptionField,
   type DefinedCommand,
+  type InferCommandData,
 } from "@rune-cli/core";
 
 type RunnableCommand = Pick<
@@ -32,12 +33,12 @@ export interface RunCommandContext {
   readonly cwd?: string;
 }
 
-export interface CommandExecutionResult {
+export interface CommandExecutionResult<TCommandData = unknown> {
   readonly exitCode: number;
   readonly stdout: string;
   readonly stderr: string;
   readonly error?: CommandFailure | undefined;
-  readonly data?: unknown;
+  readonly data?: TCommandData | undefined;
 }
 
 /**
@@ -113,7 +114,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
   command: TCommand,
   argv: string[] = [],
   context: RunCommandContext = {},
-): Promise<CommandExecutionResult> {
+): Promise<CommandExecutionResult<InferCommandData<TCommand>>> {
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
 
@@ -140,6 +141,6 @@ export async function runCommand<TCommand extends RunnableCommand>(
     stdout: stdoutChunks.join(""),
     stderr: stderrChunks.join(""),
     error: result.error,
-    data: result.data,
+    data: result.data as InferCommandData<TCommand>,
   };
 }

@@ -33,7 +33,7 @@ export default defineCommand({
 | `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                              |
 | `json`        | `boolean`                           | No       | Enables `--json` flag (default: `false`)                                 |
 | `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                           |
-| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. Returns `unknown` when `json: true`                       |
+| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. In `json: true` mode it may return structured data        |
 
 ### Custom help rendering
 
