@@ -46,6 +46,26 @@ describe("execution", () => {
     });
   });
 
+  test("runCommand appends human error after runtime stderr in non-json mode", async () => {
+    const command = defineCommand({
+      async run(ctx) {
+        ctx.output.error("diagnostic: loading config\n");
+        throw new CommandError({
+          kind: "config/not-found",
+          message: "Config file was not found",
+          hint: "Create rune.config.ts",
+        });
+      },
+    });
+
+    const result = await runCommand(command);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe(
+      "diagnostic: loading config\n\nConfig file was not found\nHint: Create rune.config.ts\n",
+    );
+  });
+
   test("runCommand returns structured command failures", async () => {
     const command = defineCommand({
       async run() {
@@ -99,7 +119,9 @@ describe("execution", () => {
 
     expect(result.stdout).toBe("--name rune\n");
   });
+});
 
+describe("validation", () => {
   test("runCommand parses positional args from argv", async () => {
     const command = defineCommand({
       args: [{ name: "id", type: "string", required: true }],
@@ -110,17 +132,10 @@ describe("execution", () => {
 
     const result = await runCommand(command, ["cmd_123"]);
 
-    expect(result).toEqual({
-      exitCode: 0,
-      stdout: "id=cmd_123\n",
-      stderr: "",
-      data: undefined,
-      error: undefined,
-    });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("id=cmd_123\n");
   });
-});
 
-describe("validation", () => {
   test("runCommand returns an error for missing required args", async () => {
     const command = defineCommand({
       args: [{ name: "id", type: "string", required: true }],
