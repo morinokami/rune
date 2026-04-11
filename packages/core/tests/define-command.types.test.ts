@@ -173,6 +173,21 @@ describe("type-level field name validation", () => {
       // @ts-expect-error trailing hyphen
       defineCommand(input);
     });
+
+    void ((input: { options: [{ name: "1verbose"; type: "boolean" }]; run: () => void }) => {
+      // @ts-expect-error option names must start with a letter
+      defineCommand(input);
+    });
+
+    void ((input: { options: [{ name: "verbose!"; type: "boolean" }]; run: () => void }) => {
+      // @ts-expect-error option names must be alphanumeric/kebab-case
+      defineCommand(input);
+    });
+
+    void ((input: { args: [{ name: "1bad-arg"; type: "string" }]; run: () => void }) => {
+      // @ts-expect-error hyphenated argument names must follow option-name rules
+      defineCommand(input);
+    });
   });
 });
 

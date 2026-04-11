@@ -6,6 +6,13 @@ import {
   type DefinedCommand,
 } from "@rune-cli/core";
 
+type RunnableCommand = Pick<
+  DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
+  "json" | "args" | "options"
+> & {
+  readonly run: (ctx: any) => unknown;
+};
+
 function renderHumanError(error: CommandFailure): string {
   const lines = [error.message];
 
@@ -102,8 +109,8 @@ export interface CommandExecutionResult {
  * expect(result.stdout).toBe("");
  * ```
  */
-export async function runCommand(
-  command: DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
+export async function runCommand<TCommand extends RunnableCommand>(
+  command: TCommand,
   argv: string[] = [],
   context: RunCommandContext = {},
 ): Promise<CommandExecutionResult> {

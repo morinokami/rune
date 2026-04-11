@@ -168,6 +168,9 @@ export type SingleLetter =
   | "Y"
   | "Z";
 
+// Single decimal digit, used for option and hyphenated arg name validation.
+type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
 // Converts a kebab-case string to camelCase at the type level.
 type KebabToCamelCase<S extends string> = S extends `${infer Head}-${infer Tail}`
   ? `${Head}${Capitalize<KebabToCamelCase<Tail>>}`
@@ -186,34 +189,78 @@ type IsTuple<T extends readonly any[]> = number extends T["length"] ? false : tr
 // Field name validation
 // ---------------------------------------------------------------------------
 
-// Rejects names with consecutive hyphens, leading hyphens, or trailing hyphens.
-type IsValidHyphenatedName<S extends string> = S extends `${string}--${string}`
-  ? false
-  : S extends `-${string}`
-    ? false
-    : S extends `${string}-`
-      ? false
-      : true;
+type AlphaNumericChar = SingleLetter | Digit;
 
-// Validates a single field's name: rejects empty names and invalid hyphenation.
-type IsValidFieldName<TField> = TField extends { readonly name: infer N extends string }
-  ? N extends ""
+type StartsWithLetter<S extends string> = S extends `${infer C}${string}`
+  ? C extends SingleLetter
+    ? true
+    : false
+  : false;
+
+type IsAlphaNumericString<S extends string> = S extends `${infer C}${infer Rest}`
+  ? C extends AlphaNumericChar
+    ? Rest extends ""
+      ? true
+      : IsAlphaNumericString<Rest>
+    : false
+  : false;
+
+type IsAlphaNumericSegment<S extends string> = S extends "" ? false : IsAlphaNumericString<S>;
+
+type IsValidOptionTail<S extends string> = S extends `${infer Segment}-${infer Rest}`
+  ? IsAlphaNumericSegment<Segment> extends true
+    ? IsValidOptionTail<Rest>
+    : false
+  : IsAlphaNumericSegment<S>;
+
+// Mirrors OPTION_NAME_RE in define-command.ts:
+// ^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$
+type IsValidOptionLikeName<S extends string> = S extends `${infer Head}-${infer Tail}`
+  ? Head extends ""
     ? false
-    : N extends `${string}-${string}`
-      ? IsValidHyphenatedName<N> extends false
-        ? false
+    : StartsWithLetter<Head> extends true
+      ? IsAlphaNumericString<Head> extends true
+        ? IsValidOptionTail<Tail>
+        : false
+      : false
+  : StartsWithLetter<S> extends true
+    ? IsAlphaNumericString<S>
+    : false;
+
+type IsValidArgFieldName<TField> = TField extends { readonly name: infer N extends string }
+  ? string extends N
+    ? true
+    : N extends ""
+      ? false
+      : N extends `${string}-${string}`
+        ? IsValidOptionLikeName<N>
         : true
-      : true
   : true;
 
-// Walks a tuple looking for any field with an invalid name.
-type HasInvalidFieldName<TFields extends readonly NamedField[]> = TFields extends readonly [
+type IsValidOptionFieldName<TField> = TField extends { readonly name: infer N extends string }
+  ? string extends N
+    ? true
+    : N extends ""
+      ? false
+      : IsValidOptionLikeName<N>
+  : true;
+
+type HasInvalidArgFieldName<TFields extends readonly NamedField[]> = TFields extends readonly [
   infer H,
   ...infer T extends readonly NamedField[],
 ]
-  ? IsValidFieldName<H> extends false
+  ? IsValidArgFieldName<H> extends false
     ? true
-    : HasInvalidFieldName<T>
+    : HasInvalidArgFieldName<T>
+  : false;
+
+type HasInvalidOptionFieldName<TFields extends readonly NamedField[]> = TFields extends readonly [
+  infer H,
+  ...infer T extends readonly NamedField[],
+]
+  ? IsValidOptionFieldName<H> extends false
+    ? true
+    : HasInvalidOptionFieldName<T>
   : false;
 
 // ---------------------------------------------------------------------------
@@ -266,18 +313,18 @@ type ErrorMessage<TMessage extends string> = TMessage & {
 
 export type ValidateFieldNames<TArgs, TOpts> = (TArgs extends readonly NamedField[]
   ? IsTuple<TArgs> extends true
-    ? HasInvalidFieldName<TArgs> extends true
+    ? HasInvalidArgFieldName<TArgs> extends true
       ? {
-          readonly __invalidArgName: ErrorMessage<"ERROR: Invalid argument name. Names must be non-empty and must not start/end with hyphens or contain consecutive hyphens.">;
+          readonly __invalidArgName: ErrorMessage<"ERROR: Invalid argument name. Names must be non-empty. Hyphenated argument names must start with a letter and contain only letters, numbers, and single internal hyphens.">;
         }
       : unknown
     : unknown
   : unknown) &
   (TOpts extends readonly NamedField[]
     ? IsTuple<TOpts> extends true
-      ? HasInvalidFieldName<TOpts> extends true
+      ? HasInvalidOptionFieldName<TOpts> extends true
         ? {
-            readonly __invalidOptionName: ErrorMessage<"ERROR: Invalid option name. Names must be non-empty and must not start/end with hyphens or contain consecutive hyphens.">;
+            readonly __invalidOptionName: ErrorMessage<"ERROR: Invalid option name. Option names must start with a letter and contain only letters, numbers, and single internal hyphens.">;
           }
         : unknown
       : unknown
