@@ -11,8 +11,15 @@ import { isSchemaField } from "./schema-field";
 // Public types
 // ---------------------------------------------------------------------------
 
+type RunnableCommand = Pick<
+  DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
+  "json" | "args" | "options"
+> & {
+  readonly run: (ctx: any) => unknown;
+};
+
 export interface RunCommandPipelineInput {
-  readonly command: DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>;
+  readonly command: RunnableCommand;
   readonly argv: readonly string[];
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
@@ -162,18 +169,22 @@ function normalizeOptions(
  * loading, output presentation (JSON serialization, stderr formatting), and
  * providing an appropriate {@link OutputSink}.
  */
-export async function runCommandPipeline(
-  input: RunCommandPipelineInput,
+export async function runCommandPipeline<TCommand extends RunnableCommand>(
+  input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
 ): Promise<RunCommandPipelineResult> {
   const { command, argv, cwd, sink = defaultSink } = input;
+  const commandDefinition = command as unknown as DefinedCommand<
+    readonly CommandArgField[],
+    readonly CommandOptionField[]
+  >;
 
-  const { jsonMode, parseArgv } = command.json
+  const { jsonMode, parseArgv } = commandDefinition.json
     ? extractJsonFlag(argv)
     : { jsonMode: false, parseArgv: argv };
 
   const output = createOutput(sink, { silentStdout: jsonMode });
 
-  const parsed = await parseCommandArgs(command, parseArgv);
+  const parsed = await parseCommandArgs(commandDefinition, parseArgv);
 
   if (!parsed.ok) {
     return {
@@ -187,19 +198,19 @@ export async function runCommandPipeline(
 
   try {
     const options = addCamelCaseAliases(
-      normalizeOptions(command.options, parsed.value.options as Record<string, unknown>),
+      normalizeOptions(commandDefinition.options, parsed.value.options as Record<string, unknown>),
     );
     const args = addCamelCaseAliases(
-      normalizeToCanonicalKeys(command.args, { ...parsed.value.args } as Record<string, unknown>),
+      normalizeToCanonicalKeys(commandDefinition.args, {
+        ...parsed.value.args,
+      } as Record<string, unknown>),
     );
 
     // The `command.run` signature is generic, but at this layer we operate on
     // erased `DefinedCommand` instances. The casts above produce the shapes
     // that `command.run` expects at runtime; TypeScript cannot verify this
     // statically, so we use `as never` to satisfy the call-site constraint.
-    const data = await (
-      command as DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>
-    ).run({
+    const data = await commandDefinition.run({
       options: options as never,
       args: args as never,
       cwd: cwd ?? process.cwd(),

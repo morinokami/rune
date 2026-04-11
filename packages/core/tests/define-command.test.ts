@@ -269,6 +269,7 @@ describe("name and short name validation", () => {
 
   test("defineCommand rejects option name with spaces", () => {
     expect(() =>
+      // @ts-expect-error invalid option name
       defineCommand({
         options: [{ name: "my option", type: "string" }],
         async run() {},
