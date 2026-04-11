@@ -1,7 +1,6 @@
 export { CommandError } from "./command-error";
 export { defineCommand, isDefinedCommand } from "./define-command";
 export { defineGroup } from "./define-group";
-export { createOutput } from "./output";
 export { runCommandPipeline } from "./run-command-pipeline";
 export { isSchemaField } from "./schema-field";
 
@@ -31,5 +30,3 @@ export type {
   SubcommandHelpEntry,
   UserOptionHelpEntry,
 } from "./help-data-types";
-export type { CommandOutput, OutputSink } from "./output";
-export type { RunCommandPipelineInput, RunCommandPipelineResult } from "./run-command-pipeline";
