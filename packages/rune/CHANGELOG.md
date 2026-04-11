@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.24
+
+### Patch Changes
+
+- [#93](https://github.com/morinokami/rune/pull/93) [`c87ca57`](https://github.com/morinokami/rune/commit/c87ca57b3c15b2fc3a325b8fea2dd94c0cde9e26) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): preserve run() return type for json commands through InferCommandData
+
+- [#91](https://github.com/morinokami/rune/pull/91) [`afa894c`](https://github.com/morinokami/rune/commit/afa894cdd97bd05cbe9609d03b0812fd286231bf) Thanks [@morinokami](https://github.com/morinokami)! - fix(core): align type-level option name validation with runtime rules and widen runCommand input type
+
 ## 0.0.23
 
 ### Patch Changes
