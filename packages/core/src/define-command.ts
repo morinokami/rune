@@ -256,8 +256,9 @@ export function defineCommand<
   const TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   const TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
   const TJson extends boolean = false,
+  TRunResult = TJson extends true ? unknown : void | Promise<void>,
 >(
-  input: DefineCommandInput<TArgsFields, TOptionsFields, TJson> &
+  input: DefineCommandInput<TArgsFields, TOptionsFields, TJson, TRunResult> &
     ValidateArgOrder<TArgsFields> &
     ValidateFieldNames<TArgsFields, TOptionsFields> &
     ValidateUniqueNames<TArgsFields, TOptionsFields> &
@@ -267,7 +268,8 @@ export function defineCommand<
 ): DefinedCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>,
-  TJson
+  TJson,
+  TJson extends true ? Awaited<TRunResult> : undefined
 > {
   if (input.aliases) {
     validateCommandAliases(input.aliases);
@@ -287,7 +289,12 @@ export function defineCommand<
     validateReservedNames(input.options, (input as { json?: boolean }).json === true);
   }
 
-  const command = {
+  const command: DefinedCommand<
+    NormalizeFields<TArgsFields, CommandArgField>,
+    NormalizeFields<TOptionsFields, CommandOptionField>,
+    TJson,
+    TJson extends true ? Awaited<TRunResult> : undefined
+  > = {
     description: input.description,
     json: ((input as { json?: boolean }).json === true) as TJson,
     aliases: (input.aliases ?? []) as readonly string[],
@@ -295,7 +302,12 @@ export function defineCommand<
     args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,
     options: (input.options ?? []) as NormalizeFields<TOptionsFields, CommandOptionField>,
     help: input.help,
-    run: input.run,
+    run: input.run as DefinedCommand<
+      NormalizeFields<TArgsFields, CommandArgField>,
+      NormalizeFields<TOptionsFields, CommandOptionField>,
+      TJson,
+      TJson extends true ? Awaited<TRunResult> : undefined
+    >["run"],
   };
 
   Object.defineProperty(command, DEFINED_COMMAND_BRAND, {

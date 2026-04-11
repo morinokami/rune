@@ -4,7 +4,11 @@ import { describe, expectTypeOf, test } from "vite-plus/test";
 import { z } from "zod";
 
 import { defineCommand } from "../src";
-import { type InferCommandArgs, type InferCommandOptions } from "../src/command-types";
+import {
+  type InferCommandArgs,
+  type InferCommandData,
+  type InferCommandOptions,
+} from "../src/command-types";
 
 test("defineCommand infers primitive arg and option shapes", () => {
   const basicCommand = defineCommand({
@@ -61,6 +65,19 @@ test("defineCommand infers schema-backed flag options", () => {
   });
 
   expectTypeOf<InferCommandOptions<typeof schemaFlagCommand>>().toEqualTypeOf<{ force: boolean }>();
+});
+
+test("defineCommand preserves json payload types", () => {
+  const jsonCommand = defineCommand({
+    json: true,
+    run() {
+      return { items: [1, 2, 3] as const };
+    },
+  });
+
+  expectTypeOf<InferCommandData<typeof jsonCommand>>().toEqualTypeOf<{
+    items: readonly [1, 2, 3];
+  }>();
 });
 
 test("defineCommand exposes camelCase aliases for kebab-case field names", () => {

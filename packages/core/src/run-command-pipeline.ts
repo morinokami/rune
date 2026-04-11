@@ -1,4 +1,9 @@
-import type { CommandArgField, CommandOptionField, DefinedCommand } from "./command-types";
+import type {
+  CommandArgField,
+  CommandOptionField,
+  DefinedCommand,
+  InferCommandData,
+} from "./command-types";
 import type { OutputSink } from "./output";
 
 import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
@@ -25,12 +30,12 @@ export interface RunCommandPipelineInput {
   readonly sink?: OutputSink | undefined;
 }
 
-export interface RunCommandPipelineResult {
+export interface RunCommandPipelineResult<TCommandData = unknown> {
   /** Whether argv parsing succeeded. When `false`, the command did not run. */
   readonly parseOk: boolean;
   readonly exitCode: number;
   readonly error?: CommandFailure | undefined;
-  readonly data?: unknown;
+  readonly data?: TCommandData | undefined;
   readonly jsonMode: boolean;
 }
 
@@ -171,7 +176,7 @@ function normalizeOptions(
  */
 export async function runCommandPipeline<TCommand extends RunnableCommand>(
   input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
-): Promise<RunCommandPipelineResult> {
+): Promise<RunCommandPipelineResult<InferCommandData<TCommand>>> {
   const { command, argv, cwd, sink = defaultSink } = input;
   const commandDefinition = command as unknown as DefinedCommand<
     readonly CommandArgField[],
@@ -221,7 +226,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     return {
       parseOk: true,
       exitCode: 0,
-      data,
+      data: data as InferCommandData<TCommand>,
       jsonMode,
     };
   } catch (error) {

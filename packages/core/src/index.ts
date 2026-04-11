@@ -11,6 +11,7 @@ export type {
   CommandContext,
   CommandOptionField,
   DefinedCommand,
+  InferCommandData,
   PrimitiveFieldType,
   PrimitiveArgField,
   PrimitiveOptionField,

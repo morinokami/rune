@@ -169,10 +169,10 @@ export default defineCommand({
 
 ### `run`
 
-- **型:** `(ctx: CommandContext) => void | Promise<void>`（`json` が `false` または省略された場合）または `(ctx: CommandContext) => unknown`（`json` が `true` の場合）
+- **型:** `(ctx: CommandContext) => void | Promise<void>`（`json` が `false` または省略された場合）または `(ctx: CommandContext) => TCommandData | Promise<TCommandData>`（`json` が `true` の場合）
 - **必須**
 
-コマンドが実行されたときに呼び出される関数。`json` が `true` の場合、戻り値はコマンドの API の一部となり、ユーザーが `--json` を渡した際に JSON 出力としてシリアライズされます。
+コマンドが実行されたときに呼び出される関数です。`json` が `true` の場合、戻り値はコマンドの API の一部となり、ユーザーが `--json` を渡した際に JSON 出力としてシリアライズされ、`runCommand().data` にも保持されます。
 
 ## CommandContext
 

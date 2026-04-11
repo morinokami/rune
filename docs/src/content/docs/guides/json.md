@@ -25,7 +25,7 @@ export default defineCommand({
 });
 ```
 
-Without `json`, `run()` is typed as returning `void`. When `json: true` is set, the return type of `run()` becomes `unknown`, allowing it to return a value. The return value must be serializable by `JSON.stringify()`. If a non-serializable value such as `BigInt` is returned, Rune treats it as an error.
+Without `json`, `run()` is typed as returning `void`. When `json: true` is set, `run()` can return a value, and that return type is preserved by helpers such as `runCommand().data`. The return value must be serializable by `JSON.stringify()`. If a non-serializable value such as `BigInt` is returned, Rune treats it as an error.
 
 ## Output Behavior
 

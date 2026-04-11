@@ -169,10 +169,10 @@ If `help()` throws, Rune falls back to the default help renderer and writes a wa
 
 ### `run`
 
-- **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is `false` or omitted) or `(ctx: CommandContext) => unknown` (when `json` is `true`)
+- **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is `false` or omitted) or `(ctx: CommandContext) => TCommandData | Promise<TCommandData>` (when `json` is `true`)
 - **Required**
 
-The function executed when the command is invoked. When `json` is `true`, the return value becomes part of the command's API and is serialized as JSON output when the user passes `--json`.
+The function executed when the command is invoked. When `json` is `true`, the return value becomes part of the command's API, is serialized as JSON output when the user passes `--json`, and is preserved in `runCommand().data`.
 
 ## CommandContext
 

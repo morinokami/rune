@@ -28,8 +28,10 @@ function runCommand(
   command: DefinedCommand,
   argv?: string[],
   context?: RunCommandContext,
-): Promise<CommandExecutionResult>
+): Promise<CommandExecutionResult<TCommandData>>
 ```
+
+`TCommandData` は渡した command から推論されます。`json: true` の command では `run()` の戻り値型、通常の command では `undefined` です。
 
 ### パラメータ
 
@@ -91,9 +93,9 @@ function runCommand(
 
 #### `data`
 
-- **型:** `unknown`
+- **型:** `TCommandData | undefined`
 
-コマンドが `json: true` を使用している場合の `run()` の戻り値。`--json` フラグの有無にかかわらず格納されます。`--json` が制御するのは主に `output.log()` の抑制であり、`data` のキャプチャには影響しません。
+コマンドが `json: true` を使用している場合の `run()` の戻り値です。`TCommandData` は渡した command の `run()` の戻り値型から推論されます。`--json` フラグの有無にかかわらず格納されます。`--json` が制御するのは主に `output.log()` の抑制であり、`data` のキャプチャには影響しません。
 
 ## 使用例
 
