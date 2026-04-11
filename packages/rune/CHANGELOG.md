@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.23
+
+### Patch Changes
+
+- [#89](https://github.com/morinokami/rune/pull/89) [`2230fb1`](https://github.com/morinokami/rune/commit/2230fb14c595d84cb94e5e514d20171aa104d705) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add help customization via defineCommand.help and rune.config.ts
+
 ## 0.0.22
 
 ### Patch Changes
