@@ -24,15 +24,49 @@ export default defineCommand({
 
 ### Properties
 
-| Property      | Type                             | Required | Description                                                              |
-| ------------- | -------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `description` | `string`                         | No       | One-line summary for `--help`                                            |
-| `args`        | `CommandArgField[]`              | No       | Positional arguments, in CLI order                                       |
-| `options`     | `CommandOptionField[]`           | No       | Named option flags                                                       |
-| `aliases`     | `readonly string[]`              | No       | Alternative command names (kebab-case). Root command cannot have aliases |
-| `examples`    | `readonly string[]`              | No       | Usage examples for `--help`                                              |
-| `json`        | `boolean`                        | No       | Enables `--json` flag (default: `false`)                                 |
-| `run`         | `(ctx) => void \| Promise<void>` | Yes      | Command logic. Returns `unknown` when `json: true`                       |
+| Property      | Type                                | Required | Description                                                              |
+| ------------- | ----------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `description` | `string`                            | No       | One-line summary for `--help`                                            |
+| `args`        | `CommandArgField[]`                 | No       | Positional arguments, in CLI order                                       |
+| `options`     | `CommandOptionField[]`              | No       | Named option flags                                                       |
+| `aliases`     | `readonly string[]`                 | No       | Alternative command names (kebab-case). Root command cannot have aliases |
+| `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                              |
+| `json`        | `boolean`                           | No       | Enables `--json` flag (default: `false`)                                 |
+| `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                           |
+| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. Returns `unknown` when `json: true`                       |
+
+### Custom help rendering
+
+Use `help(data)` on a command when only that command needs custom `--help` output:
+
+```ts
+import { defineCommand, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineCommand({
+  help(data) {
+    return `Custom header\n\n${renderDefaultHelp(data)}`;
+  },
+  async run() {},
+});
+```
+
+For project-wide help customization, create `rune.config.ts` at the project root:
+
+```ts
+import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineConfig({
+  renderHelp(data) {
+    return renderDefaultHelp(data);
+  },
+});
+```
+
+Priority order:
+
+1. `defineCommand({ help })`
+2. `defineConfig({ renderHelp })`
+3. `renderDefaultHelp()`
 
 ### CommandContext (`ctx`)
 

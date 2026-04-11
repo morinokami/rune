@@ -142,6 +142,31 @@ Usage examples shown in the `Examples:` section of `--help` output. Each entry i
 
 When `true`, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed.
 
+### `help`
+
+- **Type:** `(data: CommandHelpData) => string`
+- **Optional**
+
+Custom help renderer for this command. When provided, Rune calls this function instead of the global or default renderer for this command's `--help` output.
+
+The `data` argument is the structured `CommandHelpData` for the matched command.
+
+```ts
+import { defineCommand, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Deploy to production",
+  help(data) {
+    return `Deploy Command\n\n${renderDefaultHelp(data)}`;
+  },
+  async run() {
+    // ...
+  },
+});
+```
+
+If `help()` throws, Rune falls back to the default help renderer and writes a warning to stderr.
+
 ### `run`
 
 - **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is `false` or omitted) or `(ctx: CommandContext) => unknown` (when `json` is `true`)

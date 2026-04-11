@@ -1,0 +1,118 @@
+---
+title: Help Customization
+description: Learn how to customize the help output of your CLI.
+---
+
+Rune automatically generates help output from a command's `description`, `args`, `options`, and `examples`. If you need more control over the generated help output, you can customize it per command with `defineCommand({ help })`, or apply a project-wide style through `rune.config.ts`.
+
+## Per-command Customization
+
+Pass a `help` function to `defineCommand()` to take full control of that command's `--help` output. The function receives a structured `CommandHelpData` object and returns the string to display:
+
+```ts
+// src/commands/deploy.ts
+import { defineCommand, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Deploy to production",
+  options: [
+    { name: "target", type: "string", short: "t", description: "Deploy target" },
+  ],
+  help(data) {
+    return `🚀 Deploy Command\n\n${renderDefaultHelp(data)}`;
+  },
+  async run({ options }) {
+    // ...
+  },
+});
+```
+
+```bash
+$ my-cli deploy --help
+🚀 Deploy Command
+
+Usage: my-cli deploy [options]
+
+Description:
+  Deploy to production
+
+Options:
+  -t, --target <string>  Deploy target
+  -h, --help  Show help
+```
+
+`CommandHelpData` includes the command name, path segments, arguments, options, and subcommand definitions. You can use these fields to build an entirely custom layout from scratch. See the [`defineCommand()` reference](/reference/define-command/#help) for details.
+
+## Project-level Customization
+
+To apply a consistent style across all commands, create a `rune.config.ts` at the project root and define a `renderHelp` function with `defineConfig()`:
+
+```ts
+// rune.config.ts
+import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineConfig({
+  renderHelp(data) {
+    return `My CLI v1.0\n\n${renderDefaultHelp(data)}`;
+  },
+});
+```
+
+With this configuration, every command, group, and unknown-command help screen will be prefixed with "My CLI v1.0".
+
+The `data` argument is a `HelpData` union, and you can branch on `data.kind` to handle each case:
+
+```ts
+// rune.config.ts
+import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineConfig({
+  renderHelp(data) {
+    if (data.kind === "unknown") {
+      return renderDefaultHelp(data);
+    }
+
+    return `My CLI\n\n${renderDefaultHelp(data)}`;
+  },
+});
+```
+
+`data.kind` takes one of three values, allowing you to tailor the output for each type of help:
+
+- `"command"`: help for an individual command
+- `"group"`: help for a group with subcommands
+- `"unknown"`: help shown when an unrecognized command is entered
+
+See the [`defineConfig()` reference](/reference/define-config/) for details.
+
+## Priority
+
+Help rendering follows a three-level priority chain:
+
+1. `defineCommand({ help })`: command-specific renderer
+2. `defineConfig({ renderHelp })`: project-wide renderer
+3. Rune's built-in default renderer
+
+When a command defines its own `help` function, that function is always used; neither `renderHelp` from `rune.config.ts` nor the default renderer is called. For commands without a `help` function, as well as groups and unknown commands, `renderHelp` is used if defined. If neither is present, Rune falls back to the built-in default renderer.
+
+## Using `renderDefaultHelp`
+
+`renderDefaultHelp` is the same function that powers Rune's built-in default help output, and it can be imported from `@rune-cli/rune`. By calling it inside a custom renderer, you can easily add headers, footers, or other sections around the standard output:
+
+```ts
+import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineConfig({
+  renderHelp(data) {
+    const header = "my-tool — A modern build tool\n";
+    const footer = "\nDocumentation: https://example.com/docs";
+    return `${header}\n${renderDefaultHelp(data)}${footer}\n`;
+  },
+});
+```
+
+You can also skip the default output entirely and build a completely custom format from the fields in `data`.
+
+## Fallback on Errors
+
+If a function provided via `defineCommand({ help })` or `defineConfig({ renderHelp })` throws an exception, Rune falls back to the default help renderer and prints a warning to stderr. The same fallback also applies when `rune.config.ts` fails to load or does not export a valid `defineConfig()` result. This ensures that `--help` always works, even when a custom renderer or config has a bug.

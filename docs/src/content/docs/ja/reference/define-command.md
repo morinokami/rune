@@ -142,6 +142,31 @@ Rune が生のトークンをパースする型。
 
 `true` の場合、フレームワークは組み込みの `--json` フラグを受け付けます。JSON モードでは、`run()` の戻り値が構造化された JSON 出力となり、`output.log()` の呼び出しは抑制されます。
 
+### `help`
+
+- **型:** `(data: CommandHelpData) => string`
+- **省略可能**
+
+このコマンド専用のカスタムヘルプレンダラーです。指定した場合、このコマンドの `--help` 出力ではグローバルまたはデフォルトのレンダラーの代わりにこの関数が呼ばれます。
+
+`data` 引数には、そのコマンドに対応する構造化済みの `CommandHelpData` が渡されます。
+
+```ts
+import { defineCommand, renderDefaultHelp } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Deploy to production",
+  help(data) {
+    return `Deploy Command\n\n${renderDefaultHelp(data)}`;
+  },
+  async run() {
+    // ...
+  },
+});
+```
+
+`help()` が例外を投げた場合、Rune はデフォルトのヘルプレンダラーにフォールバックし、stderr に警告を書き出します。
+
 ### `run`
 
 - **型:** `(ctx: CommandContext) => void | Promise<void>`（`json` が `false` または省略された場合）または `(ctx: CommandContext) => unknown`（`json` が `true` の場合）

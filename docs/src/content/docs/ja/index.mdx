@@ -37,6 +37,8 @@ Rune では `src/commands` 以下のファイル構造から CLI のコマンド
 
 `description`、`args`、`options`、`examples` などの定義から、`--help` の出力が自動生成されます。引数の説明、プリミティブのデフォルト値、ショートオプション、否定フラグ、サブコマンド一覧まで反映されるため、ヘルプを別管理する必要がありません。
 
+より細かく制御したい場合は、`defineCommand({ help })` によるコマンド単位のカスタマイズや、`defineConfig()` を使った `rune.config.ts` によるプロジェクト全体のカスタマイズを利用できます。どちらも `renderDefaultHelp()` を土台として拡張できます。
+
 ### 構造化されたエラー
 
 `CommandError` を使うと、`kind`、`message`、`hint`、`details` を持つ構造化されたエラーを定義できます。通常実行時には人間向けに読みやすく表示され、`--json` モードでは機械可読なエラー情報として出力されます。

@@ -70,6 +70,7 @@ export default defineConfig({
             { slug: "guides/commands" },
             { slug: "guides/testing" },
             { slug: "guides/json" },
+            { slug: "guides/help-customization" },
             // { slug: "guides/standard-schema" },
             { slug: "guides/skills" },
             // { slug: "guides/deployment" },
@@ -82,6 +83,7 @@ export default defineConfig({
           },
           items: [
             { slug: "reference/define-command" },
+            { slug: "reference/define-config" },
             { slug: "reference/define-group" },
             { slug: "reference/command-error" },
             { slug: "reference/test-utils" },
