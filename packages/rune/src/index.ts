@@ -4,6 +4,8 @@ export type {
   CommandContext,
   CommandHelpData,
   CommandOptionField,
+  DefinedCommand,
+  DefinedGroup,
 } from "@rune-cli/core";
 
 export { defineConfig } from "./define-config";
