@@ -55,6 +55,9 @@ export async function findConflictingEntries(dirPath: string): Promise<readonly 
 }
 
 // Creates a minimal Rune project starter in a new directory.
+//
+// Callers are expected to surface friendly errors for these conditions,
+// but the function also guards them itself so it is safe to call directly.
 export async function scaffoldProject(
   projectName: string,
   cwd: string = process.cwd(),

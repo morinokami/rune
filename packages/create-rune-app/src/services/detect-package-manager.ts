@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 
 export interface PackageManager {
   readonly name: string;
-  readonly installCommand: string;
   readonly installArgs: readonly string[];
+  readonly installCommand: string;
   readonly runCommand: (script: string, args: string) => string;
 }
 
@@ -15,32 +15,32 @@ export function detectPackageManager(): PackageManager {
   const name = userAgent ? userAgent.split(" ")[0].split("/")[0] : undefined;
 
   switch (name) {
-    case "yarn":
-      return {
-        name: "yarn",
-        installCommand: "yarn",
-        installArgs: [],
-        runCommand: (script, args) => `yarn ${script} ${args}`,
-      };
     case "pnpm":
       return {
         name: "pnpm",
-        installCommand: "pnpm install",
         installArgs: ["install"],
+        installCommand: "pnpm install",
         runCommand: (script, args) => `pnpm ${script} ${args}`,
       };
     case "bun":
       return {
         name: "bun",
-        installCommand: "bun install",
         installArgs: ["install"],
+        installCommand: "bun install",
         runCommand: (script, args) => `bun ${script} ${args}`,
+      };
+    case "yarn":
+      return {
+        name: "yarn",
+        installArgs: [],
+        installCommand: "yarn",
+        runCommand: (script, args) => `yarn ${script} ${args}`,
       };
     default:
       return {
         name: "npm",
-        installCommand: "npm install",
         installArgs: ["install"],
+        installCommand: "npm install",
         runCommand: (script, args) => `npm run ${script} -- ${args}`,
       };
   }

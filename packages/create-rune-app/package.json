@@ -25,6 +25,7 @@
   "scripts": {
     "build": "node ../../packages/rune/dist/cli.mjs build",
     "dev": "node ../../packages/rune/dist/cli.mjs dev",
+    "test": "vp test",
     "check": "vp check"
   },
   "dependencies": {
