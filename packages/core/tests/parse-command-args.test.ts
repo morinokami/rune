@@ -1,10 +1,12 @@
 import { describe, expect, test } from "vite-plus/test";
 import { z } from "zod";
 
+import type { DefinedCommand } from "../src/command-types";
+
 import { defineCommand } from "../src";
 import { parseCommandArgs } from "../src/parse-command-args";
 
-describe("primitive fields", () => {
+describe("primitive parsing and defaults", () => {
   test("parseCommandArgs parses args, options, short names, booleans, and defaults", async () => {
     const command = defineCommand({
       args: [{ name: "id", type: "string", required: true }],
@@ -46,6 +48,40 @@ describe("primitive fields", () => {
         args: {},
         options: { name: "rune" },
         rawArgs: ["--name=rune"],
+      },
+    });
+  });
+
+  test("parseCommandArgs parses primitive boolean args", async () => {
+    const command = defineCommand({
+      args: [{ name: "enabled", type: "boolean", required: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["true"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: { enabled: true },
+        options: {},
+        rawArgs: ["true"],
+      },
+    });
+  });
+
+  test("parseCommandArgs rejects invalid primitive boolean args", async () => {
+    const command = defineCommand({
+      args: [{ name: "enabled", type: "boolean", required: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["yes"]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        message: 'Invalid value for argument enabled:\n\n  Expected boolean, received "yes"',
       },
     });
   });
@@ -140,10 +176,10 @@ describe("primitive fields", () => {
   });
 });
 
-describe("schema fields", () => {
-  test("parseCommandArgs validates and accepts a schema-backed arg", async () => {
+describe("schema-backed fields", () => {
+  test("parseCommandArgs parses a schema-backed arg", async () => {
     const command = defineCommand({
-      args: [{ name: "id", schema: z.string().uuid() }],
+      args: [{ name: "id", schema: z.uuid() }],
       async run() {},
     });
 
@@ -160,7 +196,7 @@ describe("schema fields", () => {
     });
   });
 
-  test("parseCommandArgs validates and accepts a schema-backed option", async () => {
+  test("parseCommandArgs parses a schema-backed option", async () => {
     const command = defineCommand({
       options: [{ name: "port", schema: z.coerce.number().int().positive() }],
       async run() {},
@@ -178,7 +214,25 @@ describe("schema fields", () => {
     });
   });
 
-  test("parseCommandArgs treats schema-backed optional options as optional when undefined validates", async () => {
+  test("parseCommandArgs parses schema-backed flag options", async () => {
+    const command = defineCommand({
+      options: [{ name: "force", schema: z.boolean(), flag: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--force"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { force: true },
+        rawArgs: ["--force"],
+      },
+    });
+  });
+
+  test("parseCommandArgs omits schema-backed options when validating undefined succeeds", async () => {
     const command = defineCommand({
       options: [{ name: "mode", schema: z.string().optional() }],
       async run() {},
@@ -196,111 +250,111 @@ describe("schema fields", () => {
     });
   });
 
-  test("parseCommandArgs supports schema-backed boolean-like flags", async () => {
+  test("parseCommandArgs applies schema-backed defaults for omitted args", async () => {
     const command = defineCommand({
-      options: [{ name: "force", schema: z.boolean(), flag: true }],
+      args: [{ name: "mode", schema: z.string().default("dev") }],
       async run() {},
     });
 
-    const result = await parseCommandArgs(command, ["--force"]);
+    const result = await parseCommandArgs(command, []);
 
     expect(result).toEqual({
       ok: true,
       value: {
-        args: {},
-        options: { force: true },
-        rawArgs: ["--force"],
+        args: { mode: "dev" },
+        options: {},
+        rawArgs: [],
       },
     });
   });
 });
 
-describe("error cases: missing required fields", () => {
-  test("parseCommandArgs fails when a required option is missing", async () => {
-    const command = defineCommand({
-      options: [{ name: "name", type: "string", required: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, []);
+describe("missing required fields", () => {
+  test.each([
+    {
+      label: "a required argument",
+      define: () =>
+        defineCommand({
+          args: [{ name: "id", type: "string", required: true }],
+          async run() {},
+        }),
+      message: "Missing required argument:\n\n  id",
+    },
+    {
+      label: "a required option",
+      define: () =>
+        defineCommand({
+          options: [{ name: "name", type: "string", required: true }],
+          async run() {},
+        }),
+      message: "Missing required option:\n\n  --name <string>",
+    },
+    {
+      label: "a required schema-backed argument",
+      define: () =>
+        defineCommand({
+          args: [{ name: "token", schema: z.string() }],
+          async run() {},
+        }),
+      message: "Missing required argument:\n\n  token",
+    },
+    {
+      label: "a required schema-backed option",
+      define: () =>
+        defineCommand({
+          options: [{ name: "token", schema: z.string() }],
+          async run() {},
+        }),
+      message: "Missing required option:\n\n  --token",
+    },
+  ])("parseCommandArgs fails when $label is missing", async ({ define, message }) => {
+    const result = await parseCommandArgs(define() as unknown as DefinedCommand, []);
 
     expect(result).toEqual({
       ok: false,
       error: {
-        message: "Missing required option:\n\n  --name <string>",
-      },
-    });
-  });
-
-  test("parseCommandArgs fails when a required argument is missing", async () => {
-    const command = defineCommand({
-      args: [{ name: "id", type: "string", required: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, []);
-
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        message: "Missing required argument:\n\n  id",
-      },
-    });
-  });
-
-  test("parseCommandArgs fails when a required schema-backed option is missing", async () => {
-    const command = defineCommand({
-      options: [{ name: "token", schema: z.string() }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, []);
-
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        message: "Missing required option:\n\n  --token",
+        message,
       },
     });
   });
 });
 
-describe("error cases: invalid values", () => {
-  test("parseCommandArgs fails when a number option is invalid", async () => {
-    const command = defineCommand({
-      options: [{ name: "count", type: "number", required: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["--count", "abc"]);
+describe("invalid values", () => {
+  test.each([
+    {
+      label: "an invalid number option",
+      define: () =>
+        defineCommand({
+          options: [{ name: "count", type: "number", required: true }],
+          async run() {},
+        }),
+      argv: ["--count", "abc"],
+      message: 'Invalid value for option --count <number>:\n\n  Expected number, received "abc"',
+    },
+    {
+      label: "an invalid number argument",
+      define: () =>
+        defineCommand({
+          args: [{ name: "count", type: "number", required: true }],
+          async run() {},
+        }),
+      argv: ["oops"],
+      message: 'Invalid value for argument count:\n\n  Expected number, received "oops"',
+    },
+  ])("parseCommandArgs fails for $label", async ({ define, argv, message }) => {
+    const result = await parseCommandArgs(define() as unknown as DefinedCommand, argv);
 
     expect(result).toEqual({
       ok: false,
       error: {
-        message: 'Invalid value for option --count <number>:\n\n  Expected number, received "abc"',
-      },
-    });
-  });
-
-  test("parseCommandArgs fails when a number argument is invalid", async () => {
-    const command = defineCommand({
-      args: [{ name: "count", type: "number", required: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["oops"]);
-
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        message: 'Invalid value for argument count:\n\n  Expected number, received "oops"',
+        message,
       },
     });
   });
 
   test("parseCommandArgs fails when a schema-backed arg is invalid", async () => {
     const command = defineCommand({
-      args: [{ name: "id", schema: z.string().uuid() }],
+      args: [{ name: "id", schema: z.uuid() }],
       async run() {},
     });
 
@@ -308,73 +362,55 @@ describe("error cases: invalid values", () => {
 
     expect(result.ok).toBe(false);
 
-    if (result.ok) return;
+    if (result.ok) {
+      throw new Error("Expected parseCommandArgs to fail");
+    }
     expect(result.error.message).toContain("Invalid value for argument id");
   });
 });
 
 describe("negatable boolean options", () => {
-  test("parseCommandArgs uses default true when neither --flag nor --no-flag is provided", async () => {
-    const command = defineCommand({
+  function createNegatableColorCommand() {
+    return defineCommand({
       options: [{ name: "color", type: "boolean", default: true }],
       async run() {},
     });
+  }
 
-    const result = await parseCommandArgs(command, []);
+  test.each([
+    {
+      label: "uses default true when omitted",
+      argv: [] as string[],
+      options: { color: true },
+      rawArgs: [] as string[],
+    },
+    {
+      label: "sets the value to true when --flag is provided",
+      argv: ["--color"],
+      options: { color: true },
+      rawArgs: ["--color"],
+    },
+    {
+      label: "sets the value to false when --no-flag is provided",
+      argv: ["--no-color"],
+      options: { color: false },
+      rawArgs: ["--no-color"],
+    },
+  ])("parseCommandArgs $label", async ({ argv, options, rawArgs }) => {
+    const result = await parseCommandArgs(createNegatableColorCommand(), argv);
 
     expect(result).toEqual({
       ok: true,
       value: {
         args: {},
-        options: { color: true },
-        rawArgs: [],
-      },
-    });
-  });
-
-  test("parseCommandArgs sets value to true when --flag is provided", async () => {
-    const command = defineCommand({
-      options: [{ name: "color", type: "boolean", default: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["--color"]);
-
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        args: {},
-        options: { color: true },
-        rawArgs: ["--color"],
-      },
-    });
-  });
-
-  test("parseCommandArgs sets value to false when --no-flag is provided", async () => {
-    const command = defineCommand({
-      options: [{ name: "color", type: "boolean", default: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["--no-color"]);
-
-    expect(result).toEqual({
-      ok: true,
-      value: {
-        args: {},
-        options: { color: false },
-        rawArgs: ["--no-color"],
+        options,
+        rawArgs,
       },
     });
   });
 
   test("parseCommandArgs fails when both --flag and --no-flag are provided", async () => {
-    const command = defineCommand({
-      options: [{ name: "color", type: "boolean", default: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["--color", "--no-color"]);
+    const result = await parseCommandArgs(createNegatableColorCommand(), ["--color", "--no-color"]);
 
     expect(result).toEqual({
       ok: false,
@@ -385,12 +421,10 @@ describe("negatable boolean options", () => {
   });
 
   test("parseCommandArgs rejects duplicate --no-flag", async () => {
-    const command = defineCommand({
-      options: [{ name: "color", type: "boolean", default: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["--no-color", "--no-color"]);
+    const result = await parseCommandArgs(createNegatableColorCommand(), [
+      "--no-color",
+      "--no-color",
+    ]);
 
     expect(result).toEqual({
       ok: false,
@@ -433,7 +467,7 @@ describe("negatable boolean options", () => {
   });
 });
 
-describe("parseArgs edge cases", () => {
+describe("parseCommandArgs edge cases", () => {
   test("parseCommandArgs respects the -- separator", async () => {
     const command = defineCommand({
       args: [{ name: "value", type: "string", required: true }],
@@ -467,29 +501,42 @@ describe("parseArgs edge cases", () => {
     });
   });
 
-  test("parseCommandArgs rejects duplicate options", async () => {
+  test("parseCommandArgs fails on unknown short options", async () => {
     const command = defineCommand({
-      options: [{ name: "name", type: "string" }],
       async run() {},
     });
 
-    const result = await parseCommandArgs(command, ["--name", "foo", "--name", "bar"]);
+    const result = await parseCommandArgs(command, ["-w"]);
 
     expect(result).toEqual({
       ok: false,
       error: {
-        message: 'Duplicate option "--name <string>" is not supported',
+        message: 'Unknown option "-w"',
       },
     });
   });
 
-  test("parseCommandArgs rejects duplicate options across long and short forms", async () => {
-    const command = defineCommand({
-      options: [{ name: "name", type: "string", short: "n" }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["--name", "foo", "-n", "bar"]);
+  test.each([
+    {
+      label: "duplicate long options",
+      define: () =>
+        defineCommand({
+          options: [{ name: "name", type: "string" }],
+          async run() {},
+        }),
+      argv: ["--name", "foo", "--name", "bar"],
+    },
+    {
+      label: "duplicate options across long and short forms",
+      define: () =>
+        defineCommand({
+          options: [{ name: "name", type: "string", short: "n" }],
+          async run() {},
+        }),
+      argv: ["--name", "foo", "-n", "bar"],
+    },
+  ])("parseCommandArgs rejects $label", async ({ define, argv }) => {
+    const result = await parseCommandArgs(define(), argv);
 
     expect(result).toEqual({
       ok: false,
