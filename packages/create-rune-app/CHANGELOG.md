@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.11
+
+### Patch Changes
+
+- [#101](https://github.com/morinokami/rune/pull/101) [`bf9ad8f`](https://github.com/morinokami/rune/commit/bf9ad8f33b53d0d07fa270f4980e0e0b9cbe8eb7) Thanks [@morinokami](https://github.com/morinokami)! - refactor(create-rune-app): separate command orchestration and use-case tests
+
 ## 0.0.10
 
 ### Patch Changes
