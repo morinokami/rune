@@ -303,7 +303,7 @@ export default defineCommand({
 | `exitCode` | `number`    | No       | Process exit code (default: `1`)                                              |
 | `cause`    | `unknown`   | No       | Underlying error                                                              |
 
-Unhandled non-CommandError exceptions are wrapped with `kind: "internal"`.
+Unhandled non-CommandError exceptions are wrapped with `kind: "rune/unexpected"`.
 
 ## Gotchas
 

@@ -84,7 +84,7 @@ test("returns structured error", async () => {
 });
 ```
 
-予期しない例外が throw された場合は、`kind: "internal"` としてラップされます。
+予期しない例外が throw された場合は、`kind: "rune/unexpected"` としてラップされます。
 
 ## JSON モードのテスト
 

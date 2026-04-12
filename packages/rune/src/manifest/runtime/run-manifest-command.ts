@@ -63,7 +63,7 @@ function renderJsonError(error?: CommandFailure): { readonly error: Record<strin
   if (!error) {
     return {
       error: {
-        kind: "internal",
+        kind: "rune/unexpected",
         message: "Command failed",
       },
     };
@@ -84,7 +84,7 @@ function renderJsonError(error?: CommandFailure): { readonly error: Record<strin
 function writeJsonToStdout(
   value: unknown,
   fallback: unknown = {
-    error: { kind: "internal", message: "Failed to serialize command output" },
+    error: { kind: "rune/unexpected", message: "Failed to serialize command output" },
   },
 ): boolean {
   try {

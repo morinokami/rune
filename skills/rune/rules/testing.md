@@ -89,7 +89,7 @@ test("returns structured error", async () => {
 });
 ```
 
-Unexpected (non-CommandError) exceptions are wrapped with `kind: "internal"`.
+Unexpected (non-CommandError) exceptions are wrapped with `kind: "rune/unexpected"`.
 
 ### JSON mode
 
@@ -134,7 +134,7 @@ test("rejects missing required argument", async () => {
   const result = await runCommand(command, []);
 
   expect(result.exitCode).toBe(1);
-  expect(result.error?.kind).toBe("invalid-arguments");
+  expect(result.error?.kind).toBe("rune/invalid-arguments");
 });
 ```
 

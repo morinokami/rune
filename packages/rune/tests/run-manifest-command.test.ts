@@ -602,7 +602,7 @@ describe("json mode", () => {
     expect(captured.exitCode).toBe(1);
     expect(JSON.parse(captured.stdout)).toEqual({
       error: {
-        kind: "internal",
+        kind: "rune/unexpected",
         message: "something broke",
       },
     });
@@ -656,7 +656,7 @@ describe("json mode", () => {
     expect(captured.exitCode).toBe(1);
     expect(JSON.parse(captured.stdout)).toEqual({
       error: {
-        kind: "invalid-arguments",
+        kind: "rune/invalid-arguments",
         message: "Missing required option:\n\n  --count <number>",
       },
     });
@@ -708,7 +708,7 @@ describe("json mode", () => {
     const parsed = JSON.parse(captured.stdout);
     expect(parsed).toEqual({
       error: {
-        kind: "internal",
+        kind: "rune/unexpected",
         message: "Failed to serialize command output",
       },
     });
