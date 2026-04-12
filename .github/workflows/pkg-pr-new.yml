@@ -24,4 +24,4 @@ jobs:
         run: vp run build --filter './packages/*'
 
       - name: Publish
-        run: vpx pkg-pr-new publish './packages/create-rune-app' './packages/rune'
+        run: vpx pkg-pr-new publish --pnpm './packages/create-rune-app' './packages/rune'
