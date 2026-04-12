@@ -1,15 +1,11 @@
-import type {
-  CommandArgField,
-  CommandOptionField,
-  DefinedCommand,
-  InferCommandData,
-} from "./command-types";
-import type { OutputSink } from "./output";
+import type { OutputSink } from "./command-output";
+import type { DefinedCommand, InferCommandData } from "./command-types";
+import type { CommandArgField, CommandOptionField } from "./field-types";
 
 import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
 import { CommandError, type CommandFailure } from "./command-error";
-import { createOutput } from "./output";
-import { extractJsonFlag, parseCommandArgs } from "./parse-command-args";
+import { createOutput } from "./command-output";
+import { parseCommandArgs } from "./parse-command-args";
 import { isSchemaField } from "./schema-field";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +50,30 @@ const defaultSink: OutputSink = {
 
 const INVALID_ARGUMENTS_ERROR_KIND = "invalid-arguments";
 const INTERNAL_ERROR_KIND = "internal";
+
+/**
+ * Extracts a framework-managed `--json` flag from argv.
+ * Only tokens before the `--` terminator are considered.
+ *
+ * Returns the detected JSON mode flag and the argv to pass to the parser
+ * (with `--json` removed). The original argv is always preserved for
+ * `ctx.rawArgs`.
+ */
+function extractJsonFlag(argv: readonly string[]): {
+  jsonMode: boolean;
+  parseArgv: readonly string[];
+} {
+  const terminatorIndex = argv.indexOf("--");
+  const scanEnd = terminatorIndex === -1 ? argv.length : terminatorIndex;
+  const jsonIndex = argv.indexOf("--json");
+
+  if (jsonIndex === -1 || jsonIndex >= scanEnd) {
+    return { jsonMode: false, parseArgv: argv };
+  }
+
+  const parseArgv = [...argv.slice(0, jsonIndex), ...argv.slice(jsonIndex + 1)];
+  return { jsonMode: true, parseArgv };
+}
 
 function formatUnexpectedExecutionError(error: unknown): string {
   if (error instanceof Error) {

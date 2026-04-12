@@ -1,17 +1,15 @@
+import type { DefineCommandInput, DefinedCommand } from "./command-types";
+import type { CommandArgField, CommandOptionField, NormalizeFields } from "./field-types";
 import type {
-  CommandArgField,
-  CommandOptionField,
-  DefineCommandInput,
-  DefinedCommand,
-  NormalizeFields,
   ValidateArgOrder,
   ValidateDuplicateShortNames,
   ValidateFieldNames,
   ValidateNegationCollision,
   ValidateReservedNames,
   ValidateUniqueNames,
-} from "./command-types";
+} from "./validate-types";
 
+import { kebabToCamelCase } from "./camel-case-aliases";
 import { isSchemaField } from "./schema-field";
 
 // ---------------------------------------------------------------------------
@@ -27,10 +25,6 @@ const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // ---------------------------------------------------------------------------
 // Field validation
 // ---------------------------------------------------------------------------
-
-function kebabToCamelCase(str: string): string {
-  return str.replace(/-(.)/g, (_, char: string) => char.toUpperCase());
-}
 
 function validateUniqueFieldNames(
   fields: readonly (CommandArgField | CommandOptionField)[],

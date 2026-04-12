@@ -3,7 +3,7 @@ import type {
   CommandOptionField,
   SchemaArgField,
   SchemaOptionField,
-} from "./command-types";
+} from "./field-types";
 
 // Any field whose runtime validation comes from a Standard Schema object.
 export type SchemaField = SchemaArgField | SchemaOptionField;

@@ -3,7 +3,7 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expect, test } from "vite-plus/test";
 import { z } from "zod";
 
-import type { CommandArgField, CommandOptionField, SingleLetter } from "../src/command-types";
+import type { CommandArgField, CommandOptionField, SingleLetter } from "../src/field-types";
 
 import { defineCommand } from "../src";
 

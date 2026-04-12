@@ -2,12 +2,8 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import { parseArgs } from "node:util";
 
-import type {
-  CommandArgField,
-  CommandOptionField,
-  DefinedCommand,
-  InferNamedFields,
-} from "./command-types";
+import type { DefinedCommand, InferNamedFields } from "./command-types";
+import type { CommandArgField, CommandOptionField } from "./field-types";
 
 import { addCamelCaseAliases } from "./camel-case-aliases";
 import { isSchemaField } from "./schema-field";
@@ -472,34 +468,6 @@ function detectDuplicateOption(
   }
 
   return undefined;
-}
-
-// ---------------------------------------------------------------------------
-// JSON flag extraction
-// ---------------------------------------------------------------------------
-
-/**
- * Extracts a framework-managed `--json` flag from argv.
- * Only tokens before the `--` terminator are considered.
- *
- * Returns the detected JSON mode flag and the argv to pass to the parser
- * (with `--json` removed). The original argv is always preserved for
- * `ctx.rawArgs`.
- */
-export function extractJsonFlag(argv: readonly string[]): {
-  jsonMode: boolean;
-  parseArgv: readonly string[];
-} {
-  const terminatorIndex = argv.indexOf("--");
-  const scanEnd = terminatorIndex === -1 ? argv.length : terminatorIndex;
-  const jsonIndex = argv.indexOf("--json");
-
-  if (jsonIndex === -1 || jsonIndex >= scanEnd) {
-    return { jsonMode: false, parseArgv: argv };
-  }
-
-  const parseArgv = [...argv.slice(0, jsonIndex), ...argv.slice(jsonIndex + 1)];
-  return { jsonMode: true, parseArgv };
 }
 
 // ---------------------------------------------------------------------------

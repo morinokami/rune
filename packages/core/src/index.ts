@@ -5,18 +5,16 @@ export { runCommandPipeline } from "./run-command-pipeline";
 export { isSchemaField } from "./schema-field";
 
 export type { CommandFailure, JsonPrimitive, JsonValue } from "./command-error";
+export type { CommandContext, DefinedCommand, InferCommandData } from "./command-types";
 export type {
   CommandArgField,
-  CommandContext,
   CommandOptionField,
-  DefinedCommand,
-  InferCommandData,
-  PrimitiveFieldType,
   PrimitiveArgField,
+  PrimitiveFieldType,
   PrimitiveOptionField,
   SchemaArgField,
   SchemaOptionField,
-} from "./command-types";
+} from "./field-types";
 export type { DefineGroupInput, DefinedGroup } from "./define-group";
 export type {
   ArgumentHelpEntry,
@@ -29,4 +27,4 @@ export type {
   SchemaOptionHelpEntry,
   SubcommandHelpEntry,
   UserOptionHelpEntry,
-} from "./help-data-types";
+} from "./help-types";
