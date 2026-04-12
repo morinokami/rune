@@ -27,10 +27,10 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Build packages
-        run: vp run build --filter './packages/*'
+        run: vp run --filter './packages/*' build
 
       - name: Run Vite+ check
-        run: vp run check --filter './packages/*'
+        run: vp run --filter './packages/*' check
 
       - name: Run ls-lint
         run: vpx ls-lint
@@ -57,10 +57,10 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Build packages
-        run: vp run build --filter './packages/*'
+        run: vp run --filter './packages/*' build
 
       - name: Run tests
-        run: vp run test --filter './packages/*'
+        run: vp run --filter './packages/*' test
 
   build:
     runs-on: ubuntu-latest
@@ -81,7 +81,7 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Build packages
-        run: vp run build --filter './packages/*'
+        run: vp run --filter './packages/*' build
 
       - name: Run publint
         run: vpx publint ./packages/rune

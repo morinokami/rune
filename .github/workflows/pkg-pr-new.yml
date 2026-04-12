@@ -21,7 +21,7 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Build packages
-        run: vp run build --filter './packages/*'
+        run: vp run --filter './packages/*' build
 
       - name: Publish
         run: vpx pkg-pr-new publish './packages/create-rune-app' './packages/rune'
