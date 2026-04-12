@@ -3,7 +3,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { CommandError, defineCommand } from "../src";
 import { runCommandPipeline } from "../src/run-command-pipeline";
 
-describe("context injection and defaults", () => {
+describe("context and execution", () => {
   test("injects options, args, cwd, and rawArgs into the command context", async () => {
     const observed = {
       name: "",
@@ -35,7 +35,12 @@ describe("context injection and defaults", () => {
       cwd: "/tmp/rune-project",
       rawArgs: ["my-id", "--name", "rune"],
     });
-    expect(result.exitCode).toBe(0);
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: undefined,
+      jsonMode: false,
+    });
   });
 
   test("falls back to process.cwd() when cwd is omitted", async () => {
@@ -87,7 +92,7 @@ describe("context injection and defaults", () => {
     expect(observed).toEqual({ opt: "true", arg: "hello" });
   });
 
-  test("accepts camelCase input via argv and exposes both casings", async () => {
+  test("exposes both casings for kebab-case inputs", async () => {
     const observed = { kebab: "", camel: "", optKebab: false, optCamel: false };
 
     const command = defineCommand({
@@ -118,67 +123,221 @@ describe("context injection and defaults", () => {
       },
     });
 
-    await runCommandPipeline({ command, argv: [] });
+    const result = await runCommandPipeline({ command, argv: [] });
 
     expect(called).toBe(true);
+    expect(result.exitCode).toBe(0);
   });
 });
 
-describe("error handling", () => {
-  test("returns a non-zero result when a command throws", async () => {
+describe("output and json mode", () => {
+  function createCapturingSink() {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+
+    return {
+      stdout,
+      stderr,
+      sink: {
+        stdout(message: string) {
+          stdout.push(message);
+        },
+        stderr(message: string) {
+          stderr.push(message);
+        },
+      },
+    };
+  }
+
+  test("writes stdout and stderr through the provided sink", async () => {
+    const { sink, stdout, stderr } = createCapturingSink();
+    const command = defineCommand({
+      run(ctx) {
+        ctx.output.log("hello %s", "world");
+        ctx.output.error("bad input");
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink,
+    });
+
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: undefined,
+      jsonMode: false,
+    });
+    expect(stdout).toEqual(["hello world\n"]);
+    expect(stderr).toEqual(["bad input\n"]);
+  });
+
+  test("returns command data and suppresses stdout in json mode", async () => {
+    const { sink, stdout, stderr } = createCapturingSink();
+    let observedRawArgs: readonly string[] = [];
+
+    const command = defineCommand({
+      json: true,
+      run(ctx) {
+        observedRawArgs = ctx.rawArgs;
+        ctx.output.log("hidden");
+        ctx.output.error("warning");
+        return { ok: true };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: ["--json"],
+      sink,
+    });
+
+    expect(observedRawArgs).toEqual(["--json"]);
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: { ok: true },
+      jsonMode: true,
+    });
+    expect(stdout).toEqual([]);
+    expect(stderr).toEqual(["warning\n"]);
+  });
+
+  test("does not treat --json after -- as a framework-managed flag", async () => {
+    let observedArg = "";
+
+    const command = defineCommand({
+      json: true,
+      args: [{ name: "value", type: "string", required: true }],
+      run(ctx) {
+        observedArg = ctx.args.value;
+        return { value: ctx.args.value };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: ["--", "--json"],
+    });
+
+    expect(observedArg).toBe("--json");
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: { value: "--json" },
+      jsonMode: false,
+    });
+  });
+
+  test("treats --json as a user option when command json mode is disabled", async () => {
+    let observedJson = false;
+
+    const command = defineCommand({
+      options: [{ name: "json", type: "boolean" }],
+      run(ctx) {
+        observedJson = ctx.options.json;
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: ["--json"],
+    });
+
+    expect(observedJson).toBe(true);
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: undefined,
+      jsonMode: false,
+    });
+  });
+});
+
+describe("parse failures", () => {
+  test("returns invalid-arguments results when argument parsing fails", async () => {
     let called = false;
 
     const command = defineCommand({
-      async run() {
+      options: [{ name: "name", type: "string", required: true }],
+      run() {
         called = true;
+      },
+    });
+
+    const result = await runCommandPipeline({ command, argv: [] });
+
+    expect(called).toBe(false);
+    expect(result).toEqual({
+      parseOk: false,
+      exitCode: 1,
+      error: {
+        kind: "invalid-arguments",
+        message: "Missing required option:\n\n  --name <string>",
+        exitCode: 1,
+      },
+      data: undefined,
+      jsonMode: false,
+    });
+  });
+});
+
+describe("execution failures", () => {
+  test.each([
+    {
+      label: "Error instances with messages",
+      throwError: () => {
         throw new Error("Boom");
       },
-    });
-
-    const result = await runCommandPipeline({ command, argv: [] });
-
-    expect(called).toBe(true);
-    expect(result.exitCode).toBe(1);
-    expect(result.error).toEqual({
-      kind: "internal",
-      message: "Boom",
-      exitCode: 1,
-    });
-  });
-
-  test("normalizes an empty Error message", async () => {
-    const command = defineCommand({
-      run() {
+      expectedMessage: "Boom",
+    },
+    {
+      label: "Error instances with empty messages",
+      throwError: () => {
         throw new Error("");
       },
-    });
-
-    const result = await runCommandPipeline({ command, argv: [] });
-
-    expect(result.exitCode).toBe(1);
-    expect(result.error).toEqual({
-      kind: "internal",
-      message: "Error",
-      exitCode: 1,
-    });
-  });
-
-  test("normalizes non-Error throws", async () => {
-    const command = defineCommand({
-      run() {
+      expectedMessage: "Error",
+    },
+    {
+      label: "string throws",
+      throwError: () => {
+        throw "Boom";
+      },
+      expectedMessage: "Boom",
+    },
+    {
+      label: "non-Error throws",
+      throwError: () => {
         throw { code: "ENOPE" };
       },
-    });
+      expectedMessage: "Unknown error",
+    },
+  ])(
+    "normalizes unexpected execution failures from $label",
+    async ({ throwError, expectedMessage }) => {
+      const command = defineCommand({
+        run() {
+          throwError();
+        },
+      });
 
-    const result = await runCommandPipeline({ command, argv: [] });
+      const result = await runCommandPipeline({ command, argv: [] });
 
-    expect(result.exitCode).toBe(1);
-    expect(result.error).toEqual({
-      kind: "internal",
-      message: "Unknown error",
-      exitCode: 1,
-    });
-  });
+      expect(result).toEqual({
+        parseOk: true,
+        exitCode: 1,
+        error: {
+          kind: "internal",
+          message: expectedMessage,
+          exitCode: 1,
+        },
+        data: undefined,
+        jsonMode: false,
+      });
+    },
+  );
 
   test("normalizes CommandError instances", async () => {
     const command = defineCommand({
@@ -195,13 +354,48 @@ describe("error handling", () => {
 
     const result = await runCommandPipeline({ command, argv: [] });
 
-    expect(result.exitCode).toBe(9);
-    expect(result.error).toEqual({
-      kind: "project/invalid-name",
-      message: "Project name must be lowercase kebab-case",
-      hint: "Try --name my-app",
-      details: { received: "MyApp" },
+    expect(result).toEqual({
+      parseOk: true,
       exitCode: 9,
+      error: {
+        kind: "project/invalid-name",
+        message: "Project name must be lowercase kebab-case",
+        hint: "Try --name my-app",
+        details: { received: "MyApp" },
+        exitCode: 9,
+      },
+      data: undefined,
+      jsonMode: false,
+    });
+  });
+
+  test("normalizes plain structured error-like objects", async () => {
+    const command = defineCommand({
+      run() {
+        throw {
+          kind: "project/invalid-name",
+          message: "Project name must be lowercase kebab-case",
+          hint: "Try --name my-app",
+          details: { received: "MyApp" },
+          exitCode: 9,
+        };
+      },
+    });
+
+    const result = await runCommandPipeline({ command, argv: [] });
+
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 9,
+      error: {
+        kind: "project/invalid-name",
+        message: "Project name must be lowercase kebab-case",
+        hint: "Try --name my-app",
+        details: { received: "MyApp" },
+        exitCode: 9,
+      },
+      data: undefined,
+      jsonMode: false,
     });
   });
 
@@ -218,39 +412,16 @@ describe("error handling", () => {
 
     const result = await runCommandPipeline({ command, argv: [] });
 
-    expect(result.exitCode).toBe(1);
-    expect(result.error).toEqual({
-      kind: "project/invalid-name",
-      message: "bad",
+    expect(result).toEqual({
+      parseOk: true,
       exitCode: 1,
-    });
-  });
-
-  test("preserves CommandError causes", async () => {
-    const cause = new Error("root cause");
-
-    const command = defineCommand({
-      run() {
-        throw new CommandError({
-          kind: "wrapped",
-          message: "wrapped error",
-          cause,
-        });
+      error: {
+        kind: "project/invalid-name",
+        message: "bad",
+        exitCode: 1,
       },
+      data: undefined,
+      jsonMode: false,
     });
-
-    try {
-      await runCommandPipeline({ command, argv: [] });
-    } catch {
-      throw new Error("runCommandPipeline should not rethrow command errors");
-    }
-
-    const commandError = new CommandError({
-      kind: "wrapped",
-      message: "wrapped error",
-      cause,
-    });
-
-    expect(commandError.cause).toBe(cause);
   });
 });
