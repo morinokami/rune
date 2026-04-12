@@ -5,10 +5,10 @@ import { z } from "zod";
 
 import type { CommandArgField, CommandOptionField, SingleLetter } from "../src/field-types";
 
-import { defineCommand } from "../src";
+import { defineCommand, isDefinedCommand } from "../src";
 
-describe("basic structure", () => {
-  test("defineCommand normalizes empty args and options", () => {
+describe("normalization and pass-through", () => {
+  test("defineCommand normalizes omitted args and options to empty arrays", () => {
     const command = defineCommand({
       async run() {},
     });
@@ -25,16 +25,15 @@ describe("basic structure", () => {
     expect(command.examples).toEqual([]);
   });
 
-  test("defineCommand preserves examples", () => {
+  test("defineCommand normalizes omitted aliases to empty array", () => {
     const command = defineCommand({
-      examples: ["my-cli greet Alice", "my-cli greet --loud Bob"],
       async run() {},
     });
 
-    expect(command.examples).toEqual(["my-cli greet Alice", "my-cli greet --loud Bob"]);
+    expect(command.aliases).toEqual([]);
   });
 
-  test("defineCommand preserves description and field definitions", () => {
+  test("defineCommand preserves description and field counts", () => {
     const command = defineCommand({
       description: "Create a project",
       args: [{ name: "id", type: "string", required: true }],
@@ -48,6 +47,38 @@ describe("basic structure", () => {
     expect(command.description).toBe("Create a project");
     expect(command.args).toHaveLength(1);
     expect(command.options).toHaveLength(2);
+  });
+
+  test("defineCommand preserves examples", () => {
+    const command = defineCommand({
+      examples: ["my-cli greet Alice", "my-cli greet --loud Bob"],
+      async run() {},
+    });
+
+    expect(command.examples).toEqual(["my-cli greet Alice", "my-cli greet --loud Bob"]);
+  });
+
+  test("defineCommand preserves aliases", () => {
+    const command = defineCommand({
+      aliases: ["create", "new-project"],
+      async run() {},
+    });
+
+    expect(command.aliases).toEqual(["create", "new-project"]);
+  });
+
+  test("defineCommand preserves json mode and custom help handler", () => {
+    const help = () => "custom help";
+    const command = defineCommand({
+      json: true,
+      help,
+      async run() {
+        return {};
+      },
+    });
+
+    expect(command.json).toBe(true);
+    expect(command.help).toBe(help);
   });
 
   test("defineCommand preserves schema-backed and default-backed field definitions", () => {
@@ -75,7 +106,7 @@ describe("basic structure", () => {
     ]);
   });
 
-  test("defineCommand accepts explicit flag hints for schema-backed options", () => {
+  test("defineCommand preserves explicit flag hints for schema-backed options", () => {
     const forceSchema = z.boolean();
     const command = defineCommand({
       options: [
@@ -184,56 +215,59 @@ describe("argument ordering", () => {
   });
 });
 
-describe("name and short name validation", () => {
-  test("defineCommand accepts valid kebab-case names", () => {
+describe("field name validation", () => {
+  test.each([{ name: "file-path" }, { name: "projectName" }])(
+    'defineCommand accepts valid arg name "$name"',
+    ({ name }) => {
+      expect(() =>
+        defineCommand({
+          args: [{ name, type: "string", required: true }],
+          async run() {},
+        }),
+      ).not.toThrow();
+    },
+  );
+
+  test.each([{ name: "dry-run" }, { name: "dryRun" }])(
+    'defineCommand accepts valid option name "$name"',
+    ({ name }) => {
+      expect(() =>
+        defineCommand({
+          options: [{ name, type: "boolean" }],
+          async run() {},
+        }),
+      ).not.toThrow();
+    },
+  );
+
+  test.each([
+    { name: "my--arg", message: 'Invalid argument name "my--arg"' },
+    { name: "-arg", message: 'Invalid argument name "-arg"' },
+    { name: "", message: 'Invalid argument name ""' },
+  ])('defineCommand rejects invalid arg name "$name"', ({ name, message }) => {
     expect(() =>
       defineCommand({
-        args: [{ name: "file-path", type: "string", required: true }],
-        options: [
-          { name: "dry-run", type: "boolean" },
-          { name: "output", type: "string", short: "o" },
-        ],
+        args: [{ name, type: "string" }],
         async run() {},
       }),
-    ).not.toThrow();
+    ).toThrow(message);
   });
 
-  test("defineCommand accepts camelCase names for args and options", () => {
+  test.each([
+    { name: "my option", type: "string" as const, message: 'Invalid option name "my option"' },
+    { name: "", type: "string" as const, message: 'Invalid option name ""' },
+    { name: "-verbose", type: "boolean" as const, message: 'Invalid option name "-verbose"' },
+  ])('defineCommand rejects invalid option name "$name"', ({ name, type, message }) => {
     expect(() =>
       defineCommand({
-        args: [{ name: "projectName", type: "string", required: true }],
-        options: [{ name: "dryRun", type: "boolean" }],
+        options: [{ name, type }],
         async run() {},
       }),
-    ).not.toThrow();
+    ).toThrow(message);
   });
+});
 
-  test("defineCommand rejects options whose camelCase aliases collide (kebab first)", () => {
-    expect(() =>
-      // @ts-expect-error camelCase alias collision
-      defineCommand({
-        options: [
-          { name: "foo-bar", type: "string" },
-          { name: "fooBar", type: "string" },
-        ],
-        async run() {},
-      }),
-    ).toThrow('Duplicate option name "fooBar".');
-  });
-
-  test("defineCommand rejects options whose camelCase aliases collide (camel first)", () => {
-    expect(() =>
-      // @ts-expect-error camelCase alias collision
-      defineCommand({
-        options: [
-          { name: "fooBar", type: "string" },
-          { name: "foo-bar", type: "string" },
-        ],
-        async run() {},
-      }),
-    ).toThrow('Option "foo-bar" conflicts with "fooBar" (same camelCase alias).');
-  });
-
+describe("camelCase alias and short name validation", () => {
   test("defineCommand rejects args whose camelCase aliases collide", () => {
     expect(() =>
       // @ts-expect-error camelCase alias collision
@@ -247,88 +281,43 @@ describe("name and short name validation", () => {
     ).toThrow('Duplicate argument name "myArg".');
   });
 
-  test("defineCommand rejects hyphenated arg names with consecutive hyphens", () => {
-    expect(() =>
-      // @ts-expect-error invalid hyphenated name
+  test.each([
+    {
+      names: ["foo-bar", "fooBar"] as const,
+      message: 'Duplicate option name "fooBar".',
+    },
+    {
+      names: ["fooBar", "foo-bar"] as const,
+      message: 'Option "foo-bar" conflicts with "fooBar" (same camelCase alias).',
+    },
+  ])("defineCommand rejects options whose camelCase aliases collide", ({ names, message }) => {
+    expect(() => {
+      // @ts-expect-error camelCase alias collision
       defineCommand({
-        args: [{ name: "my--arg", type: "string" }],
+        options: [
+          { name: names[0], type: "string" },
+          { name: names[1], type: "string" },
+        ],
         async run() {},
-      }),
-    ).toThrow('Invalid argument name "my--arg"');
+      });
+    }).toThrow(message);
   });
 
-  test("defineCommand rejects hyphenated arg names with leading hyphen", () => {
-    expect(() =>
-      // @ts-expect-error invalid hyphenated name
-      defineCommand({
-        args: [{ name: "-arg", type: "string" }],
-        async run() {},
-      }),
-    ).toThrow('Invalid argument name "-arg"');
-  });
-
-  test("defineCommand rejects option name with spaces", () => {
-    expect(() =>
-      // @ts-expect-error invalid option name
-      defineCommand({
-        options: [{ name: "my option", type: "string" }],
-        async run() {},
-      }),
-    ).toThrow('Invalid option name "my option"');
-  });
-
-  test("defineCommand rejects empty option name", () => {
-    expect(() =>
-      // @ts-expect-error empty name
-      defineCommand({
-        options: [{ name: "", type: "string" }],
-        async run() {},
-      }),
-    ).toThrow('Invalid option name ""');
-  });
-
-  test("defineCommand rejects empty argument name", () => {
-    expect(() =>
-      // @ts-expect-error empty name
-      defineCommand({
-        args: [{ name: "", type: "string" }],
-        async run() {},
-      }),
-    ).toThrow('Invalid argument name ""');
-  });
-
-  test("defineCommand rejects option name starting with a hyphen", () => {
-    expect(() =>
-      // @ts-expect-error invalid hyphenated name
-      defineCommand({
-        options: [{ name: "-verbose", type: "boolean" }],
-        async run() {},
-      }),
-    ).toThrow('Invalid option name "-verbose"');
-  });
-
-  test("defineCommand rejects invalid short name", () => {
+  test.each([
+    { short: "vv", message: 'Invalid short name "vv" for option "verbose"' },
+    { short: "1", message: 'Invalid short name "1" for option "verbose"' },
+  ])('defineCommand rejects invalid short name "$short"', ({ short, message }) => {
     expect(() =>
       defineCommand({
         // @ts-expect-error invalid short name
-        options: [{ name: "verbose", type: "boolean", short: "vv" }],
+        options: [{ name: "verbose", type: "boolean", short }],
         async run() {},
       }),
-    ).toThrow('Invalid short name "vv" for option "verbose"');
-  });
-
-  test("defineCommand rejects numeric short name", () => {
-    expect(() =>
-      defineCommand({
-        // @ts-expect-error invalid short name
-        options: [{ name: "verbose", type: "boolean", short: "1" }],
-        async run() {},
-      }),
-    ).toThrow('Invalid short name "1" for option "verbose"');
+    ).toThrow(message);
   });
 });
 
-describe("uniqueness and field shape validation", () => {
+describe("uniqueness validation", () => {
   test("defineCommand rejects duplicate option names", () => {
     expect(() =>
       // @ts-expect-error duplicate option name
@@ -370,6 +359,18 @@ describe("uniqueness and field shape validation", () => {
 });
 
 describe("negation collision validation", () => {
+  test("defineCommand allows no-X option when X is not negatable", () => {
+    expect(() =>
+      defineCommand({
+        options: [
+          { name: "color", type: "boolean" },
+          { name: "no-color", type: "string" },
+        ],
+        async run() {},
+      }),
+    ).not.toThrow();
+  });
+
   test("defineCommand rejects option named no-X when X is a negatable boolean option", () => {
     expect(() =>
       // @ts-expect-error negation collision
@@ -382,21 +383,46 @@ describe("negation collision validation", () => {
       }),
     ).toThrow('Option "no-color" conflicts with the automatic negation of boolean option "color".');
   });
-
-  test("defineCommand allows no-X option when X is not negatable", () => {
-    expect(() =>
-      defineCommand({
-        options: [
-          { name: "color", type: "boolean" },
-          { name: "no-color", type: "string" },
-        ],
-        async run() {},
-      }),
-    ).not.toThrow();
-  });
 });
 
 describe("reserved name validation", () => {
+  test.each([
+    {
+      label: "version option",
+      define: () =>
+        defineCommand({
+          options: [{ name: "version", type: "string" }],
+          async run() {},
+        }),
+    },
+    {
+      label: "json option when json mode is not enabled",
+      define: () =>
+        defineCommand({
+          options: [{ name: "json", type: "boolean" }],
+          async run() {},
+        }),
+    },
+    {
+      label: "-V short name",
+      define: () =>
+        defineCommand({
+          options: [{ name: "verbose", type: "boolean", short: "V" }],
+          async run() {},
+        }),
+    },
+    {
+      label: "non-reserved short names",
+      define: () =>
+        defineCommand({
+          options: [{ name: "verbose", type: "boolean", short: "v" }],
+          async run() {},
+        }),
+    },
+  ])("defineCommand allows $label", ({ define }) => {
+    expect(() => define()).not.toThrow();
+  });
+
   test("defineCommand rejects option named help", () => {
     expect(() =>
       // @ts-expect-error reserved option name
@@ -417,24 +443,6 @@ describe("reserved name validation", () => {
     ).toThrow('Short name "h" for option "header" is reserved by the framework.');
   });
 
-  test("defineCommand allows version option on non-root commands", () => {
-    expect(() =>
-      defineCommand({
-        options: [{ name: "version", type: "string" }],
-        async run() {},
-      }),
-    ).not.toThrow();
-  });
-
-  test("defineCommand allows -V short name", () => {
-    expect(() =>
-      defineCommand({
-        options: [{ name: "verbose", type: "boolean", short: "V" }],
-        async run() {},
-      }),
-    ).not.toThrow();
-  });
-
   test("defineCommand rejects json option when json mode is enabled", () => {
     expect(() =>
       // @ts-expect-error reserved option name in json mode
@@ -447,111 +455,164 @@ describe("reserved name validation", () => {
       }),
     ).toThrow('Option name "json" is reserved by the framework.');
   });
-
-  test("defineCommand allows json option when json mode is not enabled", () => {
-    expect(() =>
-      defineCommand({
-        options: [{ name: "json", type: "boolean" }],
-        async run() {},
-      }),
-    ).not.toThrow();
-  });
-
-  test("defineCommand allows non-reserved short names", () => {
-    expect(() =>
-      defineCommand({
-        options: [{ name: "verbose", type: "boolean", short: "v" }],
-        async run() {},
-      }),
-    ).not.toThrow();
-  });
 });
 
-describe("widened input pass-through", () => {
-  test("widened option arrays with camelCase collision pass type check and are caught at runtime", () => {
-    const fields: readonly CommandOptionField[] = [
-      { name: "foo-bar", type: "string" },
-      { name: "fooBar", type: "string" },
-    ];
-
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/Duplicate option name/);
+describe("alias validation", () => {
+  test("defineCommand accepts valid command aliases", () => {
+    expect(() =>
+      defineCommand({
+        aliases: ["create", "new-project", "v2"],
+        async run() {},
+      }),
+    ).not.toThrow();
   });
 
-  test("widened arg arrays with duplicate names pass type check and are caught at runtime", () => {
-    const fields: readonly CommandArgField[] = [
-      { name: "input", type: "string" },
-      { name: "input", type: "string" },
-    ];
-
-    expect(() => defineCommand({ args: fields, run() {} })).toThrow(/Duplicate/);
-  });
-
-  test("widened option arrays with duplicate short names pass type check and are caught at runtime", () => {
-    const fields: readonly CommandOptionField[] = [
-      { name: "verbose", type: "boolean", short: "v" },
-      { name: "version", type: "boolean", short: "v" },
-    ];
-
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/Duplicate short/);
-  });
-
-  test("widened option arrays with invalid names pass type check and are caught at runtime", () => {
-    const fields: readonly CommandOptionField[] = [{ name: "-bad", type: "string" }];
-
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/Invalid option name/);
-  });
-
-  test("widened arg arrays with empty names pass type check and are caught at runtime", () => {
-    const fields: readonly CommandArgField[] = [{ name: "", type: "string" }];
-
-    expect(() => defineCommand({ args: fields, run() {} })).toThrow(/Invalid argument name/);
-  });
-
-  test("widened option arrays with reserved names pass type check and are caught at runtime", () => {
-    const fields: readonly CommandOptionField[] = [{ name: "help", type: "boolean" }];
-
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/reserved by the framework/);
-  });
-
-  test("widened option arrays with reserved short names pass type check and are caught at runtime", () => {
-    const fields: readonly CommandOptionField[] = [{ name: "header", type: "string", short: "h" }];
-
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/reserved by the framework/);
-  });
-
-  test("widened option arrays with json name in json mode pass type check and are caught at runtime", () => {
-    const fields: readonly CommandOptionField[] = [{ name: "json", type: "boolean" }];
-
-    expect(() => defineCommand({ json: true, options: fields, run: () => ({}) })).toThrow(
-      /reserved by the framework/,
+  test("defineCommand rejects invalid command aliases", () => {
+    expect(() =>
+      defineCommand({
+        aliases: ["CreateProject"],
+        async run() {},
+      }),
+    ).toThrow(
+      'Invalid command alias "CreateProject". Aliases must be lowercase kebab-case (letters, digits, and internal hyphens).',
     );
   });
 
-  test("tuple with widened member names does not trigger false positive", () => {
-    const dynamicName: string = "alpha";
-
+  test("defineCommand rejects duplicate command aliases", () => {
     expect(() =>
       defineCommand({
-        options: [
-          { name: dynamicName, type: "string" },
-          { name: "beta", type: "string" },
-        ],
+        aliases: ["create", "create"],
         async run() {},
       }),
-    ).not.toThrow();
+    ).toThrow('Duplicate command alias "create".');
+  });
+});
+
+describe("runtime validation for widened inputs", () => {
+  test.each([
+    {
+      label: "camelCase-colliding option names",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [
+          { name: "foo-bar", type: "string" },
+          { name: "fooBar", type: "string" },
+        ];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /Duplicate option name/,
+    },
+    {
+      label: "duplicate arg names",
+      define: () => {
+        const fields: readonly CommandArgField[] = [
+          { name: "input", type: "string" },
+          { name: "input", type: "string" },
+        ];
+        return defineCommand({ args: fields, run() {} });
+      },
+      message: /Duplicate/,
+    },
+    {
+      label: "duplicate option short names",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [
+          { name: "verbose", type: "boolean", short: "v" },
+          { name: "version", type: "boolean", short: "v" },
+        ];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /Duplicate short/,
+    },
+    {
+      label: "invalid option names",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [{ name: "-bad", type: "string" }];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /Invalid option name/,
+    },
+    {
+      label: "empty arg names",
+      define: () => {
+        const fields: readonly CommandArgField[] = [{ name: "", type: "string" }];
+        return defineCommand({ args: fields, run() {} });
+      },
+      message: /Invalid argument name/,
+    },
+    {
+      label: "reserved option names",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [{ name: "help", type: "boolean" }];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /reserved by the framework/,
+    },
+    {
+      label: "reserved option short names",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [
+          { name: "header", type: "string", short: "h" },
+        ];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /reserved by the framework/,
+    },
+    {
+      label: "json option names in json mode",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [{ name: "json", type: "boolean" }];
+        return defineCommand({ json: true, options: fields, run: () => ({}) });
+      },
+      message: /reserved by the framework/,
+    },
+  ])("rejects $label at runtime", ({ define, message }) => {
+    expect(() => define()).toThrow(message);
   });
 
-  test("tuple with widened short name does not trigger false positive", () => {
-    const dynamicShort = "a" as SingleLetter;
+  test.each([
+    {
+      label: "widened member names in option tuples",
+      define: () => {
+        const dynamicName: string = "alpha";
+        return defineCommand({
+          options: [
+            { name: dynamicName, type: "string" },
+            { name: "beta", type: "string" },
+          ],
+          async run() {},
+        });
+      },
+    },
+    {
+      label: "widened short names in option tuples",
+      define: () => {
+        const dynamicShort = "a" as SingleLetter;
+        return defineCommand({
+          options: [
+            { name: "alpha", type: "string", short: dynamicShort },
+            { name: "beta", type: "string", short: "b" },
+          ],
+          async run() {},
+        });
+      },
+    },
+  ])("does not report false positives for $label", ({ define }) => {
+    expect(() => define()).not.toThrow();
+  });
+});
 
-    expect(() =>
-      defineCommand({
-        options: [
-          { name: "alpha", type: "string", short: dynamicShort },
-          { name: "beta", type: "string", short: "b" },
-        ],
-        async run() {},
-      }),
-    ).not.toThrow();
+describe("defined command branding", () => {
+  test("isDefinedCommand returns true for commands created by defineCommand", () => {
+    const command = defineCommand({
+      async run() {},
+    });
+
+    expect(isDefinedCommand(command)).toBe(true);
+  });
+
+  test("isDefinedCommand returns false for non-command values", () => {
+    expect(isDefinedCommand({ run() {} })).toBe(false);
+    expect(isDefinedCommand(null)).toBe(false);
+    expect(isDefinedCommand("command")).toBe(false);
   });
 });
