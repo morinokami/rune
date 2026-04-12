@@ -35,7 +35,7 @@ jobs:
         run: vp install -g npm@latest
 
       - name: Build packages
-        run: vp run build --filter './packages/*'
+        run: vp run --filter './packages/*' build
 
       - name: Create Release Pull Request
         id: changesets
