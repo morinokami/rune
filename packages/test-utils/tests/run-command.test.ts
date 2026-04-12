@@ -38,7 +38,7 @@ describe("execution", () => {
       stdout: "",
       stderr: "boom\n",
       error: {
-        kind: "internal",
+        kind: "rune/unexpected",
         message: "boom",
         exitCode: 1,
       },
@@ -149,7 +149,7 @@ describe("validation", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).not.toBe("");
     expect(result.error).toEqual({
-      kind: "invalid-arguments",
+      kind: "rune/invalid-arguments",
       message: "Missing required argument:\n\n  id",
       exitCode: 1,
     });
@@ -165,7 +165,7 @@ describe("validation", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).not.toBe("");
     expect(result.error).toEqual({
-      kind: "invalid-arguments",
+      kind: "rune/invalid-arguments",
       message: 'Unknown option "--unknown"',
       exitCode: 1,
     });
@@ -299,7 +299,7 @@ describe("json mode", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toBe("");
     expect(result.error).toEqual({
-      kind: "invalid-arguments",
+      kind: "rune/invalid-arguments",
       message: "Missing required argument:\n\n  id",
       exitCode: 1,
     });

@@ -48,8 +48,8 @@ const defaultSink: OutputSink = {
   },
 };
 
-const INVALID_ARGUMENTS_ERROR_KIND = "invalid-arguments";
-const INTERNAL_ERROR_KIND = "internal";
+const INVALID_ARGUMENTS_ERROR_KIND = "rune/invalid-arguments";
+const UNEXPECTED_ERROR_KIND = "rune/unexpected";
 
 /**
  * Extracts a framework-managed `--json` flag from argv.
@@ -159,7 +159,7 @@ function normalizeExecutionFailure(error: unknown): CommandFailure {
   }
 
   return {
-    kind: INTERNAL_ERROR_KIND,
+    kind: UNEXPECTED_ERROR_KIND,
     message: formatUnexpectedExecutionError(error),
     exitCode: 1,
   };
@@ -222,13 +222,13 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
   }
 
   try {
-    const options = addCamelCaseAliases(
-      normalizeOptions(commandDefinition.options, parsed.value.options as Record<string, unknown>),
-    );
     const args = addCamelCaseAliases(
       normalizeToCanonicalKeys(commandDefinition.args, {
         ...parsed.value.args,
       } as Record<string, unknown>),
+    );
+    const options = addCamelCaseAliases(
+      normalizeOptions(commandDefinition.options, parsed.value.options as Record<string, unknown>),
     );
 
     // The `command.run` signature is generic, but at this layer we operate on

@@ -84,7 +84,7 @@ test("returns structured error", async () => {
 });
 ```
 
-Unexpected exceptions are wrapped with `kind: "internal"`.
+Unexpected exceptions are wrapped with `kind: "rune/unexpected"`.
 
 ## Testing JSON Mode
 

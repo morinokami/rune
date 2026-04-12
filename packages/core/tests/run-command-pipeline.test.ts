@@ -274,7 +274,7 @@ describe("parse failures", () => {
       parseOk: false,
       exitCode: 1,
       error: {
-        kind: "invalid-arguments",
+        kind: "rune/invalid-arguments",
         message: "Missing required option:\n\n  --name <string>",
         exitCode: 1,
       },
@@ -329,7 +329,7 @@ describe("execution failures", () => {
         parseOk: true,
         exitCode: 1,
         error: {
-          kind: "internal",
+          kind: "rune/unexpected",
           message: expectedMessage,
           exitCode: 1,
         },

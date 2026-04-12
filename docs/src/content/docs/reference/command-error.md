@@ -33,7 +33,7 @@ new CommandError(init: CommandErrorInit)
 - **Type:** `string`
 - **Required**
 
-A string that categorizes the error for programmatic consumers. In `--json` mode, this value appears in the output so that callers can handle specific error types without parsing the message. Choose a stable, descriptive identifier such as `"not-found"`, `"already-exists"`, or `"validation"`.
+A string that categorizes the error for programmatic consumers. In `--json` mode, this value appears in the output so that callers can handle specific error types without parsing the message. Choose a stable, descriptive identifier such as `"not-found"`, `"already-exists"`, or `"validation"`. The `rune/*` namespace is reserved for framework-generated failures.
 
 #### `message`
 
