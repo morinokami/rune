@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.26
+
+### Patch Changes
+
+- [#96](https://github.com/morinokami/rune/pull/96) [`2a98b3b`](https://github.com/morinokami/rune/commit/2a98b3b61f4bd8b1525e0e5321aa1017ec3539e1) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): restore exported command result types
+
 ## 0.0.25
 
 ### Patch Changes
