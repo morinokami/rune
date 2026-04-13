@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.27
+
+### Patch Changes
+
+- [#102](https://github.com/morinokami/rune/pull/102) [`60e7d5e`](https://github.com/morinokami/rune/commit/60e7d5e5d4d431f5afc4296ef89b7db802741ac4) Thanks [@morinokami](https://github.com/morinokami)! - refactor(errors): namespace framework-generated error kinds
+
 ## 0.0.26
 
 ### Patch Changes
