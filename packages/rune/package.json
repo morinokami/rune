@@ -45,7 +45,7 @@
     "check": "vp check"
   },
   "dependencies": {
-    "esbuild": "catalog:"
+    "rolldown": "catalog:"
   },
   "devDependencies": {
     "@rune-cli/core": "workspace:*",
