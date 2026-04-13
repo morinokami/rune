@@ -1,10 +1,4 @@
-// ---------------------------------------------------------------------------
-// Constants & types
-// ---------------------------------------------------------------------------
-
-import { validateCommandAliases } from "./define-command";
-
-const DEFINED_GROUP_BRAND = Symbol.for("@rune-cli/defined-group");
+import { validateCommandAliases } from "./validate-command-aliases";
 
 /** The group definition object accepted by {@link defineGroup}. */
 export interface DefineGroupInput {
@@ -54,16 +48,9 @@ export function defineGroup(input: DefineGroupInput): DefinedGroup {
     validateCommandAliases(input.aliases);
   }
 
-  const group: DefinedGroup = {
+  return {
     description: input.description,
-    aliases: (input.aliases ?? []) as readonly string[],
-    examples: (input.examples ?? []) as readonly string[],
+    aliases: [...(input.aliases ?? [])],
+    examples: [...(input.examples ?? [])],
   };
-
-  Object.defineProperty(group, DEFINED_GROUP_BRAND, {
-    value: true,
-    enumerable: false,
-  });
-
-  return group;
 }

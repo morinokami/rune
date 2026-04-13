@@ -25,6 +25,22 @@ describe("normalization and pass-through", () => {
       examples: ["my-cli project create", "my-cli projects list"],
     });
   });
+
+  test("defineGroup copies aliases and examples arrays", () => {
+    const aliases = ["project"];
+    const examples = ["my-cli project create"];
+    const group = defineGroup({
+      description: "Manage projects",
+      aliases,
+      examples,
+    });
+
+    aliases.push("projects");
+    examples.push("my-cli projects list");
+
+    expect(group.aliases).toEqual(["project"]);
+    expect(group.examples).toEqual(["my-cli project create"]);
+  });
 });
 
 describe("alias validation", () => {

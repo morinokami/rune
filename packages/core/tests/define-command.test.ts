@@ -67,6 +67,38 @@ describe("normalization and pass-through", () => {
     expect(command.aliases).toEqual(["create", "new-project"]);
   });
 
+  test("defineCommand copies aliases and examples arrays", () => {
+    const aliases = ["create"];
+    const examples = ["my-cli create"];
+    const command = defineCommand({
+      aliases,
+      examples,
+      async run() {},
+    });
+
+    aliases.push("new-project");
+    examples.push("my-cli new-project");
+
+    expect(command.aliases).toEqual(["create"]);
+    expect(command.examples).toEqual(["my-cli create"]);
+  });
+
+  test("defineCommand copies args and options arrays", () => {
+    const args: CommandArgField[] = [{ name: "id", type: "string", required: true }];
+    const options: CommandOptionField[] = [{ name: "force", type: "boolean" }];
+    const command = defineCommand({
+      args,
+      options,
+      async run() {},
+    });
+
+    args.push({ name: "mode", type: "string" });
+    options.push({ name: "count", type: "number" });
+
+    expect(command.args).toEqual([{ name: "id", type: "string", required: true }]);
+    expect(command.options).toEqual([{ name: "force", type: "boolean" }]);
+  });
+
   test("defineCommand preserves json mode and custom help handler", () => {
     const help = () => "custom help";
     const command = defineCommand({

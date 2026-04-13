@@ -11,6 +11,7 @@ import type {
 
 import { kebabToCamelCase } from "./camel-case-aliases";
 import { isSchemaField } from "./schema-field";
+import { validateCommandAliases } from "./validate-command-aliases";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -20,7 +21,6 @@ const DEFINED_COMMAND_BRAND = Symbol.for("@rune-cli/defined-command");
 
 const OPTION_NAME_RE = /^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$/;
 const OPTION_SHORT_RE = /^[a-zA-Z]$/;
-const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // ---------------------------------------------------------------------------
 // Field validation
@@ -141,24 +141,6 @@ function validateOptionShortNames(options: readonly CommandOptionField[]): void 
   }
 }
 
-export function validateCommandAliases(aliases: readonly string[]): void {
-  const seen = new Set<string>();
-
-  for (const alias of aliases) {
-    if (!COMMAND_ALIAS_RE.test(alias)) {
-      throw new Error(
-        `Invalid command alias "${alias}". Aliases must be lowercase kebab-case (letters, digits, and internal hyphens).`,
-      );
-    }
-
-    if (seen.has(alias)) {
-      throw new Error(`Duplicate command alias "${alias}".`);
-    }
-
-    seen.add(alias);
-  }
-}
-
 function isOptionalArg(field: CommandArgField): boolean | undefined {
   if (isSchemaField(field)) {
     // Standard Schema exposes no optionality metadata and validate() can be
@@ -189,6 +171,12 @@ function validateArgOrdering(args: readonly CommandArgField[]): void {
       );
     }
   }
+}
+
+function copyNormalizedFields<TFields extends readonly TField[] | undefined, TField>(
+  fields: TFields | undefined,
+): NormalizeFields<TFields, TField> {
+  return [...(fields ?? [])] as unknown as NormalizeFields<TFields, TField>;
 }
 
 // ---------------------------------------------------------------------------
@@ -291,10 +279,10 @@ export function defineCommand<
   > = {
     description: input.description,
     json: ((input as { json?: boolean }).json === true) as TJson,
-    aliases: (input.aliases ?? []) as readonly string[],
-    examples: (input.examples ?? []) as readonly string[],
-    args: (input.args ?? []) as NormalizeFields<TArgsFields, CommandArgField>,
-    options: (input.options ?? []) as NormalizeFields<TOptionsFields, CommandOptionField>,
+    aliases: [...(input.aliases ?? [])],
+    examples: [...(input.examples ?? [])],
+    args: copyNormalizedFields<TArgsFields, CommandArgField>(input.args),
+    options: copyNormalizedFields<TOptionsFields, CommandOptionField>(input.options),
     help: input.help,
     run: input.run as DefinedCommand<
       NormalizeFields<TArgsFields, CommandArgField>,
