@@ -376,6 +376,22 @@ describe("invalid values", () => {
     }
     expect(result.error.message).toContain("Invalid value for argument id");
   });
+
+  test("parseCommandArgs fails when a schema-backed option is invalid", async () => {
+    const command = defineCommand({
+      options: [{ name: "port", schema: z.coerce.number().int().positive() }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--port", "bad"]);
+
+    expect(result.ok).toBe(false);
+
+    if (result.ok) {
+      throw new Error("Expected parseCommandArgs to fail");
+    }
+    expect(result.error.message).toContain("Invalid value for option --port");
+  });
 });
 
 describe("negatable boolean options", () => {

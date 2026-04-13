@@ -424,4 +424,35 @@ describe("execution failures", () => {
       jsonMode: false,
     });
   });
+
+  test.each([
+    { label: "the maximum valid exit code", exitCode: 255, expectedExitCode: 255 },
+    { label: "an out-of-range exit code", exitCode: 256, expectedExitCode: 1 },
+    { label: "a negative exit code", exitCode: -1, expectedExitCode: 1 },
+    { label: "a non-integer exit code", exitCode: 1.5, expectedExitCode: 1 },
+    { label: "an omitted exit code", exitCode: undefined, expectedExitCode: 1 },
+  ])("normalizes $label", async ({ exitCode, expectedExitCode }) => {
+    const command = defineCommand({
+      run() {
+        throw new CommandError({
+          kind: "project/invalid-name",
+          message: "bad",
+          exitCode,
+        });
+      },
+    });
+
+    const result = await runCommandPipeline({ command, argv: [] });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: expectedExitCode,
+      error: {
+        kind: "project/invalid-name",
+        message: "bad",
+        exitCode: expectedExitCode,
+      },
+      jsonMode: false,
+    });
+  });
 });

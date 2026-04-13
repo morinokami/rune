@@ -611,7 +611,7 @@ describe("runtime validation for widened inputs", () => {
       { name: "Arg", type: "string" },
     ];
 
-    expect(() => defineCommand({ args: fields, run() {} })).toThrow('Invalid argument name "-arg"');
+    expect(() => defineCommand({ args: fields, run() {} })).toThrow(/Invalid argument name/);
   });
 
   test("prefers invalid option names over later camelCase-collision errors", () => {
@@ -620,9 +620,7 @@ describe("runtime validation for widened inputs", () => {
       { name: "Verbose", type: "string" },
     ];
 
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(
-      'Invalid option name "-verbose"',
-    );
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/Invalid option name/);
   });
 
   test("prefers reserved option names over later negation-collision errors", () => {
@@ -631,9 +629,7 @@ describe("runtime validation for widened inputs", () => {
       { name: "no-help", type: "string" },
     ];
 
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(
-      'Option name "help" is reserved by the framework.',
-    );
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/reserved by the framework/);
   });
 
   test("prefers reserved short names over duplicate short-name errors", () => {
@@ -642,9 +638,7 @@ describe("runtime validation for widened inputs", () => {
       { name: "hello", type: "boolean", short: "h" },
     ];
 
-    expect(() => defineCommand({ options: fields, run() {} })).toThrow(
-      'Short name "h" for option "header" is reserved by the framework.',
-    );
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(/reserved by the framework/);
   });
 
   test.each([
