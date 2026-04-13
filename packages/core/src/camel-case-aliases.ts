@@ -2,7 +2,7 @@
  * Converts a kebab-case string to camelCase.
  *
  * This is the single runtime implementation of the kebab→camel convention.
- * The type-level counterpart is `KebabToCamelCase` in `command-type-internals.ts`;
+ * The type-level counterpart is `KebabToCamelCase` in `internal-types/utils.ts`;
  * both must produce identical camelCase aliases for any input allowed by
  * `OPTION_NAME_RE` in `define-command.ts`. When changing the conversion
  * rule, update both sides together.

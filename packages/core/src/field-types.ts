@@ -112,8 +112,7 @@ export type NormalizeFields<
   TField,
 > = TFields extends readonly TField[] ? TFields : readonly [];
 
-// Single ASCII letter, used to constrain option short names.
-export type SingleLetter =
+export type LowercaseLetter =
   | "a"
   | "b"
   | "c"
@@ -139,30 +138,9 @@ export type SingleLetter =
   | "w"
   | "x"
   | "y"
-  | "z"
-  | "A"
-  | "B"
-  | "C"
-  | "D"
-  | "E"
-  | "F"
-  | "G"
-  | "H"
-  | "I"
-  | "J"
-  | "K"
-  | "L"
-  | "M"
-  | "N"
-  | "O"
-  | "P"
-  | "Q"
-  | "R"
-  | "S"
-  | "T"
-  | "U"
-  | "V"
-  | "W"
-  | "X"
-  | "Y"
-  | "Z";
+  | "z";
+
+export type UppercaseLetter = Uppercase<LowercaseLetter>;
+
+// Single ASCII letter, used to constrain option short names.
+export type SingleLetter = LowercaseLetter | UppercaseLetter;

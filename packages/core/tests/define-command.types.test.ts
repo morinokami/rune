@@ -3,12 +3,20 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expectTypeOf, test } from "vite-plus/test";
 import { z } from "zod";
 
+import type { LowercaseLetter, SingleLetter, UppercaseLetter } from "../src/field-types";
+
 import { defineCommand } from "../src";
 import {
   type InferCommandArgs,
   type InferCommandData,
   type InferCommandOptions,
 } from "../src/command-types";
+
+test("SingleLetter remains the union of lowercase and uppercase letters", () => {
+  expectTypeOf<SingleLetter>().toEqualTypeOf<LowercaseLetter | UppercaseLetter>();
+  expectTypeOf<Extract<SingleLetter, "a" | "Z">>().toEqualTypeOf<"a" | "Z">();
+  expectTypeOf<Extract<SingleLetter, "1">>().toEqualTypeOf<never>();
+});
 
 test("defineCommand infers primitive arg and option shapes", () => {
   const basicCommand = defineCommand({

@@ -1,5 +1,4 @@
 import type { CommandOutput } from "./command-output";
-import type { FieldName, FieldValue, IsRequiredField, Simplify } from "./command-type-internals";
 import type {
   CommandArgField,
   CommandOptionField,
@@ -7,6 +6,25 @@ import type {
   NormalizeFields,
 } from "./field-types";
 import type { CommandHelpData } from "./help-types";
+import type { FieldName, FieldValue, IsRequiredField, Simplify } from "./internal-types";
+
+type RequiredNamedFields<
+  TFields extends readonly NamedField[],
+  TBooleanAlwaysPresent extends boolean,
+> = {
+  [TField in TFields[number] as IsRequiredField<TField, TBooleanAlwaysPresent> extends true
+    ? FieldName<TField>
+    : never]: FieldValue<TField>;
+};
+
+type OptionalNamedFields<
+  TFields extends readonly NamedField[],
+  TBooleanAlwaysPresent extends boolean,
+> = {
+  [TField in TFields[number] as IsRequiredField<TField, TBooleanAlwaysPresent> extends true
+    ? never
+    : FieldName<TField>]?: FieldValue<TField>;
+};
 
 // Converts declared field arrays into the object shape exposed to command code.
 // Pass `TBooleanAlwaysPresent = true` for option fields so that primitive
@@ -15,15 +33,8 @@ export type InferNamedFields<
   TFields extends readonly NamedField[],
   TBooleanAlwaysPresent extends boolean = false,
 > = Simplify<
-  {
-    [TField in TFields[number] as IsRequiredField<TField, TBooleanAlwaysPresent> extends true
-      ? FieldName<TField>
-      : never]: FieldValue<TField>;
-  } & {
-    [TField in TFields[number] as IsRequiredField<TField, TBooleanAlwaysPresent> extends true
-      ? never
-      : FieldName<TField>]?: FieldValue<TField>;
-  }
+  RequiredNamedFields<TFields, TBooleanAlwaysPresent> &
+    OptionalNamedFields<TFields, TBooleanAlwaysPresent>
 >;
 
 /** Runtime data passed into a command's `run` function. */
