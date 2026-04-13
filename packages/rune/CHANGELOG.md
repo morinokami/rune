@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.28
+
+### Patch Changes
+
+- [#104](https://github.com/morinokami/rune/pull/104) [`9973ec0`](https://github.com/morinokami/rune/commit/9973ec07100f661999ee1763db3ba628967d7b3d) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): migrate build pipeline from esbuild to rolldown
+
 ## 0.0.27
 
 ### Patch Changes
