@@ -1,7 +1,5 @@
-import { build, type BuildFailure } from "esbuild";
-import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import type { CommandManifest, CommandManifestCommandNode } from "../manifest/manifest-types";
 
@@ -18,16 +16,17 @@ import {
   resolveProjectPath,
   resolveSourceDirectory,
 } from "../project/project-files";
+import { toPosixPath } from "./path-utils";
+import {
+  BUILD_CLI_FILENAME,
+  BUILD_MANIFEST_FILENAME,
+  buildCliEntry,
+  buildCommandEntries,
+  buildConfigEntry,
+  formatBuildFailure,
+  isBuildFailure,
+} from "./rolldown-build";
 import { writeStderrLine, writeStdout } from "./write-result";
-
-// ---------------------------------------------------------------------------
-// Constants & types
-// ---------------------------------------------------------------------------
-
-const BUILD_CLI_FILENAME = "cli.mjs";
-const BUILD_CONFIG_FILENAME = "config.mjs";
-const BUILD_MANIFEST_FILENAME = "manifest.json";
-const RUNE_PACKAGE_NAME = "@rune-cli/rune";
 
 export interface RunBuildCommandOptions {
   readonly cwd?: string | undefined;
@@ -44,12 +43,6 @@ const CODE_SOURCE_EXTENSIONS = new Set([
   ".mjs",
   ".cjs",
 ]);
-const BUILD_TARGET = "node24";
-
-interface RunePackageJson {
-  readonly name?: string | undefined;
-}
-
 // ---------------------------------------------------------------------------
 // Manifest & path helpers
 // ---------------------------------------------------------------------------
@@ -65,10 +58,6 @@ function isDeclarationFile(filePath: string): boolean {
 function replaceFileExtension(filePath: string, extension: string): string {
   const parsedPath = path.parse(filePath);
   return path.join(parsedPath.dir, `${parsedPath.name}${extension}`);
-}
-
-function toPosixPath(filePath: string): string {
-  return filePath.split(path.sep).join(path.posix.sep);
 }
 
 function createBuiltManifest(manifest: CommandManifest, sourceDirectory: string): CommandManifest {
@@ -87,37 +76,6 @@ function createBuiltManifest(manifest: CommandManifest, sourceDirectory: string)
     }),
   };
 }
-
-function isBuildFailure(error: unknown): error is BuildFailure {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "errors" in error &&
-    Array.isArray((error as { errors?: unknown }).errors)
-  );
-}
-
-function formatBuildFailure(projectRoot: string, error: BuildFailure): string {
-  const [firstError] = error.errors;
-
-  if (!firstError) {
-    return "Failed to build project";
-  }
-
-  if (!firstError.location) {
-    return `Failed to compile: ${firstError.text}`;
-  }
-
-  const filePath = path.isAbsolute(firstError.location.file)
-    ? path.relative(projectRoot, firstError.location.file)
-    : firstError.location.file;
-
-  return `Failed to compile ${filePath}:${firstError.location.line}:${firstError.location.column + 1}: ${firstError.text}`;
-}
-
-// ---------------------------------------------------------------------------
-// Dist asset copying
-// ---------------------------------------------------------------------------
 
 async function copyBuiltAssets(sourceDirectory: string, distDirectory: string): Promise<void> {
   const entries = await readdir(sourceDirectory, { withFileTypes: true });
@@ -144,220 +102,6 @@ async function copyBuiltAssets(sourceDirectory: string, distDirectory: string): 
       await cp(sourceEntryPath, distEntryPath);
     }),
   );
-}
-
-// ---------------------------------------------------------------------------
-// Built CLI entry generation
-// ---------------------------------------------------------------------------
-
-function renderBuiltCliEntry(
-  cliName: string,
-  version: string | undefined,
-  runtimeImportPath: string,
-  hasConfig: boolean,
-): string {
-  const configLine = hasConfig
-    ? `const configPath = fileURLToPath(new URL("./${BUILD_CONFIG_FILENAME}", distDirectoryUrl));\n`
-    : "";
-  const configOption = hasConfig ? "\n  configPath," : "";
-
-  return `import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-
-import { runManifestCommand } from ${JSON.stringify(runtimeImportPath)};
-
-const cliName = ${JSON.stringify(cliName)};
-const version = ${JSON.stringify(version)};
-const distDirectoryUrl = new URL("./", import.meta.url);
-const manifestPath = fileURLToPath(new URL("./${BUILD_MANIFEST_FILENAME}", distDirectoryUrl));
-const manifestContents = await readFile(manifestPath, "utf8");
-const manifest = JSON.parse(manifestContents);
-const runtimeManifest = {
-  ...manifest,
-  nodes: manifest.nodes.map((node) =>
-    node.kind === "command"
-      ? {
-          ...node,
-          sourceFilePath: fileURLToPath(new URL(node.sourceFilePath, distDirectoryUrl)),
-        }
-      : node,
-  ),
-};
-${configLine}process.exitCode = await runManifestCommand({
-  manifest: runtimeManifest,
-  rawArgs: process.argv.slice(2),
-  cliName,
-  version,
-  cwd: process.cwd(),${configOption}
-});
-`;
-}
-
-function collectCommandEntryPoints(manifest: CommandManifest): readonly string[] {
-  return manifest.nodes.flatMap((node) => (node.kind === "command" ? [node.sourceFilePath] : []));
-}
-
-// ---------------------------------------------------------------------------
-// Runtime helper resolution
-// ---------------------------------------------------------------------------
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    const stats = await stat(filePath);
-    return stats.isFile();
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-
-    throw error;
-  }
-}
-
-async function resolveRunePackageRoot(): Promise<string> {
-  let currentDirectory = path.dirname(fileURLToPath(import.meta.url));
-
-  while (true) {
-    const packageJsonPath = path.join(currentDirectory, "package.json");
-
-    try {
-      const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as RunePackageJson;
-
-      if (packageJson.name === RUNE_PACKAGE_NAME) {
-        return currentDirectory;
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-    }
-
-    const parentDirectory = path.dirname(currentDirectory);
-
-    if (parentDirectory === currentDirectory) {
-      throw new Error(`Could not locate package root for ${RUNE_PACKAGE_NAME}`);
-    }
-
-    currentDirectory = parentDirectory;
-  }
-}
-
-async function resolveBuildTsconfig(projectRoot: string): Promise<string | undefined> {
-  const tsconfigPath = path.join(projectRoot, "tsconfig.json");
-
-  return (await pathExists(tsconfigPath)) ? tsconfigPath : undefined;
-}
-
-async function resolveRuntimeHelperEntryPath(): Promise<string> {
-  const packageRoot = await resolveRunePackageRoot();
-  const sourceRuntimePath = path.join(packageRoot, "src", "runtime.ts");
-
-  if (await pathExists(sourceRuntimePath)) {
-    return sourceRuntimePath;
-  }
-
-  const distRuntimePath = path.join(packageRoot, "dist", "runtime.mjs");
-
-  if (await pathExists(distRuntimePath)) {
-    return distRuntimePath;
-  }
-
-  throw new Error("Could not locate Rune runtime helper entry");
-}
-
-// ---------------------------------------------------------------------------
-// Build steps
-// ---------------------------------------------------------------------------
-
-async function buildCommandEntries(
-  projectRoot: string,
-  sourceDirectory: string,
-  distDirectory: string,
-  manifest: CommandManifest,
-): Promise<void> {
-  const entryPoints = [...collectCommandEntryPoints(manifest)];
-  const tsconfig = await resolveBuildTsconfig(projectRoot);
-
-  if (entryPoints.length === 0) {
-    return;
-  }
-
-  await build({
-    absWorkingDir: projectRoot,
-    entryPoints,
-    outdir: distDirectory,
-    outbase: sourceDirectory,
-    entryNames: "[dir]/[name]",
-    chunkNames: "chunks/[name]-[hash]",
-    assetNames: "assets/[name]-[hash]",
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: BUILD_TARGET,
-    splitting: true,
-    tsconfig,
-    outExtension: { ".js": ".mjs" },
-    logLevel: "silent",
-    write: true,
-  });
-}
-
-async function buildConfigEntry(
-  projectRoot: string,
-  distDirectory: string,
-  configPath: string,
-): Promise<void> {
-  const tsconfig = await resolveBuildTsconfig(projectRoot);
-
-  await build({
-    absWorkingDir: projectRoot,
-    entryPoints: [configPath],
-    outfile: path.join(distDirectory, BUILD_CONFIG_FILENAME),
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: BUILD_TARGET,
-    tsconfig,
-    logLevel: "silent",
-    write: true,
-  });
-}
-
-async function buildCliEntry(
-  projectRoot: string,
-  distDirectory: string,
-  cliName: string,
-  version: string | undefined,
-  hasConfig: boolean,
-): Promise<void> {
-  const runtimeHelperEntryPath = await resolveRuntimeHelperEntryPath();
-
-  await build({
-    absWorkingDir: projectRoot,
-    stdin: {
-      contents: renderBuiltCliEntry(
-        cliName,
-        version,
-        `./${path.basename(runtimeHelperEntryPath)}`,
-        hasConfig,
-      ),
-      loader: "ts",
-      resolveDir: path.dirname(runtimeHelperEntryPath),
-      sourcefile: "rune-built-cli-entry.ts",
-    },
-    outfile: path.join(distDirectory, BUILD_CLI_FILENAME),
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: BUILD_TARGET,
-    // This bundle is composed from Rune's own runtime helper source, so it must
-    // not inherit the target project's tsconfig path mapping or module settings.
-    banner: {
-      js: "#!/usr/bin/env node",
-    },
-    logLevel: "silent",
-    write: true,
-  });
 }
 
 async function writeBuiltRuntimeFiles(
@@ -394,13 +138,7 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
     await writeBuiltRuntimeFiles(distDirectory, builtManifest);
     await Promise.all([
       buildCommandEntries(projectRoot, sourceDirectory, distDirectory, sourceManifest),
-      buildCliEntry(
-        projectRoot,
-        distDirectory,
-        cliInfo.name,
-        cliInfo.version,
-        configPath !== undefined,
-      ),
+      buildCliEntry(distDirectory, cliInfo.name, cliInfo.version, configPath !== undefined),
       ...(configPath ? [buildConfigEntry(projectRoot, distDirectory, configPath)] : []),
       copyBuiltAssets(sourceDirectory, distDirectory),
     ]);
