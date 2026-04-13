@@ -290,6 +290,15 @@ describe("missing required fields", () => {
       message: "Missing required option:\n\n  --name <string>",
     },
     {
+      label: "a required boolean option",
+      define: () =>
+        defineCommand({
+          options: [{ name: "force", type: "boolean", required: true }],
+          async run() {},
+        }),
+      message: "Missing required option:\n\n  --force",
+    },
+    {
       label: "a required schema-backed argument",
       define: () =>
         defineCommand({
@@ -525,6 +534,7 @@ describe("parseCommandArgs edge cases", () => {
           async run() {},
         }),
       argv: ["--name", "foo", "--name", "bar"],
+      message: 'Duplicate option "--name <string>" is not supported',
     },
     {
       label: "duplicate options across long and short forms",
@@ -534,14 +544,25 @@ describe("parseCommandArgs edge cases", () => {
           async run() {},
         }),
       argv: ["--name", "foo", "-n", "bar"],
+      message: 'Duplicate option "--name <string>" is not supported',
     },
-  ])("parseCommandArgs rejects $label", async ({ define, argv }) => {
-    const result = await parseCommandArgs(define(), argv);
+    {
+      label: "duplicate boolean options",
+      define: () =>
+        defineCommand({
+          options: [{ name: "force", type: "boolean" }],
+          async run() {},
+        }),
+      argv: ["--force", "--force"],
+      message: 'Duplicate option "--force" is not supported',
+    },
+  ])("parseCommandArgs rejects $label", async ({ define, argv, message }) => {
+    const result = await parseCommandArgs(define() as unknown as DefinedCommand, argv);
 
     expect(result).toEqual({
       ok: false,
       error: {
-        message: 'Duplicate option "--name <string>" is not supported',
+        message,
       },
     });
   });

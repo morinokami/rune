@@ -3,7 +3,12 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { parseArgs } from "node:util";
 
 import type { DefinedCommand, InferNamedFields } from "./command-types";
-import type { CommandArgField, CommandOptionField } from "./field-types";
+import type {
+  CommandArgField,
+  CommandOptionField,
+  PrimitiveArgField,
+  PrimitiveOptionField,
+} from "./field-types";
 
 import { addCamelCaseAliases } from "./camel-case-aliases";
 import { isSchemaField } from "./schema-field";
@@ -31,18 +36,20 @@ export type ParseCommandArgsResult<TOptions, TArgs> =
       readonly error: ParseCommandArgsError;
     };
 
-type SuccessfulFieldParse =
+// Result of resolving a field from CLI input, defaults, or omission rules.
+type ResolvedFieldSuccess =
   | { readonly ok: true; readonly present: true; readonly value: unknown }
   | { readonly ok: true; readonly present: false };
 
-type FailedFieldParse = {
+type ParseFailure = {
   readonly ok: false;
   readonly error: ParseCommandArgsError;
 };
 
-type FieldParseResult = SuccessfulFieldParse | FailedFieldParse;
+type ResolvedFieldResult = ResolvedFieldSuccess | ParseFailure;
 
-type SchemaValidationResult = { readonly ok: true; readonly value: unknown } | FailedFieldParse;
+// Result of parsing or validating a provided raw value for a single field.
+type FieldValueParseResult = { readonly ok: true; readonly value: unknown } | ParseFailure;
 
 type ParseArgsOptionType = "boolean" | "string";
 
@@ -50,18 +57,6 @@ type ParseArgsOptionConfig = {
   readonly type: ParseArgsOptionType;
   readonly short?: string | undefined;
 };
-
-type TokenizedParseArgsConfig = {
-  readonly args: readonly string[];
-  readonly allowPositionals: true;
-  readonly strict: true;
-  readonly tokens: true;
-  readonly options: Record<string, ParseArgsOptionConfig>;
-};
-
-type TokenizedParseArgsResult = ReturnType<typeof parseArgs<TokenizedParseArgsConfig>>;
-
-type ParseArgsToken = NonNullable<TokenizedParseArgsResult["tokens"]>[number];
 
 // ---------------------------------------------------------------------------
 // Negatable boolean options
@@ -80,7 +75,11 @@ function negationName(name: string): string {
 // ---------------------------------------------------------------------------
 
 function formatTypeHint(field: CommandOptionField): string {
-  return isSchemaField(field) ? "" : ` <${field.type}>`;
+  if (isSchemaField(field) || field.type === "boolean") {
+    return "";
+  }
+
+  return ` <${field.type}>`;
 }
 
 function formatOptionLabel(field: CommandOptionField): string {
@@ -91,7 +90,7 @@ function formatArgumentLabel(field: CommandArgField): string {
   return field.name;
 }
 
-function createMissingOptionError(field: CommandOptionField): FailedFieldParse {
+function createMissingOptionError(field: CommandOptionField): ParseFailure {
   return {
     ok: false,
     error: {
@@ -100,7 +99,7 @@ function createMissingOptionError(field: CommandOptionField): FailedFieldParse {
   };
 }
 
-function createMissingArgumentError(field: CommandArgField): FailedFieldParse {
+function createMissingArgumentError(field: CommandArgField): ParseFailure {
   return {
     ok: false,
     error: {
@@ -112,7 +111,7 @@ function createMissingArgumentError(field: CommandArgField): FailedFieldParse {
 function createInvalidOptionError(
   field: CommandOptionField,
   messages: readonly string[],
-): FailedFieldParse {
+): ParseFailure {
   return {
     ok: false,
     error: {
@@ -124,7 +123,7 @@ function createInvalidOptionError(
 function createInvalidArgumentError(
   field: CommandArgField,
   messages: readonly string[],
-): FailedFieldParse {
+): ParseFailure {
   return {
     ok: false,
     error: {
@@ -133,7 +132,7 @@ function createInvalidArgumentError(
   };
 }
 
-function createUnknownOptionError(token: string): FailedFieldParse {
+function createUnknownOptionError(token: string): ParseFailure {
   return {
     ok: false,
     error: {
@@ -142,7 +141,7 @@ function createUnknownOptionError(token: string): FailedFieldParse {
   };
 }
 
-function createDuplicateOptionError(field: CommandOptionField): FailedFieldParse {
+function createDuplicateOptionError(field: CommandOptionField): ParseFailure {
   return {
     ok: false,
     error: {
@@ -151,7 +150,7 @@ function createDuplicateOptionError(field: CommandOptionField): FailedFieldParse
   };
 }
 
-function createUnexpectedArgumentError(token: string): FailedFieldParse {
+function createUnexpectedArgumentError(token: string): ParseFailure {
   return {
     ok: false,
     error: {
@@ -160,7 +159,7 @@ function createUnexpectedArgumentError(token: string): FailedFieldParse {
   };
 }
 
-function createConflictingOptionError(field: CommandOptionField): FailedFieldParse {
+function createConflictingOptionError(field: CommandOptionField): ParseFailure {
   return {
     ok: false,
     error: {
@@ -174,18 +173,23 @@ function createConflictingOptionError(field: CommandOptionField): FailedFieldPar
 // ---------------------------------------------------------------------------
 
 function parsePrimitiveValue(
-  field: CommandArgField | CommandOptionField,
+  field: PrimitiveArgField | PrimitiveOptionField,
   rawValue: unknown,
-): SchemaValidationResult {
-  if (isSchemaField(field)) {
-    throw new Error("Schema fields must be handled separately");
-  }
-
+): FieldValueParseResult {
   switch (field.type) {
     case "string":
+      if (typeof rawValue !== "string") {
+        return {
+          ok: false,
+          error: {
+            message: `Expected string, received ${JSON.stringify(rawValue)}`,
+          },
+        };
+      }
+
       return {
         ok: true,
-        value: String(rawValue),
+        value: rawValue,
       };
     case "number": {
       if (typeof rawValue !== "string") {
@@ -248,7 +252,7 @@ function parsePrimitiveValue(
 async function validateSchemaValue(
   schema: StandardSchemaV1,
   rawValue: unknown,
-): Promise<SchemaValidationResult> {
+): Promise<FieldValueParseResult> {
   const result = await schema["~standard"].validate(rawValue);
 
   if ("value" in result) {
@@ -278,7 +282,7 @@ async function validateSchemaValue(
 async function parseProvidedField(
   field: CommandArgField | CommandOptionField,
   rawValue: unknown,
-): Promise<SchemaValidationResult> {
+): Promise<FieldValueParseResult> {
   if (isSchemaField(field)) {
     return validateSchemaValue(field.schema, rawValue);
   }
@@ -288,8 +292,8 @@ async function parseProvidedField(
 
 async function resolveMissingField(
   field: CommandArgField | CommandOptionField,
-  missingRequired: () => FailedFieldParse,
-): Promise<FieldParseResult> {
+  missingRequired: () => ParseFailure,
+): Promise<ResolvedFieldResult> {
   if (!isSchemaField(field)) {
     if (field.default !== undefined) {
       return {
@@ -332,7 +336,7 @@ async function resolveMissingField(
 async function parseArgumentField(
   field: CommandArgField,
   rawValue: string | undefined,
-): Promise<FieldParseResult> {
+): Promise<ResolvedFieldResult> {
   if (rawValue === undefined) {
     return resolveMissingField(field, () => createMissingArgumentError(field));
   }
@@ -353,7 +357,7 @@ async function parseArgumentField(
 async function parseOptionField(
   field: CommandOptionField,
   rawValue: unknown,
-): Promise<FieldParseResult> {
+): Promise<ResolvedFieldResult> {
   const result = await parseProvidedField(field, rawValue);
 
   if (!result.ok) {
@@ -371,7 +375,19 @@ async function parseOptionField(
 // node:util parseArgs adapter
 // ---------------------------------------------------------------------------
 
-function normalizeParseArgsError(error: unknown): FailedFieldParse {
+type NodeParseArgsConfig = {
+  readonly args: readonly string[];
+  readonly allowPositionals: true;
+  readonly strict: true;
+  readonly tokens: true;
+  readonly options: Record<string, ParseArgsOptionConfig>;
+};
+
+type NodeParseArgsResult = ReturnType<typeof parseArgs<NodeParseArgsConfig>>;
+
+type NodeParseArgsToken = NonNullable<NodeParseArgsResult["tokens"]>[number];
+
+function mapNodeParseArgsError(error: unknown): ParseFailure {
   if (!(error instanceof Error)) {
     return {
       ok: false,
@@ -432,8 +448,8 @@ function buildParseArgsOptions<TOptionsFields extends readonly CommandOptionFiel
 
 function detectDuplicateOption(
   options: readonly CommandOptionField[],
-  tokens: readonly ParseArgsToken[],
-): FailedFieldParse | undefined {
+  tokens: readonly NodeParseArgsToken[],
+): ParseFailure | undefined {
   const counts = new Map<string, number>();
 
   for (const token of tokens) {
@@ -483,7 +499,7 @@ export async function parseCommandArgs<
 ): Promise<
   ParseCommandArgsResult<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>
 > {
-  let parsed: TokenizedParseArgsResult | undefined;
+  let parsed: NodeParseArgsResult | undefined;
 
   try {
     parsed = parseArgs({
@@ -494,7 +510,7 @@ export async function parseCommandArgs<
       options: buildParseArgsOptions(command.options),
     });
   } catch (error) {
-    return normalizeParseArgsError(error);
+    return mapNodeParseArgsError(error);
   }
 
   const duplicateError = detectDuplicateOption(command.options, parsed.tokens);
@@ -506,8 +522,7 @@ export async function parseCommandArgs<
   const parsedArgs: Record<string, unknown> = {};
   const parsedOptions: Record<string, unknown> = {};
 
-  for (let index = 0; index < command.args.length; index += 1) {
-    const field = command.args[index];
+  for (const [index, field] of command.args.entries()) {
     const result = await parseArgumentField(field, parsed.positionals[index]);
 
     if (!result.ok) {
