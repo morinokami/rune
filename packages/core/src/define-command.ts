@@ -26,37 +26,6 @@ const OPTION_SHORT_RE = /^[a-zA-Z]$/;
 // Field validation
 // ---------------------------------------------------------------------------
 
-function validateUniqueFieldNames(
-  fields: readonly (CommandArgField | CommandOptionField)[],
-  kind: "argument" | "option",
-): void {
-  const seen = new Set<string>();
-
-  for (const field of fields) {
-    if (field.name.length === 0) {
-      throw new Error(`Invalid ${kind} name "${field.name}". Names must be non-empty.`);
-    }
-
-    if (seen.has(field.name)) {
-      throw new Error(`Duplicate ${kind} name "${field.name}".`);
-    }
-
-    seen.add(field.name);
-
-    if (field.name.includes("-")) {
-      const camelName = kebabToCamelCase(field.name);
-
-      if (seen.has(camelName)) {
-        throw new Error(
-          `${kind === "argument" ? "Argument" : "Option"} "${field.name}" conflicts with "${camelName}" (same camelCase alias).`,
-        );
-      }
-
-      seen.add(camelName);
-    }
-  }
-}
-
 // Hyphenated field names (args or options) must follow the same kebab-case
 // rules so that the type-level KebabToCamelCase and the runtime regex produce
 // identical camelCase aliases. OPTION_NAME_RE already enforces this for
@@ -66,6 +35,10 @@ const HYPHENATED_NAME_RE = OPTION_NAME_RE;
 
 function validateArgNames(args: readonly CommandArgField[]): void {
   for (const field of args) {
+    if (field.name.length === 0) {
+      throw new Error(`Invalid argument name "${field.name}". Names must be non-empty.`);
+    }
+
     if (field.name.includes("-") && !HYPHENATED_NAME_RE.test(field.name)) {
       throw new Error(
         `Invalid argument name "${field.name}". Hyphenated names must start with a letter and contain only letters, numbers, and single internal hyphens.`,
@@ -76,6 +49,10 @@ function validateArgNames(args: readonly CommandArgField[]): void {
 
 function validateOptionNames(options: readonly CommandOptionField[]): void {
   for (const field of options) {
+    if (field.name.length === 0) {
+      throw new Error(`Invalid option name "${field.name}". Names must be non-empty.`);
+    }
+
     if (!OPTION_NAME_RE.test(field.name)) {
       throw new Error(
         `Invalid option name "${field.name}". Option names must start with a letter and contain only letters, numbers, and internal hyphens.`,
@@ -119,9 +96,7 @@ function validateReservedNames(options: readonly CommandOptionField[], json: boo
   }
 }
 
-function validateOptionShortNames(options: readonly CommandOptionField[]): void {
-  const seen = new Set<string>();
-
+function validateOptionShortNameFormat(options: readonly CommandOptionField[]): void {
   for (const field of options) {
     if (field.short === undefined) {
       continue;
@@ -131,6 +106,43 @@ function validateOptionShortNames(options: readonly CommandOptionField[]): void 
       throw new Error(
         `Invalid short name "${field.short}" for option "${field.name}". Short name must be a single letter.`,
       );
+    }
+  }
+}
+
+function validateUniqueFieldAndAliasNames(
+  fields: readonly (CommandArgField | CommandOptionField)[],
+  kind: "argument" | "option",
+): void {
+  const seen = new Set<string>();
+
+  for (const field of fields) {
+    if (seen.has(field.name)) {
+      throw new Error(`Duplicate ${kind} name "${field.name}".`);
+    }
+
+    seen.add(field.name);
+
+    if (field.name.includes("-")) {
+      const camelName = kebabToCamelCase(field.name);
+
+      if (seen.has(camelName)) {
+        throw new Error(
+          `${kind === "argument" ? "Argument" : "Option"} "${field.name}" conflicts with "${camelName}" (same camelCase alias).`,
+        );
+      }
+
+      seen.add(camelName);
+    }
+  }
+}
+
+function validateUniqueOptionShortNames(options: readonly CommandOptionField[]): void {
+  const seen = new Set<string>();
+
+  for (const field of options) {
+    if (field.short === undefined) {
+      continue;
     }
 
     if (seen.has(field.short)) {
@@ -184,7 +196,7 @@ function copyNormalizedFields<TFields extends readonly TField[] | undefined, TFi
 // ---------------------------------------------------------------------------
 
 /**
- * Defines a CLI command with a description, positional arguments, options,
+ * Defines a CLI command with optional metadata, positional arguments, options,
  * and a function to execute when the command is invoked.
  *
  * The command module's default export should be the return value of this function.
@@ -253,22 +265,25 @@ export function defineCommand<
   TJson,
   TJson extends true ? Awaited<TRunResult> : undefined
 > {
+  const jsonEnabled = input.json === true;
+
+  // Validate command-level metadata first, then per-field format/reserved-name
+  // rules, and only then cross-field relationships like duplicates/collisions.
   if (input.aliases) {
     validateCommandAliases(input.aliases);
   }
-
   if (input.args) {
-    validateUniqueFieldNames(input.args, "argument");
     validateArgNames(input.args);
+    validateUniqueFieldAndAliasNames(input.args, "argument");
     validateArgOrdering(input.args);
   }
-
   if (input.options) {
-    validateUniqueFieldNames(input.options, "option");
     validateOptionNames(input.options);
-    validateOptionShortNames(input.options);
+    validateReservedNames(input.options, jsonEnabled);
+    validateOptionShortNameFormat(input.options);
+    validateUniqueFieldAndAliasNames(input.options, "option");
+    validateUniqueOptionShortNames(input.options);
     validateNegationCollisions(input.options);
-    validateReservedNames(input.options, (input as { json?: boolean }).json === true);
   }
 
   const command: DefinedCommand<
@@ -278,7 +293,7 @@ export function defineCommand<
     TJson extends true ? Awaited<TRunResult> : undefined
   > = {
     description: input.description,
-    json: ((input as { json?: boolean }).json === true) as TJson,
+    json: jsonEnabled as TJson,
     aliases: [...(input.aliases ?? [])],
     examples: [...(input.examples ?? [])],
     args: copyNormalizedFields<TArgsFields, CommandArgField>(input.args),

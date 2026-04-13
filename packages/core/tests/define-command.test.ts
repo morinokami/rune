@@ -275,7 +275,7 @@ describe("field name validation", () => {
   test.each([
     { name: "my--arg", message: 'Invalid argument name "my--arg"' },
     { name: "-arg", message: 'Invalid argument name "-arg"' },
-    { name: "", message: 'Invalid argument name ""' },
+    { name: "", message: 'Invalid argument name "". Names must be non-empty.' },
   ])('defineCommand rejects invalid arg name "$name"', ({ name, message }) => {
     expect(() =>
       defineCommand({
@@ -287,7 +287,11 @@ describe("field name validation", () => {
 
   test.each([
     { name: "my option", type: "string" as const, message: 'Invalid option name "my option"' },
-    { name: "", type: "string" as const, message: 'Invalid option name ""' },
+    {
+      name: "",
+      type: "string" as const,
+      message: 'Invalid option name "". Names must be non-empty.',
+    },
     { name: "-verbose", type: "boolean" as const, message: 'Invalid option name "-verbose"' },
   ])('defineCommand rejects invalid option name "$name"', ({ name, type, message }) => {
     expect(() =>
@@ -599,6 +603,48 @@ describe("runtime validation for widened inputs", () => {
     },
   ])("rejects $label at runtime", ({ define, message }) => {
     expect(() => define()).toThrow(message);
+  });
+
+  test("prefers invalid argument names over later camelCase-collision errors", () => {
+    const fields: readonly CommandArgField[] = [
+      { name: "-arg", type: "string" },
+      { name: "Arg", type: "string" },
+    ];
+
+    expect(() => defineCommand({ args: fields, run() {} })).toThrow('Invalid argument name "-arg"');
+  });
+
+  test("prefers invalid option names over later camelCase-collision errors", () => {
+    const fields: readonly CommandOptionField[] = [
+      { name: "-verbose", type: "string" },
+      { name: "Verbose", type: "string" },
+    ];
+
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(
+      'Invalid option name "-verbose"',
+    );
+  });
+
+  test("prefers reserved option names over later negation-collision errors", () => {
+    const fields: readonly CommandOptionField[] = [
+      { name: "help", type: "boolean", default: true },
+      { name: "no-help", type: "string" },
+    ];
+
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(
+      'Option name "help" is reserved by the framework.',
+    );
+  });
+
+  test("prefers reserved short names over duplicate short-name errors", () => {
+    const fields: readonly CommandOptionField[] = [
+      { name: "header", type: "string", short: "h" },
+      { name: "hello", type: "boolean", short: "h" },
+    ];
+
+    expect(() => defineCommand({ options: fields, run() {} })).toThrow(
+      'Short name "h" for option "header" is reserved by the framework.',
+    );
   });
 
   test.each([
