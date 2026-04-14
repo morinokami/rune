@@ -10,11 +10,9 @@ import {
 import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
-  resolveCommandsDirectory,
   resolveConfigPath,
-  resolveDistDirectory,
+  resolveProjectDirectories,
   resolveProjectPath,
-  resolveSourceDirectory,
 } from "../project/project-files";
 import { toPosixPath } from "./path-utils";
 import {
@@ -124,9 +122,8 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
 
   try {
     projectRoot = resolveProjectPath(options);
-    const sourceDirectory = resolveSourceDirectory(projectRoot);
-    const commandsDirectory = resolveCommandsDirectory(projectRoot);
-    const distDirectory = resolveDistDirectory(projectRoot);
+    const { sourceDirectory, commandsDirectory, distDirectory } =
+      resolveProjectDirectories(projectRoot);
 
     await assertCommandsDirectoryExists(commandsDirectory);
     const sourceManifest = await generateCommandManifest({ commandsDirectory });

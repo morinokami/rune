@@ -9,8 +9,8 @@ import { runManifestCommand } from "../manifest/runtime/run-manifest-command";
 import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
-  resolveCommandsDirectory,
   resolveConfigPath,
+  resolveProjectDirectories,
   resolveProjectPath,
 } from "../project/project-files";
 import { isVersionFlag } from "./flags";
@@ -51,14 +51,13 @@ async function writeRunManifest(projectRoot: string, manifestContents: string): 
 export async function runRunCommand(options: RunRunCommandOptions): Promise<number> {
   try {
     const projectRoot = resolveProjectPath(options);
+    const { commandsDirectory } = resolveProjectDirectories(projectRoot);
     const cliInfo = await readProjectCliInfo(projectRoot);
 
     if (cliInfo.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
       await writeStdout(`${cliInfo.name} v${cliInfo.version}\n`);
       return 0;
     }
-
-    const commandsDirectory = resolveCommandsDirectory(projectRoot);
 
     await assertCommandsDirectoryExists(commandsDirectory);
 

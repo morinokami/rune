@@ -18,12 +18,11 @@ import {
 import type {
   CommandManifest,
   CommandManifestGroupNode,
-  CommandManifestNode,
   CommandManifestPath,
 } from "../manifest-types";
 import type { UnknownCommandRoute } from "./resolve-command-route";
 
-import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
+import { resolveSubcommandHelpEntries } from "./subcommand-help-entries";
 
 // ---------------------------------------------------------------------------
 // Public types – HelpData (rune-specific, includes group and unknown)
@@ -80,28 +79,6 @@ async function resolveFieldRequired(field: CommandArgField | CommandOptionField)
   return !("value" in omittedValidation);
 }
 
-function resolveSubcommandHelpEntries(
-  manifest: CommandManifest,
-  parentNode:
-    | CommandManifestGroupNode
-    | { readonly pathSegments: CommandManifestPath; readonly childNames: readonly string[] },
-): readonly SubcommandHelpEntry[] {
-  const nodeMap = createCommandManifestNodeMap(manifest);
-
-  return parentNode.childNames.map((childName) => {
-    const childNode: CommandManifestNode | undefined =
-      nodeMap[
-        commandManifestPathToKey([...parentNode.pathSegments, childName] as CommandManifestPath)
-      ];
-
-    return {
-      name: childName,
-      aliases: childNode ? [...childNode.aliases] : [],
-      description: childNode?.description,
-    };
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Builder options
 // ---------------------------------------------------------------------------
@@ -127,7 +104,7 @@ export interface BuildCommandHelpDataOptions {
 
 export function buildGroupHelpData(options: BuildGroupHelpDataOptions): GroupHelpData {
   const { manifest, node, cliName, version } = options;
-  const subcommands = resolveSubcommandHelpEntries(manifest, node);
+  const subcommands = resolveSubcommandHelpEntries(manifest, node.pathSegments, node.childNames);
   const isRoot = node.pathSegments.length === 0;
 
   const frameworkOptions: FrameworkOptionHelpEntry[] = [
@@ -237,10 +214,11 @@ export function buildUnknownCommandHelpData(
   manifest: CommandManifest,
   version?: string,
 ): UnknownCommandHelpData {
-  const availableSubcommands = resolveSubcommandHelpEntries(manifest, {
-    pathSegments: route.matchedPath as CommandManifestPath,
-    childNames: route.availableChildNames,
-  });
+  const availableSubcommands = resolveSubcommandHelpEntries(
+    manifest,
+    route.matchedPath as CommandManifestPath,
+    route.availableChildNames,
+  );
 
   return {
     kind: "unknown",

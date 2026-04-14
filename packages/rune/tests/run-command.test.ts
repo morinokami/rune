@@ -136,6 +136,14 @@ describe("top-level CLI behavior", () => {
     expect(captured.stderr).toBe("");
   });
 
+  test("rune run --project <path> --help shows help", async () => {
+    const captured = await captureRuneCli(["run", "--project", "./foo", "--help"]);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toContain("Usage: rune run [options]\n");
+    expect(captured.stderr).toBe("");
+  });
+
   test("runRuneCli reports unknown top-level subcommands", async () => {
     const captured = await captureRuneCli(["unknown"]);
 
@@ -407,6 +415,18 @@ describe("alternate command layouts and runtime errors", () => {
     expect(captured.exitCode).toBe(1);
     expect(captured.stdout).toBe("");
     expect(captured.stderr).toContain("Commands directory not found at src/commands");
+  });
+
+  test("runRuneCli returns the project version before validating src/commands", async () => {
+    const projectRoot = await createRunProject({
+      "package.json": JSON.stringify({ name: "mycli", version: "1.2.3" }, null, 2),
+    });
+
+    const captured = await captureRuneCli(["run", "--version"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("mycli v1.2.3\n");
+    expect(captured.stderr).toBe("");
   });
 
   test("runRuneCli reports plain object default exports with a clear error", async () => {

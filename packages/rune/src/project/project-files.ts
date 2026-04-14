@@ -26,6 +26,12 @@ export interface ResolveProjectPathOptions {
   readonly projectPath?: string | undefined;
 }
 
+export interface ProjectDirectories {
+  readonly sourceDirectory: string;
+  readonly commandsDirectory: string;
+  readonly distDirectory: string;
+}
+
 // ---------------------------------------------------------------------------
 // Path resolution
 // ---------------------------------------------------------------------------
@@ -45,6 +51,14 @@ export function resolveCommandsDirectory(projectRoot: string): string {
 
 export function resolveDistDirectory(projectRoot: string): string {
   return path.join(projectRoot, DIST_DIRECTORY_NAME);
+}
+
+export function resolveProjectDirectories(projectRoot: string): ProjectDirectories {
+  return {
+    sourceDirectory: resolveSourceDirectory(projectRoot),
+    commandsDirectory: resolveCommandsDirectory(projectRoot),
+    distDirectory: resolveDistDirectory(projectRoot),
+  };
 }
 
 // ---------------------------------------------------------------------------

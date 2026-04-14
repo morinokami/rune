@@ -1,9 +1,6 @@
-import type { SubcommandHelpEntry } from "@rune-cli/core";
-
 import type { CommandManifest, CommandManifestPath } from "../manifest-types";
 import type { ResolveCommandRouteResult } from "./resolve-command-route";
 
-import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
 import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
 import { loadRuneConfigSafe } from "./config-loader";
 import {
@@ -13,6 +10,7 @@ import {
   type HelpData,
 } from "./help-data";
 import { renderDefaultHelp } from "./render-help";
+import { resolveSubcommandHelpEntries } from "./subcommand-help-entries";
 
 export interface RenderResolvedHelpOptions {
   readonly manifest: CommandManifest;
@@ -21,25 +19,6 @@ export interface RenderResolvedHelpOptions {
   readonly version?: string | undefined;
   readonly loadCommand?: LoadCommandFn | undefined;
   readonly configPath?: string | undefined;
-}
-
-function resolveChildSubcommands(
-  manifest: CommandManifest,
-  parentPathSegments: CommandManifestPath,
-  childNames: readonly string[],
-): readonly SubcommandHelpEntry[] {
-  const nodeMap = createCommandManifestNodeMap(manifest);
-
-  return childNames.map((childName) => {
-    const childNode =
-      nodeMap[commandManifestPathToKey([...parentPathSegments, childName] as CommandManifestPath)];
-
-    return {
-      name: childName,
-      aliases: childNode ? [...childNode.aliases] : [],
-      description: childNode?.description,
-    };
-  });
 }
 
 function renderHelpSafe<T extends HelpData>(render: (data: T) => string, data: T): string {
@@ -85,7 +64,11 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
 
   const subcommands =
     node.childNames.length > 0
-      ? resolveChildSubcommands(options.manifest, node.pathSegments, node.childNames)
+      ? resolveSubcommandHelpEntries(
+          options.manifest,
+          node.pathSegments as CommandManifestPath,
+          node.childNames,
+        )
       : undefined;
 
   const data = await buildCommandHelpData({
