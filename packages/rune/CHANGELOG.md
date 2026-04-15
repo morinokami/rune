@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.29
+
+### Patch Changes
+
+- [#106](https://github.com/morinokami/rune/pull/106) [`f423472`](https://github.com/morinokami/rune/commit/f423472a5d63c69fef8830fb09b42124ecc92a12) Thanks [@morinokami](https://github.com/morinokami)! - refactor(rune): replace typescript parser with oxc-parser for manifest generation
+
 ## 0.0.28
 
 ### Patch Changes
