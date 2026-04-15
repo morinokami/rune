@@ -1,5 +1,13 @@
+import type {
+  ExportDefaultDeclarationKind,
+  Expression,
+  ObjectProperty,
+  PropertyKey,
+  Statement,
+} from "oxc-parser";
+
 import { readFile } from "node:fs/promises";
-import ts from "typescript";
+import { parse } from "oxc-parser";
 
 export interface CommandMetadata {
   readonly description?: string | undefined;
@@ -7,30 +15,50 @@ export interface CommandMetadata {
   readonly examples: readonly string[];
 }
 
-function getPropertyNameText(name: ts.PropertyName): string | undefined {
-  if (ts.isIdentifier(name) || ts.isStringLiteral(name)) {
-    return name.text;
+function getPropertyNameText(key: PropertyKey, computed: boolean): string | undefined {
+  if (computed) {
+    return undefined;
+  }
+
+  if (key.type === "Identifier") {
+    return key.name;
+  }
+
+  if (key.type === "Literal" && typeof key.value === "string") {
+    return key.value;
   }
 
   return undefined;
 }
 
-function getStaticStringValue(expression: ts.Expression): string | undefined {
-  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
-    return expression.text;
+function getStaticStringValue(expression: Expression): string | undefined {
+  if (expression.type === "Literal" && typeof expression.value === "string") {
+    return expression.value;
+  }
+
+  if (
+    expression.type === "TemplateLiteral" &&
+    expression.expressions.length === 0 &&
+    expression.quasis.length === 1
+  ) {
+    return expression.quasis[0].value.cooked ?? undefined;
   }
 
   return undefined;
 }
 
-function getStaticStringArrayValue(expression: ts.Expression): readonly string[] | undefined {
-  if (!ts.isArrayLiteralExpression(expression)) {
+function getStaticStringArrayValue(expression: Expression): readonly string[] | undefined {
+  if (expression.type !== "ArrayExpression") {
     return undefined;
   }
 
   const values: string[] = [];
 
   for (const element of expression.elements) {
+    if (element === null || element.type === "SpreadElement") {
+      return undefined;
+    }
+
     const value = getStaticStringValue(element);
 
     if (value === undefined) {
@@ -43,47 +71,49 @@ function getStaticStringArrayValue(expression: ts.Expression): readonly string[]
   return values;
 }
 
-function resolveExpression(expression: ts.Expression, sourceFile: ts.SourceFile): ts.Expression {
-  if (ts.isIdentifier(expression)) {
-    return findVariableInitializer(sourceFile, expression.text) ?? expression;
+function resolveExpression(
+  expression: Expression,
+  statements: readonly Statement[],
+): Expression | undefined {
+  if (expression.type === "Identifier") {
+    return findVariableInitializer(statements, expression.name) ?? expression;
   }
 
   return expression;
 }
 
-function isDefineCommandExpression(expression: ts.Expression): boolean {
+function isDefineCommandExpression(expression: Expression): boolean {
   return isNamedCallExpression(expression, "defineCommand");
 }
 
-export function isDefineGroupExpression(expression: ts.Expression): boolean {
+function isDefineGroupExpression(expression: Expression): boolean {
   return isNamedCallExpression(expression, "defineGroup");
 }
 
-function isDefineCallExpression(expression: ts.Expression): boolean {
+function isDefineCallExpression(expression: Expression): boolean {
   return (
-    ts.isCallExpression(expression) &&
-    (isDefineCommandExpression(expression.expression) ||
-      isDefineGroupExpression(expression.expression))
+    expression.type === "CallExpression" &&
+    (isDefineCommandExpression(expression.callee) || isDefineGroupExpression(expression.callee))
   );
 }
 
 function extractMetadataFromCommandDefinition(
-  expression: ts.Expression,
-  sourceFile: ts.SourceFile,
+  expression: Expression,
+  statements: readonly Statement[],
   knownMetadata: ReadonlyMap<string, CommandMetadata | undefined>,
 ): CommandMetadata | undefined {
-  if (ts.isIdentifier(expression)) {
-    return knownMetadata.get(expression.text);
+  if (expression.type === "Identifier") {
+    return knownMetadata.get(expression.name);
   }
 
-  if (!ts.isCallExpression(expression) || !isDefineCallExpression(expression)) {
+  if (expression.type !== "CallExpression" || !isDefineCallExpression(expression)) {
     return undefined;
   }
 
-  const isGroup = isDefineGroupExpression(expression.expression);
+  const isGroup = isDefineGroupExpression(expression.callee);
   const [definition] = expression.arguments;
 
-  if (!definition || !ts.isObjectLiteralExpression(definition)) {
+  if (!definition || definition.type !== "ObjectExpression") {
     return undefined;
   }
 
@@ -92,19 +122,19 @@ function extractMetadataFromCommandDefinition(
   let examples: readonly string[] = [];
 
   for (const property of definition.properties) {
-    let propertyName: string | undefined;
-    let resolved: ts.Expression | undefined;
-
-    // Shorthand property: `{ aliases }` is equivalent to `{ aliases: aliases }`
-    if (ts.isShorthandPropertyAssignment(property)) {
-      propertyName = property.name.text;
-      resolved = resolveExpression(property.name, sourceFile);
-    } else if (ts.isPropertyAssignment(property)) {
-      propertyName = getPropertyNameText(property.name);
-      resolved = resolveExpression(property.initializer, sourceFile);
+    if (property.type !== "Property") {
+      continue;
     }
 
-    if (!propertyName || !resolved) {
+    const propertyName = getPropertyNameText(property.key, property.computed);
+
+    if (propertyName === undefined) {
+      continue;
+    }
+
+    const resolved = resolvePropertyValue(property, statements);
+
+    if (!resolved) {
       continue;
     }
 
@@ -142,22 +172,31 @@ function extractMetadataFromCommandDefinition(
   return { description, aliases, examples };
 }
 
-export function findVariableInitializer(
-  sourceFile: ts.SourceFile,
+function resolvePropertyValue(
+  property: ObjectProperty,
+  statements: readonly Statement[],
+): Expression | undefined {
+  // Shorthand property: `{ aliases }` is equivalent to `{ aliases: aliases }`.
+  // In oxc AST, shorthand sets both `key` and `value` to the same Identifier node.
+  if (property.shorthand && property.key.type === "Identifier") {
+    return findVariableInitializer(statements, property.key.name) ?? property.value;
+  }
+
+  return resolveExpression(property.value, statements);
+}
+
+function findVariableInitializer(
+  statements: readonly Statement[],
   name: string,
-): ts.Expression | undefined {
-  for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) {
+): Expression | undefined {
+  for (const statement of statements) {
+    if (statement.type !== "VariableDeclaration") {
       continue;
     }
 
-    for (const declaration of statement.declarationList.declarations) {
-      if (
-        ts.isIdentifier(declaration.name) &&
-        declaration.name.text === name &&
-        declaration.initializer
-      ) {
-        return declaration.initializer;
+    for (const declarator of statement.declarations) {
+      if (declarator.id.type === "Identifier" && declarator.id.name === name && declarator.init) {
+        return declarator.init;
       }
     }
   }
@@ -165,13 +204,13 @@ export function findVariableInitializer(
   return undefined;
 }
 
-function isNamedCallExpression(expression: ts.Expression, name: string): boolean {
-  if (ts.isIdentifier(expression)) {
-    return expression.text === name;
+function isNamedCallExpression(expression: Expression, name: string): boolean {
+  if (expression.type === "Identifier") {
+    return expression.name === name;
   }
 
-  if (ts.isPropertyAccessExpression(expression)) {
-    return expression.name.text === name;
+  if (expression.type === "MemberExpression" && !expression.computed) {
+    return expression.property.type === "Identifier" && expression.property.name === name;
   }
 
   return false;
@@ -181,35 +220,45 @@ export async function extractMetadataFromSourceFile(
   sourceFilePath: string,
 ): Promise<CommandMetadata | undefined> {
   const sourceText = await readFile(sourceFilePath, "utf8");
-  const sourceFile = ts.createSourceFile(
-    sourceFilePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
+  const { program } = await parse(sourceFilePath, sourceText);
   const knownMetadata = new Map<string, CommandMetadata | undefined>();
 
-  for (const statement of sourceFile.statements) {
-    if (ts.isVariableStatement(statement)) {
-      for (const declaration of statement.declarationList.declarations) {
-        if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
+  for (const statement of program.body) {
+    if (statement.type === "VariableDeclaration") {
+      for (const declaration of statement.declarations) {
+        if (declaration.id.type !== "Identifier" || !declaration.init) {
           continue;
         }
 
         knownMetadata.set(
-          declaration.name.text,
-          extractMetadataFromCommandDefinition(declaration.initializer, sourceFile, knownMetadata),
+          declaration.id.name,
+          extractMetadataFromCommandDefinition(declaration.init, program.body, knownMetadata),
         );
       }
 
       continue;
     }
 
-    if (ts.isExportAssignment(statement)) {
-      return extractMetadataFromCommandDefinition(statement.expression, sourceFile, knownMetadata);
+    if (statement.type === "ExportDefaultDeclaration") {
+      if (isExpression(statement.declaration)) {
+        return extractMetadataFromCommandDefinition(
+          statement.declaration,
+          program.body,
+          knownMetadata,
+        );
+      }
+
+      return undefined;
     }
   }
 
   return undefined;
+}
+
+function isExpression(node: ExportDefaultDeclarationKind): node is Expression {
+  return (
+    node.type !== "FunctionDeclaration" &&
+    node.type !== "ClassDeclaration" &&
+    node.type !== "TSInterfaceDeclaration"
+  );
 }

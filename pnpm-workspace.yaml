@@ -17,6 +17,7 @@ catalog:
   astro: 6.1.5
   astro-og: 0.3.2
   knip: 6.3.0
+  oxc-parser: 0.124.0
   pkg-pr-new: 0.0.66
   publint: 0.3.18
   rolldown: 1.0.0-rc.15
@@ -30,6 +31,11 @@ catalog:
   zod: 4.3.6
 
 catalogMode: prefer
+
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - "@rune-cli/*"
+  - create-rune-app
 overrides:
   vite: "catalog:"
   vitest: "catalog:"
@@ -40,8 +46,3 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
     vitest: "*"
-
-minimumReleaseAge: 4320
-minimumReleaseAgeExclude:
-  - "@rune-cli/*"
-  - create-rune-app

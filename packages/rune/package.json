@@ -45,6 +45,7 @@
     "check": "vp check"
   },
   "dependencies": {
+    "oxc-parser": "catalog:",
     "rolldown": "catalog:"
   },
   "devDependencies": {
@@ -54,9 +55,6 @@
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "peerDependencies": {
-    "typescript": ">=5.0.0"
   },
   "engines": {
     "node": ">=24.12.0"
