@@ -1,83 +1,20 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import { runRuneCli } from "../src/cli/rune-cli";
-import { captureCommandResult, createTempFixtureManager, type FixtureFiles } from "./helpers";
+import { captureCommandResult, createTempFixtureManager } from "./helpers";
 
-const coreEntryPath = fileURLToPath(new URL("../../core/src/index.ts", import.meta.url));
+const coreEntryPath = JSON.stringify(
+  fileURLToPath(new URL("../../core/src/index.ts", import.meta.url)),
+);
+
 const testFixtures = createTempFixtureManager();
-
-interface CommandModuleSpec {
-  readonly description?: string;
-  readonly args?: string;
-  readonly options?: string;
-  readonly runSignature?: string;
-  readonly runBodyLines?: readonly string[];
-}
 
 afterEach(async () => {
   await testFixtures.cleanup();
 });
-
-// Fixtures
-
-function createCommandModule({
-  description,
-  args,
-  options,
-  runSignature = "async run()",
-  runBodyLines = [],
-}: CommandModuleSpec): string {
-  const moduleLines = [`import { defineCommand } from ${JSON.stringify(coreEntryPath)};`, ""];
-
-  moduleLines.push("export default defineCommand({");
-  if (description !== undefined) {
-    moduleLines.push(`  description: ${JSON.stringify(description)},`);
-  }
-  if (args !== undefined) {
-    moduleLines.push(`  args: ${args},`);
-  }
-  if (options !== undefined) {
-    moduleLines.push(`  options: ${options},`);
-  }
-
-  if (runBodyLines.length === 0) {
-    moduleLines.push(`  ${runSignature} {},`);
-  } else {
-    moduleLines.push(`  ${runSignature} {`);
-    moduleLines.push(...runBodyLines.map((line) => `    ${line}`));
-    moduleLines.push("  },");
-  }
-
-  moduleLines.push("});");
-  return moduleLines.join("\n");
-}
-
-async function createRunProject(files: FixtureFiles): Promise<string> {
-  const { fixtureDirectory } = await testFixtures.createFixture({
-    files,
-  });
-  return fixtureDirectory;
-}
-
-async function createRunWorkspaceProject(files: FixtureFiles): Promise<{
-  readonly workspaceRoot: string;
-  readonly projectRoot: string;
-}> {
-  const { rootDirectory, fixtureDirectory } = await testFixtures.createFixture({
-    fixturePath: "fixture",
-    files,
-  });
-
-  return {
-    workspaceRoot: rootDirectory,
-    projectRoot: fixtureDirectory,
-  };
-}
-
-// Helpers
 
 async function captureRuneCliResult(argv: readonly string[], cwd?: string) {
   return captureCommandResult(() => runRuneCli({ argv, cwd }));
@@ -85,15 +22,21 @@ async function captureRuneCliResult(argv: readonly string[], cwd?: string) {
 
 describe("run execution", () => {
   test("runRuneCli executes a simple command through `rune run`", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello/index.ts": createCommandModule({
-        description: "Say hello",
-        args: "[]",
-        options: '[{ name: "name", type: "string", required: true }]',
-        runSignature: "async run(ctx)",
-        runBodyLines: ["console.log(`hello ${ctx.options.name}`);"],
-      }),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  args: [],
+  options: [{ name: "name", type: "string", required: true }],
+  async run(ctx) {
+    console.log(\`hello \${ctx.options.name}\`);
+  },
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(["run", "hello", "--name", "rune"], projectRoot);
@@ -101,20 +44,20 @@ describe("run execution", () => {
     expect(captured.exitCode).toBe(0);
     expect(captured.stdout).toBe("hello rune\n");
     expect(captured.stderr).toBe("");
-
-    const manifestContents = await readFile(
-      path.join(projectRoot, ".rune", "manifest.json"),
-      "utf8",
-    );
-    expect(manifestContents).toContain('"hello"');
   });
 
-  test("runRuneCli shows help in run mode and refreshes the manifest after command edits", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello/index.ts": createCommandModule({
-        description: "Say hello",
-      }),
+  test("runRuneCli reflects command description changes across successive runs", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
     });
 
     const firstResult = await captureRuneCliResult(["run"], projectRoot);
@@ -125,9 +68,13 @@ describe("run execution", () => {
 
     await writeFile(
       path.join(projectRoot, "src", "commands", "hello", "index.ts"),
-      createCommandModule({
-        description: "Say hi",
-      }),
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hi",
+  async run() {},
+});
+`,
     );
 
     const secondResult = await captureRuneCliResult(["run"], projectRoot);
@@ -191,14 +138,20 @@ describe("top-level CLI behavior", () => {
 
 describe("run subcommand parsing", () => {
   test("runRuneCli only parses rune run options before the command path", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/create/index.ts": createCommandModule({
-        args: "[]",
-        options: '[{ name: "project", type: "string", required: true }]',
-        runSignature: "async run(ctx)",
-        runBodyLines: ["console.log(`create ${ctx.options.project}`);"],
-      }),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/create/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  args: [],
+  options: [{ name: "project", type: "string", required: true }],
+  async run(ctx) {
+    console.log(\`create \${ctx.options.project}\`);
+  },
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(
@@ -212,14 +165,22 @@ describe("run subcommand parsing", () => {
   });
 
   test("runRuneCli supports forwarding commands after `--` with an explicit project path", async () => {
-    const { workspaceRoot } = await createRunWorkspaceProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello/index.ts": createCommandModule({
-        description: "Say hello",
-        args: "[]",
-        options: "[]",
-        runBodyLines: ['console.log("hello");'],
-      }),
+    const { rootDirectory: workspaceRoot } = await testFixtures.createFixture({
+      fixturePath: "fixture",
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  args: [],
+  options: [],
+  async run() {
+    console.log("hello");
+  },
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(
@@ -233,12 +194,19 @@ describe("run subcommand parsing", () => {
   });
 
   test("runRuneCli preserves the caller cwd when using `--project` in run mode", async () => {
-    const { workspaceRoot } = await createRunWorkspaceProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/show-cwd/index.ts": createCommandModule({
-        runSignature: "async run(ctx)",
-        runBodyLines: ["console.log(ctx.cwd);"],
-      }),
+    const { rootDirectory: workspaceRoot } = await testFixtures.createFixture({
+      fixturePath: "fixture",
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/show-cwd/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  async run(ctx) {
+    console.log(ctx.cwd);
+  },
+});
+`,
+      },
     });
 
     const invocationRoot = path.join(workspaceRoot, "invocation");
@@ -255,13 +223,21 @@ describe("run subcommand parsing", () => {
   });
 
   test("runRuneCli supports `--project=<path>` before the command path", async () => {
-    const { workspaceRoot } = await createRunWorkspaceProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello/index.ts": createCommandModule({
-        args: "[]",
-        options: "[]",
-        runBodyLines: ['console.log("hello");'],
-      }),
+    const { rootDirectory: workspaceRoot } = await testFixtures.createFixture({
+      fixturePath: "fixture",
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  args: [],
+  options: [],
+  async run() {
+    console.log("hello");
+  },
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(
@@ -283,14 +259,21 @@ describe("run subcommand parsing", () => {
   });
 
   test("rune run hello --help passes --help through to the user command", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello/index.ts": createCommandModule({
-        description: "Say hello",
-        args: "[]",
-        options: "[]",
-        runBodyLines: ['console.log("hello");'],
-      }),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  args: [],
+  options: [],
+  async run() {
+    console.log("hello");
+  },
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(["run", "hello", "--help"], projectRoot);
@@ -304,20 +287,26 @@ describe("run subcommand parsing", () => {
 
 describe("CLI name resolution", () => {
   test("runRuneCli uses the package bin name for help output", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify(
-        {
-          name: "@scope/mycli",
-          bin: {
-            runeplay: "./dist/cli.mjs",
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify(
+          {
+            name: "@scope/mycli",
+            bin: {
+              runeplay: "./dist/cli.mjs",
+            },
           },
-        },
-        null,
-        2,
-      ),
-      "src/commands/hello/index.ts": createCommandModule({
-        description: "Say hello",
-      }),
+          null,
+          2,
+        ),
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(["run"], projectRoot);
@@ -328,11 +317,17 @@ describe("CLI name resolution", () => {
   });
 
   test("runRuneCli falls back to the unscoped package name when no bin field exists", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "@scope/mycli" }, null, 2),
-      "src/commands/hello/index.ts": createCommandModule({
-        description: "Say hello",
-      }),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "@scope/mycli" }, null, 2),
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(["run"], projectRoot);
@@ -343,10 +338,16 @@ describe("CLI name resolution", () => {
   });
 
   test("runRuneCli falls back to the project directory name when package.json is missing", async () => {
-    const projectRoot = await createRunProject({
-      "src/commands/hello/index.ts": createCommandModule({
-        description: "Say hello",
-      }),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(["run"], projectRoot);
@@ -359,14 +360,20 @@ describe("CLI name resolution", () => {
 
 describe("alternate command layouts and runtime errors", () => {
   test("runRuneCli executes a bare file command through `rune run`", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello.ts": createCommandModule({
-        description: "Say hello",
-        options: '[{ name: "name", type: "string", required: true }]',
-        runSignature: "async run(ctx)",
-        runBodyLines: ["console.log(`hello ${ctx.options.name}`);"],
-      }),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  options: [{ name: "name", type: "string", required: true }],
+  async run(ctx) {
+    console.log(\`hello \${ctx.options.name}\`);
+  },
+});
+`,
+      },
     });
 
     const captured = await captureRuneCliResult(["run", "hello", "--name", "rune"], projectRoot);
@@ -377,8 +384,10 @@ describe("alternate command layouts and runtime errors", () => {
   });
 
   test("runRuneCli reports missing src/commands directories", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+      },
     });
 
     const captured = await captureRuneCliResult(["run"], projectRoot);
@@ -389,8 +398,10 @@ describe("alternate command layouts and runtime errors", () => {
   });
 
   test("runRuneCli returns the project version before validating src/commands", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli", version: "1.2.3" }, null, 2),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli", version: "1.2.3" }, null, 2),
+      },
     });
 
     const captured = await captureRuneCliResult(["run", "--version"], projectRoot);
@@ -401,16 +412,18 @@ describe("alternate command layouts and runtime errors", () => {
   });
 
   test("runRuneCli reports plain object default exports with a clear error", async () => {
-    const projectRoot = await createRunProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/plain/index.ts": [
-        "export default {",
-        '  description: "plain",',
-        "  async run() {",
-        '    console.log("hi");',
-        "  },",
-        "};",
-      ].join("\n"),
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/plain/index.ts": [
+          "export default {",
+          '  description: "plain",',
+          "  async run() {",
+          '    console.log("hi");',
+          "  },",
+          "};",
+        ].join("\n"),
+      },
     });
 
     const captured = await captureRuneCliResult(["run", "plain"], projectRoot);

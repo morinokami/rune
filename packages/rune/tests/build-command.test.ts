@@ -2,15 +2,10 @@ import { spawn } from "node:child_process";
 import { cp, mkdir, open, realpath, readFile, readdir, symlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, afterEach, describe, expect, test } from "vite-plus/test";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "vite-plus/test";
 
 import { runRuneCli } from "../src/cli/rune-cli";
-import {
-  captureCommandResult,
-  createTempFixtureManager,
-  pathExists,
-  type FixtureFiles,
-} from "./helpers";
+import { captureCommandResult, createTempFixtureManager, pathExists } from "./helpers";
 
 const buildProjectFixtures = createTempFixtureManager();
 const packagedWorkspaces = createTempFixtureManager();
@@ -23,16 +18,9 @@ let builtPackageEnvironmentPromise:
 
 const PACKAGED_ENTRIES = ["package.json", "src", "tsconfig.json", "vite.config.ts"];
 
-interface BuildCommandModuleSpec {
-  readonly description?: string;
-  readonly args?: string;
-  readonly options?: string;
-  readonly importLines?: readonly string[];
-  readonly runSignature?: string;
-  readonly runBodyLines?: readonly string[];
-}
-
-// Test setup
+beforeAll(async () => {
+  await ensureBuiltPackageEnvironment();
+});
 
 afterEach(async () => {
   await buildProjectFixtures.cleanup();
@@ -42,70 +30,13 @@ afterAll(async () => {
   await packagedWorkspaces.cleanup();
 });
 
-// Fixtures & process helpers
+// ---------------------------------------------------------------------------
+// Packaging helpers
+// ---------------------------------------------------------------------------
 
-function createBuildCommandModule({
-  description,
-  args,
-  options,
-  importLines = [],
-  runSignature = "async run()",
-  runBodyLines = [],
-}: BuildCommandModuleSpec): string {
-  const moduleLines = ['import { defineCommand } from "@rune-cli/rune";', ...importLines, ""];
-
-  moduleLines.push("export default defineCommand({");
-  if (description !== undefined) {
-    moduleLines.push(`  description: ${JSON.stringify(description)},`);
-  }
-  if (args !== undefined) {
-    moduleLines.push(`  args: ${args},`);
-  }
-  if (options !== undefined) {
-    moduleLines.push(`  options: ${options},`);
-  }
-
-  if (runBodyLines.length === 0) {
-    moduleLines.push(`  ${runSignature} {},`);
-  } else {
-    moduleLines.push(`  ${runSignature} {`);
-    moduleLines.push(...runBodyLines.map((line) => `    ${line}`));
-    moduleLines.push("  },");
-  }
-
-  moduleLines.push("});");
-  return moduleLines.join("\n");
-}
-
-async function createBuildProject(files: FixtureFiles): Promise<string> {
-  const { fixtureDirectory } = await buildProjectFixtures.createFixture({
-    files,
-  });
-  return fixtureDirectory;
-}
-
-async function createBuildWorkspaceProject(files: FixtureFiles): Promise<{
-  readonly workspaceRoot: string;
-  readonly projectRoot: string;
-}> {
-  const { rootDirectory, fixtureDirectory } = await buildProjectFixtures.createFixture({
-    fixturePath: "fixture",
-    files,
-  });
-
-  return {
-    workspaceRoot: rootDirectory,
-    projectRoot: fixtureDirectory,
-  };
-}
-
-async function runChildProcess(
-  command: string,
-  args: readonly string[],
-  cwd: string,
-): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+async function runVpPack(cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const childProcess = spawn(command, args, {
+    const childProcess = spawn(vpBinaryPath, ["pack"], {
       cwd,
       env: {
         ...process.env,
@@ -116,29 +47,22 @@ async function runChildProcess(
       },
       stdio: ["ignore", "pipe", "pipe"],
     });
-    let stdout = "";
     let stderr = "";
 
-    childProcess.stdout.setEncoding("utf8");
-    childProcess.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
     childProcess.stderr.setEncoding("utf8");
     childProcess.stderr.on("data", (chunk) => {
       stderr += chunk;
     });
     childProcess.on("error", reject);
     childProcess.on("close", (exitCode) => {
-      resolve({
-        exitCode: exitCode ?? 0,
-        stdout,
-        stderr,
-      });
+      if (exitCode !== 0) {
+        reject(new Error(stderr || `vp pack failed with exit code ${exitCode}`));
+      } else {
+        resolve();
+      }
     });
   });
 }
-
-// Packaging helpers
 
 interface TestPackageJson {
   readonly dependencies?: Readonly<Record<string, string>> | undefined;
@@ -220,20 +144,14 @@ async function ensureBuiltPackageEnvironment(): Promise<{
     const corePackageRoot = await copyPackageForPack(sourceCorePackageRoot, packagedWorkspaceRoot);
     await linkPackageDependencies(sourceCorePackageRoot, corePackageRoot);
 
-    const coreBuildResult = await runChildProcess(vpBinaryPath, ["pack"], corePackageRoot);
-    if (coreBuildResult.exitCode !== 0) {
-      throw new Error(coreBuildResult.stderr || "Failed to build the isolated core package");
-    }
+    await runVpPack(corePackageRoot);
 
     const runePackageRoot = await copyPackageForPack(sourceRunePackageRoot, packagedWorkspaceRoot);
     await linkPackageDependencies(sourceRunePackageRoot, runePackageRoot, {
       "@rune-cli/core": corePackageRoot,
     });
 
-    const runeBuildResult = await runChildProcess(vpBinaryPath, ["pack"], runePackageRoot);
-    if (runeBuildResult.exitCode !== 0) {
-      throw new Error(runeBuildResult.stderr || "Failed to build the isolated rune package");
-    }
+    await runVpPack(runePackageRoot);
 
     return { corePackageRoot, runePackageRoot };
   })().catch((error) => {
@@ -255,7 +173,11 @@ async function installRuneFixturePackage(projectRoot: string): Promise<void> {
   await symlink(runePackageRoot, runePackageDirectory, "dir");
 }
 
-async function runBuiltCli(
+// ---------------------------------------------------------------------------
+// Command execution helpers
+// ---------------------------------------------------------------------------
+
+async function captureBuiltCliResult(
   projectRoot: string,
   args: readonly string[],
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
@@ -309,12 +231,20 @@ describe("build subcommand parsing", () => {
   });
 
   test("runRuneCli supports `rune build --project=<path>`", async () => {
-    const { workspaceRoot, projectRoot } = await createBuildWorkspaceProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello/index.ts": createBuildCommandModule({
-        description: "Say hello",
-      }),
-    });
+    const { rootDirectory: workspaceRoot, fixtureDirectory: projectRoot } =
+      await buildProjectFixtures.createFixture({
+        fixturePath: "fixture",
+        files: {
+          "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+          "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+        },
+      });
     await installRuneFixturePackage(projectRoot);
 
     const captured = await captureRuneCliResult(["build", "--project=./fixture"], workspaceRoot);
@@ -343,20 +273,26 @@ describe("build subcommand parsing", () => {
 
 describe("build output", () => {
   test("runRuneCli builds a fixture project and emits a runnable dist CLI", async () => {
-    const projectRoot = await createBuildProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/message.ts": [
-        "export function formatGreeting(name: string): string {",
-        "  return `hello ${name}`;",
-        "}",
-      ].join("\n"),
-      "src/commands/hello/index.ts": createBuildCommandModule({
-        description: "Say hello",
-        options: '[{ name: "name", type: "string", required: true }]',
-        importLines: ['import { formatGreeting } from "../../message.ts";'],
-        runSignature: "async run(ctx)",
-        runBodyLines: ["console.log(formatGreeting(ctx.options.name));"],
-      }),
+    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/message.ts": [
+          "export function formatGreeting(name: string): string {",
+          "  return `hello ${name}`;",
+          "}",
+        ].join("\n"),
+        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+import { formatGreeting } from "../../message.ts";
+
+export default defineCommand({
+  description: "Say hello",
+  options: [{ name: "name", type: "string", required: true }],
+  async run(ctx) {
+    console.log(formatGreeting(ctx.options.name));
+  },
+});
+`,
+      },
     });
     await installRuneFixturePackage(projectRoot);
 
@@ -378,7 +314,11 @@ describe("build output", () => {
       await readFile(path.join(projectRoot, "dist", "commands", "hello", "index.mjs"), "utf8"),
     ).not.toContain("@rune-cli/rune");
 
-    const builtCommandResult = await runBuiltCli(projectRoot, ["hello", "--name", "rune"]);
+    const builtCommandResult = await captureBuiltCliResult(projectRoot, [
+      "hello",
+      "--name",
+      "rune",
+    ]);
 
     expect(builtCommandResult).toEqual({
       exitCode: 0,
@@ -388,11 +328,17 @@ describe("build output", () => {
   });
 
   test("the built CLI shows help without invoking rune run", async () => {
-    const projectRoot = await createBuildProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello/index.ts": createBuildCommandModule({
-        description: "Say hello",
-      }),
+    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
     });
     await installRuneFixturePackage(projectRoot);
 
@@ -400,26 +346,32 @@ describe("build output", () => {
     expect(buildResult.exitCode).toBe(0);
     expect(buildResult.stderr).toBe("");
 
-    const rootHelpResult = await runBuiltCli(projectRoot, []);
+    const rootHelpResult = await captureBuiltCliResult(projectRoot, []);
     expect(rootHelpResult.exitCode).toBe(0);
     expect(rootHelpResult.stdout).toContain("Usage: mycli <command>\n");
     expect(rootHelpResult.stdout).toContain("hello  Say hello");
 
-    const commandHelpResult = await runBuiltCli(projectRoot, ["hello", "--help"]);
+    const commandHelpResult = await captureBuiltCliResult(projectRoot, ["hello", "--help"]);
     expect(commandHelpResult.exitCode).toBe(0);
     expect(commandHelpResult.stdout).toContain("Usage: mycli hello");
     expect(commandHelpResult.stdout).toContain("Description:\n  Say hello");
   });
 
   test("runRuneCli builds a bare file command and emits the correct dist path", async () => {
-    const projectRoot = await createBuildProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/commands/hello.ts": createBuildCommandModule({
-        description: "Say hello",
-        options: '[{ name: "name", type: "string", required: true }]',
-        runSignature: "async run(ctx)",
-        runBodyLines: ["console.log(`hello ${ctx.options.name}`);"],
-      }),
+    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Say hello",
+  options: [{ name: "name", type: "string", required: true }],
+  async run(ctx) {
+    console.log(\`hello \${ctx.options.name}\`);
+  },
+});
+`,
+      },
     });
     await installRuneFixturePackage(projectRoot);
 
@@ -435,7 +387,11 @@ describe("build output", () => {
     expect(manifestContents).toContain('"sourceFilePath": "commands/hello.mjs"');
     expect(await pathExists(path.join(projectRoot, "dist", "commands", "hello.mjs"))).toBe(true);
 
-    const builtCommandResult = await runBuiltCli(projectRoot, ["hello", "--name", "rune"]);
+    const builtCommandResult = await captureBuiltCliResult(projectRoot, [
+      "hello",
+      "--name",
+      "rune",
+    ]);
 
     expect(builtCommandResult).toEqual({
       exitCode: 0,
@@ -445,13 +401,19 @@ describe("build output", () => {
   });
 
   test("runRuneCli build copies non-TypeScript files and skips declaration files", async () => {
-    const projectRoot = await createBuildProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/config.json": JSON.stringify({ greeting: "hello" }, null, 2),
-      "src/types.d.ts": "export interface Message { readonly text: string; }\n",
-      "src/commands/hello/index.ts": createBuildCommandModule({
-        description: "Say hello",
-      }),
+    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/config.json": JSON.stringify({ greeting: "hello" }, null, 2),
+        "src/types.d.ts": "export interface Message { readonly text: string; }\n",
+        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
     });
     await installRuneFixturePackage(projectRoot);
 
@@ -468,21 +430,33 @@ describe("build output", () => {
 
 describe("build isolation and optimization", () => {
   test("runRuneCli build emits shared chunks for command dependencies", async () => {
-    const projectRoot = await createBuildProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/shared.ts": [
-        "export function formatMessage(name: string): string {",
-        "  return `hello ${name}`;",
-        "}",
-      ].join("\n"),
-      "src/commands/hello/index.ts": createBuildCommandModule({
-        importLines: ['import { formatMessage } from "../../shared.ts";'],
-        runBodyLines: ['console.log(formatMessage("hello"));'],
-      }),
-      "src/commands/goodbye/index.ts": createBuildCommandModule({
-        importLines: ['import { formatMessage } from "../../shared.ts";'],
-        runBodyLines: ['console.log(formatMessage("goodbye"));'],
-      }),
+    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/shared.ts": [
+          "export function formatMessage(name: string): string {",
+          "  return `hello ${name}`;",
+          "}",
+        ].join("\n"),
+        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+import { formatMessage } from "../../shared.ts";
+
+export default defineCommand({
+  async run() {
+    console.log(formatMessage("hello"));
+  },
+});
+`,
+        "src/commands/goodbye/index.ts": `import { defineCommand } from "@rune-cli/rune";
+import { formatMessage } from "../../shared.ts";
+
+export default defineCommand({
+  async run() {
+    console.log(formatMessage("goodbye"));
+  },
+});
+`,
+      },
     });
     await installRuneFixturePackage(projectRoot);
 
@@ -495,26 +469,33 @@ describe("build isolation and optimization", () => {
   });
 
   test("runRuneCli build does not apply the project tsconfig to the built CLI entry", async () => {
-    const projectRoot = await createBuildProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "tsconfig.json": JSON.stringify(
-        {
-          compilerOptions: {
-            baseUrl: ".",
-            paths: {
-              "@rune-cli/core": ["./broken-core.ts"],
+    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "tsconfig.json": JSON.stringify(
+          {
+            compilerOptions: {
+              baseUrl: ".",
+              paths: {
+                "@rune-cli/core": ["./broken-core.ts"],
+              },
             },
           },
-        },
-        null,
-        2,
-      ),
-      "src/commands/hello/index.ts": createBuildCommandModule({
-        description: "Say hello",
-        args: "[]",
-        options: "[]",
-        runBodyLines: ['console.log("hello");'],
-      }),
+          null,
+          2,
+        ),
+        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Say hello",
+  args: [],
+  options: [],
+  async run() {
+    console.log("hello");
+  },
+});
+`,
+      },
     });
     await installRuneFixturePackage(projectRoot);
 
@@ -523,7 +504,7 @@ describe("build isolation and optimization", () => {
     expect(buildResult.exitCode).toBe(0);
     expect(buildResult.stderr).toBe("");
 
-    const builtCommandResult = await runBuiltCli(projectRoot, ["hello"]);
+    const builtCommandResult = await captureBuiltCliResult(projectRoot, ["hello"]);
     expect(builtCommandResult).toEqual({
       exitCode: 0,
       stdout: "hello\n",
@@ -534,14 +515,21 @@ describe("build isolation and optimization", () => {
 
 describe("failure reporting", () => {
   test("runRuneCli build reports transpile failures", async () => {
-    const projectRoot = await createBuildProject({
-      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-      "src/broken.ts": "export const = 1;\n",
-      "src/commands/hello/index.ts": createBuildCommandModule({
-        description: "Say hello",
-        importLines: ['import { value } from "../../broken.ts";'],
-        runBodyLines: ["console.log(value);"],
-      }),
+    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "src/broken.ts": "export const = 1;\n",
+        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+import { value } from "../../broken.ts";
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {
+    console.log(value);
+  },
+});
+`,
+      },
     });
     await installRuneFixturePackage(projectRoot);
 

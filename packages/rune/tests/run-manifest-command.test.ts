@@ -6,79 +6,45 @@ import { afterEach, describe, expect, test } from "vite-plus/test";
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
 import { runManifestCommand } from "../src/manifest/runtime/run-manifest-command";
-import {
-  captureCommandResult,
-  createTempFixtureManager,
-  type FixtureFiles,
-  writeFixtureFiles,
-} from "./helpers";
+import { captureCommandResult, createTempFixtureManager, writeFixtureFiles } from "./helpers";
 
-const coreEntryPath = fileURLToPath(new URL("../../core/src/index.ts", import.meta.url));
+const coreEntryPath = JSON.stringify(
+  fileURLToPath(new URL("../../core/src/index.ts", import.meta.url)),
+);
 const testFixtures = createTempFixtureManager();
-
-interface RuntimeCommandModuleSpec {
-  readonly description?: string;
-  readonly args?: string;
-  readonly options?: string;
-  readonly runSignature?: string;
-  readonly runBodyLines?: readonly string[];
-  readonly preludeLines?: readonly string[];
-}
-
-// Fixtures
-
-function createDefinedCommandModule({
-  description,
-  args,
-  options,
-  runSignature = "async run()",
-  runBodyLines = [],
-  preludeLines = [],
-}: RuntimeCommandModuleSpec): string {
-  const moduleLines = [`import { defineCommand } from ${JSON.stringify(coreEntryPath)};`, ""];
-
-  if (preludeLines.length > 0) {
-    moduleLines.push(...preludeLines, "");
-  }
-
-  moduleLines.push("export default defineCommand({");
-  if (description !== undefined) {
-    moduleLines.push(`  description: ${JSON.stringify(description)},`);
-  }
-  if (args !== undefined) {
-    moduleLines.push(`  args: ${args},`);
-  }
-  if (options !== undefined) {
-    moduleLines.push(`  options: ${options},`);
-  }
-
-  if (runBodyLines.length === 0) {
-    moduleLines.push(`  ${runSignature} {},`);
-  } else {
-    moduleLines.push(`  ${runSignature} {`);
-    moduleLines.push(...runBodyLines.map((line) => `    ${line}`));
-    moduleLines.push("  },");
-  }
-
-  moduleLines.push("});");
-  return moduleLines.join("\n");
-}
 
 afterEach(async () => {
   await testFixtures.cleanup();
   delete (globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules;
 });
 
+const stubModule = `export default { args: [], options: [], async run() {} };`;
+
+const trackedStubModule = (name: string) => `globalThis.__runeLoadedModules ??= [];
+globalThis.__runeLoadedModules.push("${name}");
+export default {
+  args: [],
+  options: [],
+  async run() {},
+};
+`;
+
 // Runtime fixture construction
 
-async function createRuntimeFixture(files: FixtureFiles): Promise<{
+async function createRuntimeFixture(
+  createModule: string,
+  listModule: string,
+): Promise<{
   readonly rootDirectory: string;
   readonly manifest: CommandManifest;
 }> {
   const rootDirectory = await testFixtures.createRoot();
   // Each test gets unique module URLs so dynamic import caching does not leak between cases.
 
-  await writeFixtureFiles(rootDirectory, files);
+  await writeFixtureFiles(rootDirectory, {
+    "commands/project/create/index.mjs": createModule,
+    "commands/project/list/index.mjs": listModule,
+  });
 
   const manifest: CommandManifest = {
     nodes: [
@@ -125,36 +91,23 @@ async function captureRunManifestCommandResult(options: Parameters<typeof runMan
 
 describe("routed execution", () => {
   test("runManifestCommand executes the matched leaf command through the router", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": createDefinedCommandModule({
-        description: "Create a project",
-        args: '[{ name: "id", type: "string", required: true }]',
-        options: '[{ name: "name", type: "string", required: true }]',
-        runSignature: "async run(ctx)",
-        runBodyLines: [
-          "console.log(`name=${ctx.options.name}`);",
-          "console.log(`id=${ctx.args.id}`);",
-          "console.log(`cwd=${ctx.cwd}`);",
-          'console.log(`raw=${ctx.rawArgs.join(",")}`);',
-        ],
-        preludeLines: [
-          "globalThis.__runeLoadedModules ??= [];",
-          'globalThis.__runeLoadedModules.push("create");',
-        ],
-      }),
-      "commands/project/list/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("list");',
-        "export default {",
-        '  description: "List projects",',
-        "  args: [],",
-        "  options: [],",
-        "  async run() {",
-        '    console.log("list");',
-        "  },",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Create a project",
+  args: [{ name: "id", type: "string", required: true }],
+  options: [{ name: "name", type: "string", required: true }],
+  async run(ctx) {
+    console.log(\`name=\${ctx.options.name}\`);
+    console.log(\`id=\${ctx.args.id}\`);
+    console.log(\`cwd=\${ctx.cwd}\`);
+    console.log(\`raw=\${ctx.rawArgs.join(",")}\`);
+  },
+});
+`,
+      trackedStubModule("list"),
+    );
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -171,25 +124,20 @@ describe("routed execution", () => {
   });
 
   test("runManifestCommand loads only the matched leaf module", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": createDefinedCommandModule({
-        args: "[]",
-        options: "[]",
-        preludeLines: [
-          "globalThis.__runeLoadedModules ??= [];",
-          'globalThis.__runeLoadedModules.push("create");',
-        ],
-      }),
-      "commands/project/list/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("list");',
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+globalThis.__runeLoadedModules ??= [];
+globalThis.__runeLoadedModules.push("create");
+
+export default defineCommand({
+  args: [],
+  options: [],
+  async run() {},
+});
+`,
+      trackedStubModule("list"),
+    );
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -204,28 +152,14 @@ describe("routed execution", () => {
       "create",
     ]);
   });
+});
 
+describe("group help", () => {
   test("runManifestCommand returns help output without loading child commands for groups", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("create");',
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-      "commands/project/list/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("list");',
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(
+      trackedStubModule("create"),
+      trackedStubModule("list"),
+    );
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -240,29 +174,25 @@ describe("routed execution", () => {
   });
 });
 
-describe("help and parse failures", () => {
+describe("parse failures", () => {
   test("runManifestCommand returns parse failures as non-zero stderr results", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": createDefinedCommandModule({
-        description: "Create a project",
-        args: "[]",
-        options: '[{ name: "name", type: "string", required: true }]',
-        runBodyLines: ['console.log("should not run");'],
-        preludeLines: [
-          "globalThis.__runeLoadedModules ??= [];",
-          'globalThis.__runeLoadedModules.push("create");',
-        ],
-      }),
-      "commands/project/list/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("list");',
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+globalThis.__runeLoadedModules ??= [];
+globalThis.__runeLoadedModules.push("create");
+
+export default defineCommand({
+  description: "Create a project",
+  args: [],
+  options: [{ name: "name", type: "string", required: true }],
+  async run() {
+    console.log("should not run");
+  },
+});
+`,
+      trackedStubModule("list"),
+    );
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -277,29 +207,25 @@ describe("help and parse failures", () => {
       "create",
     ]);
   });
+});
 
+describe("leaf help", () => {
   test("runManifestCommand returns leaf help through the routed command path", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": createDefinedCommandModule({
-        description: "Create a project",
-        args: '[{ name: "id", type: "string", required: true, description: "Project identifier" }]',
-        options:
-          '[{ name: "force", type: "boolean", short: "f", description: "Overwrite existing state" }]',
-        preludeLines: [
-          "globalThis.__runeLoadedModules ??= [];",
-          'globalThis.__runeLoadedModules.push("create");',
-        ],
-      }),
-      "commands/project/list/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("list");',
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+globalThis.__runeLoadedModules ??= [];
+globalThis.__runeLoadedModules.push("create");
+
+export default defineCommand({
+  description: "Create a project",
+  args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
+  options: [{ name: "force", type: "boolean", short: "f", description: "Overwrite existing state" }],
+  async run() {},
+});
+`,
+      trackedStubModule("list"),
+    );
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -315,19 +241,20 @@ describe("help and parse failures", () => {
       "create",
     ]);
   });
+});
 
+describe("module load errors", () => {
   test("runManifestCommand reports plain object default exports instead of crashing", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": [
-        "export default {",
-        '  description: "plain",',
-        "  async run() {",
-        '    console.log("hi");',
-        "  },",
-        "};",
-      ].join("\n"),
-      "commands/project/list/index.mjs": "export default {};",
-    });
+    const { manifest } = await createRuntimeFixture(
+      `export default {
+  description: "plain",
+  async run() {
+    console.log("hi");
+  },
+};
+`,
+      "export default {};",
+    );
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -343,28 +270,12 @@ describe("help and parse failures", () => {
   });
 });
 
-describe("unknown commands and version output", () => {
+describe("unknown commands", () => {
   test("runManifestCommand returns unknown command failures with suggestions", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("create");',
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-      "commands/project/list/index.mjs": [
-        "globalThis.__runeLoadedModules ??= [];",
-        'globalThis.__runeLoadedModules.push("list");',
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(
+      trackedStubModule("create"),
+      trackedStubModule("list"),
+    );
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -378,24 +289,11 @@ describe("unknown commands and version output", () => {
     expect(captured.stderr).toContain("create");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
   });
+});
 
+describe("version output", () => {
   test("runManifestCommand prints version when --version is passed with version set", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-      "commands/project/list/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(stubModule, stubModule);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -410,22 +308,7 @@ describe("unknown commands and version output", () => {
   });
 
   test("runManifestCommand prints version when -V is passed with version set", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-      "commands/project/list/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(stubModule, stubModule);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -440,22 +323,7 @@ describe("unknown commands and version output", () => {
   });
 
   test("runManifestCommand ignores --version when version is not set", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-      "commands/project/list/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(stubModule, stubModule);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -469,22 +337,7 @@ describe("unknown commands and version output", () => {
   });
 
   test("runManifestCommand does not treat --version as version request when passed to a subcommand", async () => {
-    const { manifest } = await createRuntimeFixture({
-      "commands/project/create/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-      "commands/project/list/index.mjs": [
-        "export default {",
-        "  args: [],",
-        "  options: [],",
-        "  async run() {},",
-        "};",
-      ].join("\n"),
-    });
+    const { manifest } = await createRuntimeFixture(stubModule, stubModule);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -507,13 +360,12 @@ async function createJsonFixture(commandBody: string): Promise<{
   const commandDir = path.join(rootDirectory, "commands", "list");
   await mkdir(commandDir, { recursive: true });
 
-  const moduleContents = [
-    `import { CommandError, defineCommand } from ${JSON.stringify(coreEntryPath)};`,
-    "",
-    "export default defineCommand({",
-    commandBody,
-    "});",
-  ].join("\n");
+  const moduleContents = `import { CommandError, defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+${commandBody}
+});
+`;
 
   await writeFile(path.join(commandDir, "index.mjs"), moduleContents);
 
@@ -541,15 +393,11 @@ async function createJsonFixture(commandBody: string): Promise<{
 
 describe("json mode", () => {
   test("runManifestCommand serializes return value as JSON when --json is passed", async () => {
-    const { manifest } = await createJsonFixture(
-      [
-        "  json: true,",
-        "  async run(ctx) {",
-        '    ctx.output.log("human text");',
-        "    return { items: [1, 2, 3] };",
-        "  },",
-      ].join("\n"),
-    );
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run(ctx) {
+    ctx.output.log("human text");
+    return { items: [1, 2, 3] };
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -565,9 +413,9 @@ describe("json mode", () => {
   });
 
   test("runManifestCommand does not activate JSON mode for commands without json: true", async () => {
-    const { manifest } = await createJsonFixture(
-      ["  async run(ctx) {", '    ctx.output.log("hello");', "  },"].join("\n"),
-    );
+    const { manifest } = await createJsonFixture(`  async run(ctx) {
+    ctx.output.log("hello");
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -580,16 +428,12 @@ describe("json mode", () => {
   });
 
   test("runManifestCommand does not activate JSON mode when --json appears after --", async () => {
-    const { manifest } = await createJsonFixture(
-      [
-        "  json: true,",
-        '  args: [{ name: "extra", type: "string" }],',
-        "  async run(ctx) {",
-        '    ctx.output.log("visible");',
-        "    return { ok: true };",
-        "  },",
-      ].join("\n"),
-    );
+    const { manifest } = await createJsonFixture(`  json: true,
+  args: [{ name: "extra", type: "string" }],
+  async run(ctx) {
+    ctx.output.log("visible");
+    return { ok: true };
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -604,11 +448,10 @@ describe("json mode", () => {
   });
 
   test("runManifestCommand emits JSON error payload when command throws in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(
-      ["  json: true,", "  async run() {", '    throw new Error("something broke");', "  },"].join(
-        "\n",
-      ),
-    );
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    throw new Error("something broke");
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -626,43 +469,12 @@ describe("json mode", () => {
     expect(captured.stderr).toBe("");
   });
 
-  test("runManifestCommand renders CommandError in human mode", async () => {
-    const { manifest } = await createJsonFixture(
-      [
-        "  async run() {",
-        "    throw new CommandError({",
-        '      kind: "project/invalid-name",',
-        '      message: "Project name must be lowercase kebab-case",',
-        '      hint: "Try --name my-app",',
-        "      exitCode: 9,",
-        "    });",
-        "  },",
-      ].join("\n"),
-    );
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(9);
-    expect(captured.stdout).toBe("");
-    expect(captured.stderr).toBe(
-      "Project name must be lowercase kebab-case\nHint: Try --name my-app\n",
-    );
-  });
-
   test("runManifestCommand emits JSON error payload on parse error in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(
-      [
-        "  json: true,",
-        '  options: [{ name: "count", type: "number", required: true }],',
-        "  async run() {",
-        "    return { ok: true };",
-        "  },",
-      ].join("\n"),
-    );
+    const { manifest } = await createJsonFixture(`  json: true,
+  options: [{ name: "count", type: "number", required: true }],
+  async run() {
+    return { ok: true };
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -681,18 +493,14 @@ describe("json mode", () => {
   });
 
   test("runManifestCommand omits non-serializable CommandError details in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(
-      [
-        "  json: true,",
-        "  async run() {",
-        "    throw new CommandError({",
-        '      kind: "config/not-found",',
-        '      message: "Config file was not found",',
-        "      details: BigInt(42),",
-        "    });",
-        "  },",
-      ].join("\n"),
-    );
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    throw new CommandError({
+      kind: "config/not-found",
+      message: "Config file was not found",
+      details: BigInt(42),
+    });
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -711,9 +519,10 @@ describe("json mode", () => {
   });
 
   test("runManifestCommand handles non-serializable return values in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(
-      ["  json: true,", "  async run() {", "    return { value: BigInt(42) };", "  },"].join("\n"),
-    );
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    return { value: BigInt(42) };
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -733,11 +542,10 @@ describe("json mode", () => {
   });
 
   test("runManifestCommand serializes null when json command returns undefined", async () => {
-    const { manifest } = await createJsonFixture(
-      ["  json: true,", "  async run() {", "    // returns undefined implicitly", "  },"].join(
-        "\n",
-      ),
-    );
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    // returns undefined implicitly
+  },`);
 
     const captured = await captureRunManifestCommandResult({
       manifest,
@@ -747,5 +555,30 @@ describe("json mode", () => {
 
     expect(captured.exitCode).toBe(0);
     expect(JSON.parse(captured.stdout)).toBeNull();
+  });
+});
+
+describe("error rendering (human)", () => {
+  test("runManifestCommand renders CommandError in human mode", async () => {
+    const { manifest } = await createJsonFixture(`  async run() {
+    throw new CommandError({
+      kind: "project/invalid-name",
+      message: "Project name must be lowercase kebab-case",
+      hint: "Try --name my-app",
+      exitCode: 9,
+    });
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(9);
+    expect(captured.stdout).toBe("");
+    expect(captured.stderr).toBe(
+      "Project name must be lowercase kebab-case\nHint: Try --name my-app\n",
+    );
   });
 });
