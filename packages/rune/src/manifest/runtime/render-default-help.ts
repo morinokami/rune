@@ -7,7 +7,7 @@ import type {
   SubcommandHelpEntry,
 } from "@rune-cli/core";
 
-import type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./help-data";
+import type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./build-help-data";
 
 // ---------------------------------------------------------------------------
 // Formatting helpers

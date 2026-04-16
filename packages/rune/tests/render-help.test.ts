@@ -3,7 +3,10 @@ import type { CommandHelpData } from "@rune-cli/core";
 import { describe, expect, test } from "vite-plus/test";
 
 import type { CommandManifest, CommandManifestGroupNode } from "../src/manifest/manifest-types";
-import type { GroupHelpData, UnknownCommandHelpData } from "../src/manifest/runtime/help-data";
+import type {
+  GroupHelpData,
+  UnknownCommandHelpData,
+} from "../src/manifest/runtime/build-help-data";
 
 import { defineCommand } from "../src";
 import { defineConfig } from "../src/define-config";
@@ -11,10 +14,10 @@ import {
   buildCommandHelpData,
   buildGroupHelpData,
   buildUnknownCommandHelpData,
-} from "../src/manifest/runtime/help-data";
-import { renderDefaultHelp } from "../src/manifest/runtime/render-help";
+} from "../src/manifest/runtime/build-help-data";
+import { renderDefaultHelp } from "../src/manifest/runtime/render-default-help";
+import { renderResolvedHelp } from "../src/manifest/runtime/render-resolved-help";
 import { resolveCommandRoute } from "../src/manifest/runtime/resolve-command-route";
-import { renderResolvedHelp } from "../src/manifest/runtime/resolve-help";
 
 const manifest: CommandManifest = {
   nodes: [

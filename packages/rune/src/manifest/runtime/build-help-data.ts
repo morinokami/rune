@@ -22,7 +22,7 @@ import type {
 } from "../manifest-types";
 import type { UnknownCommandRoute } from "./resolve-command-route";
 
-import { resolveSubcommandHelpEntries } from "./subcommand-help-entries";
+import { resolveSubcommandHelpEntries } from "./resolve-subcommand-help-entries";
 
 // ---------------------------------------------------------------------------
 // Public types – HelpData (rune-specific, includes group and unknown)

@@ -9,5 +9,9 @@ export type {
 } from "@rune-cli/core";
 
 export { defineConfig } from "./define-config";
-export { renderDefaultHelp } from "./manifest/runtime/render-help";
-export type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./manifest/runtime/help-data";
+export { renderDefaultHelp } from "./manifest/runtime/render-default-help";
+export type {
+  GroupHelpData,
+  HelpData,
+  UnknownCommandHelpData,
+} from "./manifest/runtime/build-help-data";

@@ -1,10 +1,10 @@
 import type { EarlyExit } from "./rune-options";
 
 import runePackageJson from "../../package.json" with { type: "json" };
-import { buildUnknownCommandHelpData } from "../manifest/runtime/help-data";
-import { renderDefaultHelp } from "../manifest/runtime/render-help";
+import { buildUnknownCommandHelpData } from "../manifest/runtime/build-help-data";
+import { renderDefaultHelp } from "../manifest/runtime/render-default-help";
+import { renderResolvedHelp } from "../manifest/runtime/render-resolved-help";
 import { resolveCommandRoute } from "../manifest/runtime/resolve-command-route";
-import { renderResolvedHelp } from "../manifest/runtime/resolve-help";
 import { isVersionFlag } from "./flags";
 import { createRuneCliManifest, getRuneSubcommand, loadRuneCommand } from "./rune-subcommands";
 import { writeStderrLine, writeStdout } from "./write-result";

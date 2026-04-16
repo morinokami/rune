@@ -3,9 +3,9 @@ import { runCommandPipeline, type CommandFailure } from "@rune-cli/core";
 import type { CommandManifest } from "../manifest-types";
 
 import { isVersionFlag } from "../../cli/flags";
-import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
+import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
+import { renderResolvedHelp } from "./render-resolved-help";
 import { resolveCommandRoute } from "./resolve-command-route";
-import { renderResolvedHelp } from "./resolve-help";
 
 export interface RunManifestCommandOptions {
   readonly manifest: CommandManifest;

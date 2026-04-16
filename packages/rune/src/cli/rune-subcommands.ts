@@ -3,7 +3,7 @@ import type { CommandArgField, CommandOptionField, DefinedCommand } from "@rune-
 import { defineCommand } from "@rune-cli/core";
 
 import type { CommandManifest } from "../manifest/manifest-types";
-import type { LoadCommandFn } from "../manifest/runtime/command-loader";
+import type { LoadCommandFn } from "../manifest/runtime/load-command";
 import type { EarlyExit } from "./rune-options";
 
 import { runBuildCommand } from "./build-command";

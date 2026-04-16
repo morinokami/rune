@@ -1,16 +1,16 @@
 import type { CommandManifest, CommandManifestPath } from "../manifest-types";
 import type { ResolveCommandRouteResult } from "./resolve-command-route";
 
-import { defaultLoadCommand, type LoadCommandFn } from "./command-loader";
-import { loadRuneConfigSafe } from "./config-loader";
 import {
   buildCommandHelpData,
   buildGroupHelpData,
   buildUnknownCommandHelpData,
   type HelpData,
-} from "./help-data";
-import { renderDefaultHelp } from "./render-help";
-import { resolveSubcommandHelpEntries } from "./subcommand-help-entries";
+} from "./build-help-data";
+import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
+import { loadRuneConfigSafe } from "./load-rune-config";
+import { renderDefaultHelp } from "./render-default-help";
+import { resolveSubcommandHelpEntries } from "./resolve-subcommand-help-entries";
 
 export interface RenderResolvedHelpOptions {
   readonly manifest: CommandManifest;
