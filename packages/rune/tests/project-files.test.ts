@@ -1,5 +1,3 @@
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
@@ -11,35 +9,24 @@ import {
   resolveProjectPath,
   resolveSourceDirectory,
 } from "../src/project/project-files";
+import { createTempFixtureManager, type FixtureFiles } from "./helpers";
 
-const fixtureRootDirectories = new Set<string>();
+const testFixtures = createTempFixtureManager();
 
 // Test setup
 
 afterEach(async () => {
-  await Promise.all(
-    [...fixtureRootDirectories].map((rootDirectory) =>
-      rm(rootDirectory, { recursive: true, force: true }),
-    ),
-  );
-  fixtureRootDirectories.clear();
+  await testFixtures.cleanup();
 });
 
 // Fixtures
 
-async function createProjectFixture(files: Readonly<Record<string, string>>): Promise<string> {
-  const projectRoot = await mkdtemp(path.join(os.tmpdir(), "rune-project-files-"));
-  fixtureRootDirectories.add(projectRoot);
-
-  await Promise.all(
-    Object.entries(files).map(async ([relativePath, contents]) => {
-      const absolutePath = path.join(projectRoot, relativePath);
-      await mkdir(path.dirname(absolutePath), { recursive: true });
-      await writeFile(absolutePath, contents);
-    }),
-  );
-
-  return projectRoot;
+async function createProjectFixture(files: FixtureFiles): Promise<string> {
+  const { fixtureDirectory } = await testFixtures.createFixture({
+    prefix: "rune-project-files-",
+    files,
+  });
+  return fixtureDirectory;
 }
 
 describe("path resolution", () => {

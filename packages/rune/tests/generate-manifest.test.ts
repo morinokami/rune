@@ -1,5 +1,3 @@
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
@@ -11,38 +9,25 @@ import {
   commandManifestPathToKey,
   createCommandManifestNodeMap,
 } from "../src/manifest/manifest-map";
+import { createTempFixtureManager, type FixtureFiles } from "./helpers";
 
-const fixtureRootDirectories = new Set<string>();
+const testFixtures = createTempFixtureManager();
 
 // Test setup
 
 afterEach(async () => {
-  await Promise.all(
-    [...fixtureRootDirectories].map((rootDirectory) =>
-      rm(rootDirectory, { recursive: true, force: true }),
-    ),
-  );
-  fixtureRootDirectories.clear();
+  await testFixtures.cleanup();
 });
 
 // Fixtures
 
-async function createCommandsFixture(files: Readonly<Record<string, string>>): Promise<string> {
-  const rootDirectory = await mkdtemp(path.join(os.tmpdir(), "rune-manifest-"));
-  const commandsDirectory = path.join(rootDirectory, "src", "commands");
-  fixtureRootDirectories.add(rootDirectory);
-
-  await mkdir(commandsDirectory, { recursive: true });
-
-  await Promise.all(
-    Object.entries(files).map(async ([relativePath, contents]) => {
-      const absolutePath = path.join(commandsDirectory, relativePath);
-      await mkdir(path.dirname(absolutePath), { recursive: true });
-      await writeFile(absolutePath, contents);
-    }),
-  );
-
-  return commandsDirectory;
+async function createCommandsFixture(files: FixtureFiles): Promise<string> {
+  const { fixtureDirectory } = await testFixtures.createFixture({
+    prefix: "rune-manifest-",
+    rootSubdirectory: path.join("src", "commands"),
+    files,
+  });
+  return fixtureDirectory;
 }
 
 describe("manifest structure", () => {
