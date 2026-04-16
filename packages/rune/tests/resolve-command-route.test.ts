@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { describe, expect, test } from "vite-plus/test";
 
 import type { CommandManifest } from "../src/manifest/manifest-types";
@@ -322,10 +323,9 @@ describe("alias routing", () => {
     const result = resolveCommandRoute(aliasManifest, ["depl"]);
 
     expect(result.kind).toBe("unknown");
+    assert(result.kind === "unknown");
 
-    if (result.kind === "unknown") {
-      // Suggestions should use canonical name
-      expect(result.suggestions).toContain("deploy");
-    }
+    // Suggestions should use canonical name
+    expect(result.suggestions).toContain("deploy");
   });
 });

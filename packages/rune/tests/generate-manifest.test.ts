@@ -23,8 +23,7 @@ afterEach(async () => {
 
 async function createCommandsFixture(files: FixtureFiles): Promise<string> {
   const { fixtureDirectory } = await testFixtures.createFixture({
-    prefix: "rune-manifest-",
-    rootSubdirectory: path.join("src", "commands"),
+    fixturePath: path.join("src", "commands"),
     files,
   });
   return fixtureDirectory;

@@ -75,7 +75,7 @@ async function createRuntimeFixture(files: FixtureFiles): Promise<{
   readonly rootDirectory: string;
   readonly manifest: CommandManifest;
 }> {
-  const rootDirectory = await testFixtures.createRoot("rune-runtime-");
+  const rootDirectory = await testFixtures.createRoot();
   // Each test gets unique module URLs so dynamic import caching does not leak between cases.
 
   await writeFixtureFiles(rootDirectory, files);
@@ -502,7 +502,7 @@ describe("unknown commands and version output", () => {
 async function createJsonFixture(commandBody: string): Promise<{
   readonly manifest: CommandManifest;
 }> {
-  const rootDirectory = await testFixtures.createRoot("rune-json-");
+  const rootDirectory = await testFixtures.createRoot();
 
   const commandDir = path.join(rootDirectory, "commands", "list");
   await mkdir(commandDir, { recursive: true });

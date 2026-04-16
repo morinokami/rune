@@ -4,26 +4,19 @@ import { afterEach, describe, expect, test } from "vite-plus/test";
 import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
-  resolveCommandsDirectory,
-  resolveDistDirectory,
+  resolveProjectDirectories,
   resolveProjectPath,
-  resolveSourceDirectory,
 } from "../src/project/project-files";
 import { createTempFixtureManager, type FixtureFiles } from "./helpers";
 
 const testFixtures = createTempFixtureManager();
 
-// Test setup
-
 afterEach(async () => {
   await testFixtures.cleanup();
 });
 
-// Fixtures
-
 async function createProjectFixture(files: FixtureFiles): Promise<string> {
   const { fixtureDirectory } = await testFixtures.createFixture({
-    prefix: "rune-project-files-",
     files,
   });
   return fixtureDirectory;
@@ -37,9 +30,11 @@ describe("path resolution", () => {
     });
 
     expect(projectRoot).toBe(path.resolve("/tmp/workspace", "./fixtures/app"));
-    expect(resolveSourceDirectory(projectRoot)).toBe(path.join(projectRoot, "src"));
-    expect(resolveCommandsDirectory(projectRoot)).toBe(path.join(projectRoot, "src", "commands"));
-    expect(resolveDistDirectory(projectRoot)).toBe(path.join(projectRoot, "dist"));
+
+    const directories = resolveProjectDirectories(projectRoot);
+    expect(directories.sourceDirectory).toBe(path.join(projectRoot, "src"));
+    expect(directories.commandsDirectory).toBe(path.join(projectRoot, "src", "commands"));
+    expect(directories.distDirectory).toBe(path.join(projectRoot, "dist"));
   });
 
   test("resolveProjectPath falls back to the current working directory", () => {
@@ -128,7 +123,7 @@ describe("commands directory validation", () => {
     });
 
     await expect(
-      assertCommandsDirectoryExists(resolveCommandsDirectory(projectRoot)),
+      assertCommandsDirectoryExists(resolveProjectDirectories(projectRoot).commandsDirectory),
     ).resolves.toBe(undefined);
   });
 
@@ -136,7 +131,7 @@ describe("commands directory validation", () => {
     const projectRoot = await createProjectFixture({});
 
     await expect(
-      assertCommandsDirectoryExists(resolveCommandsDirectory(projectRoot)),
+      assertCommandsDirectoryExists(resolveProjectDirectories(projectRoot).commandsDirectory),
     ).rejects.toThrow("Commands directory not found at src/commands");
   });
 });

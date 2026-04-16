@@ -41,23 +41,11 @@ export function resolveProjectPath(options: ResolveProjectPathOptions): string {
   return path.resolve(baseDirectory, options.projectPath ?? ".");
 }
 
-export function resolveSourceDirectory(projectRoot: string): string {
-  return path.join(projectRoot, SOURCE_DIRECTORY_NAME);
-}
-
-export function resolveCommandsDirectory(projectRoot: string): string {
-  return path.join(projectRoot, COMMANDS_DIRECTORY_NAME);
-}
-
-export function resolveDistDirectory(projectRoot: string): string {
-  return path.join(projectRoot, DIST_DIRECTORY_NAME);
-}
-
 export function resolveProjectDirectories(projectRoot: string): ProjectDirectories {
   return {
-    sourceDirectory: resolveSourceDirectory(projectRoot),
-    commandsDirectory: resolveCommandsDirectory(projectRoot),
-    distDirectory: resolveDistDirectory(projectRoot),
+    sourceDirectory: path.join(projectRoot, SOURCE_DIRECTORY_NAME),
+    commandsDirectory: path.join(projectRoot, COMMANDS_DIRECTORY_NAME),
+    distDirectory: path.join(projectRoot, DIST_DIRECTORY_NAME),
   };
 }
 

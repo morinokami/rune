@@ -57,7 +57,6 @@ function createCommandModule({
 
 async function createRunProject(files: FixtureFiles): Promise<string> {
   const { fixtureDirectory } = await testFixtures.createFixture({
-    prefix: "rune-run-project-",
     files,
   });
   return fixtureDirectory;
@@ -68,8 +67,7 @@ async function createRunWorkspaceProject(files: FixtureFiles): Promise<{
   readonly projectRoot: string;
 }> {
   const { rootDirectory, fixtureDirectory } = await testFixtures.createFixture({
-    prefix: "rune-run-workspace-",
-    rootSubdirectory: "fixture",
+    fixturePath: "fixture",
     files,
   });
 

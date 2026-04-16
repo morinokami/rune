@@ -12,14 +12,8 @@ import {
   type FixtureFiles,
 } from "./helpers";
 
-const buildProjectFixtures = createTempFixtureManager({
-  cleanupRetries: 3,
-  cleanupRetryDelayMs: 50,
-});
-const packagedWorkspaces = createTempFixtureManager({
-  cleanupRetries: 3,
-  cleanupRetryDelayMs: 50,
-});
+const buildProjectFixtures = createTempFixtureManager();
+const packagedWorkspaces = createTempFixtureManager();
 const sourceCorePackageRoot = fileURLToPath(new URL("../../core", import.meta.url));
 const sourceRunePackageRoot = fileURLToPath(new URL("..", import.meta.url));
 const vpBinaryPath = fileURLToPath(new URL("../node_modules/.bin/vp", import.meta.url));
@@ -85,7 +79,6 @@ function createBuildCommandModule({
 
 async function createBuildProject(files: FixtureFiles): Promise<string> {
   const { fixtureDirectory } = await buildProjectFixtures.createFixture({
-    prefix: "rune-build-project-",
     files,
   });
   return fixtureDirectory;
@@ -96,8 +89,7 @@ async function createBuildWorkspaceProject(files: FixtureFiles): Promise<{
   readonly projectRoot: string;
 }> {
   const { rootDirectory, fixtureDirectory } = await buildProjectFixtures.createFixture({
-    prefix: "rune-build-workspace-",
-    rootSubdirectory: "fixture",
+    fixturePath: "fixture",
     files,
   });
 
@@ -223,7 +215,7 @@ async function ensureBuiltPackageEnvironment(): Promise<{
   runePackageRoot: string;
 }> {
   builtPackageEnvironmentPromise ??= (async () => {
-    const packagedWorkspaceRoot = await packagedWorkspaces.createRoot("rune-packages-");
+    const packagedWorkspaceRoot = await packagedWorkspaces.createRoot();
 
     const corePackageRoot = await copyPackageForPack(sourceCorePackageRoot, packagedWorkspaceRoot);
     await linkPackageDependencies(sourceCorePackageRoot, corePackageRoot);
