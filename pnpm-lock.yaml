@@ -67,8 +67,8 @@ catalogs:
       specifier: 0.2.0
       version: 0.2.0
     typescript:
-      specifier: 5.9.3
-      version: 5.9.3
+      specifier: 6.0.2
+      version: 6.0.2
     vite-plus:
       specifier: 0.1.16
       version: 0.1.16
@@ -113,10 +113,10 @@ importers:
         version: 1.11.1
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.2
       vite-plus:
         specifier: 'catalog:'
-        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
+        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
 
   docs:
     dependencies:
@@ -143,11 +143,11 @@ importers:
         specifier: ^0.0.29
         version: 0.0.29(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
       typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
+        specifier: ^6.0.2
+        version: 6.0.2
       vitest:
         specifier: npm:@voidzero-dev/vite-plus-test@0.1.14
-        version: '@voidzero-dev/vite-plus-test@0.1.14(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)'
+        version: '@voidzero-dev/vite-plus-test@0.1.14(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)'
 
   packages/core:
     devDependencies:
@@ -162,10 +162,10 @@ importers:
         version: 7.0.0-dev.20260329.1
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.2
       vite-plus:
         specifier: 'catalog:'
-        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
+        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -190,10 +190,10 @@ importers:
         version: 7.0.0-dev.20260329.1
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.2
       vite-plus:
         specifier: 'catalog:'
-        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
+        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
 
   packages/rune:
     dependencies:
@@ -218,10 +218,10 @@ importers:
         version: 7.0.0-dev.20260329.1
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.2
       vite-plus:
         specifier: 'catalog:'
-        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
+        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
 
   packages/test-utils:
     devDependencies:
@@ -236,10 +236,10 @@ importers:
         version: 7.0.0-dev.20260329.1
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.2
       vite-plus:
         specifier: 'catalog:'
-        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
+        version: 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
 
 packages:
 
@@ -3907,6 +3907,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@6.0.2:
+    resolution: {integrity: sha512-bGdAIrZ0wiGDo5l8c++HWtbaNCWTS4UTv7RaTH/ThVIgjkveJt83m74bBHMJkuCbslY8ixgLBVZJIOiQlQTjfQ==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   ufo@1.6.3:
     resolution: {integrity: sha512-yDJTmhydvl5lJzBmy/hyOAA0d+aqCBuwl818haVdYCRrWV84o7YyeVm4QlVHStqNrrJSTb6jKuFAVqAFsr+K3Q==}
 
@@ -5662,7 +5667,23 @@ snapshots:
       typescript: 5.9.3
       yaml: 2.8.2
 
-  '@voidzero-dev/vite-plus-core@0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(yaml@2.8.2)':
+  '@voidzero-dev/vite-plus-core@0.1.14(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(yaml@2.8.2)':
+    dependencies:
+      '@oxc-project/runtime': 0.121.0
+      '@oxc-project/types': 0.122.0
+      lightningcss: 1.32.0
+      postcss: 8.5.8
+    optionalDependencies:
+      '@arethetypeswrong/core': 0.18.2
+      '@types/node': 24.12.2
+      esbuild: 0.27.4
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      publint: 0.3.18
+      typescript: 6.0.2
+      yaml: 2.8.2
+
+  '@voidzero-dev/vite-plus-core@0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(yaml@2.8.2)':
     dependencies:
       '@oxc-project/runtime': 0.123.0
       '@oxc-project/types': 0.123.0
@@ -5674,7 +5695,7 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.6.1
       publint: 0.3.18
-      typescript: 5.9.3
+      typescript: 6.0.2
       yaml: 2.8.2
 
   '@voidzero-dev/vite-plus-darwin-arm64@0.1.16':
@@ -5695,11 +5716,11 @@ snapshots:
   '@voidzero-dev/vite-plus-linux-x64-musl@0.1.16':
     optional: true
 
-  '@voidzero-dev/vite-plus-test@0.1.14(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)':
+  '@voidzero-dev/vite-plus-test@0.1.14(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@types/chai': 5.2.3
-      '@voidzero-dev/vite-plus-core': 0.1.14(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(yaml@2.8.2)
+      '@voidzero-dev/vite-plus-core': 0.1.14(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(esbuild@0.27.4)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(yaml@2.8.2)
       es-module-lexer: 1.7.0
       obug: 2.1.1
       pixelmatch: 7.1.0
@@ -5734,11 +5755,11 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@voidzero-dev/vite-plus-test@0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)':
+  '@voidzero-dev/vite-plus-test@0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@types/chai': 5.2.3
-      '@voidzero-dev/vite-plus-core': 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(yaml@2.8.2)
+      '@voidzero-dev/vite-plus-core': 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(yaml@2.8.2)
       es-module-lexer: 1.7.0
       obug: 2.1.1
       pixelmatch: 7.1.0
@@ -8104,7 +8125,10 @@ snapshots:
 
   typescript@5.6.1-rc: {}
 
-  typescript@5.9.3: {}
+  typescript@5.9.3:
+    optional: true
+
+  typescript@6.0.2: {}
 
   ufo@1.6.3: {}
 
@@ -8218,11 +8242,11 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-plus@0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2):
+  vite-plus@0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2):
     dependencies:
       '@oxc-project/types': 0.123.0
-      '@voidzero-dev/vite-plus-core': 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(yaml@2.8.2)
-      '@voidzero-dev/vite-plus-test': 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@5.9.3)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
+      '@voidzero-dev/vite-plus-core': 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(yaml@2.8.2)
+      '@voidzero-dev/vite-plus-test': 0.1.16(@arethetypeswrong/core@0.18.2)(@types/node@24.12.2)(jiti@2.6.1)(publint@0.3.18)(typescript@6.0.2)(vite@8.0.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(jiti@2.6.1)(yaml@2.8.2))(yaml@2.8.2)
       oxfmt: 0.43.0
       oxlint: 1.58.0(oxlint-tsgolint@0.20.0)
       oxlint-tsgolint: 0.20.0

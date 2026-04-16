@@ -24,7 +24,7 @@ catalog:
   sharp: 0.34.5
   sherif: 1.11.1
   starlight-dot-md: 0.2.0
-  typescript: 5.9.3
+  typescript: 6.0.2
   vite: npm:@voidzero-dev/vite-plus-core@0.1.14
   vite-plus: 0.1.16
   vitest: npm:@voidzero-dev/vite-plus-test@0.1.14
