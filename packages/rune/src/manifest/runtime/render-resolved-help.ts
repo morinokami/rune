@@ -58,9 +58,9 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
     return renderHelpSafe(render, data);
   }
 
-  const loadCommand = options.loadCommand ?? defaultLoadCommand;
+  const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
   const node = options.route.node;
-  const command = await loadCommand(node);
+  const command = await loadCommandFn(node);
 
   const subcommands =
     node.childNames.length > 0

@@ -10,16 +10,16 @@ import { isRuneConfig, type RuneConfig } from "../../define-config";
 export async function loadRuneConfigSafe(configPath: string): Promise<RuneConfig | undefined> {
   try {
     const moduleUrl = pathToFileURL(configPath).href;
-    const module = (await import(moduleUrl)) as { default?: unknown };
+    const loadedConfigModule = (await import(moduleUrl)) as { default?: unknown };
 
-    if (!module.default || !isRuneConfig(module.default)) {
+    if (!loadedConfigModule.default || !isRuneConfig(loadedConfigModule.default)) {
       process.stderr.write(
         "Warning: rune.config.ts does not export a valid defineConfig() default export.\n",
       );
       return undefined;
     }
 
-    return module.default;
+    return loadedConfigModule.default;
   } catch {
     process.stderr.write("Warning: Failed to load rune.config.ts.\n");
     return undefined;

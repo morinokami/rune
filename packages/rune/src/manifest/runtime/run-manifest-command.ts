@@ -126,8 +126,8 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
       return 0;
     }
 
-    const loadCommand = options.loadCommand ?? defaultLoadCommand;
-    const command = await loadCommand(route.node);
+    const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
+    const command = await loadCommandFn(route.node);
 
     const result = await runCommandPipeline({
       command,
