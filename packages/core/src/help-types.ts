@@ -23,6 +23,8 @@ export interface PrimitiveArgumentHelpEntry {
 export interface SchemaArgumentHelpEntry {
   readonly name: string;
   readonly type: undefined;
+  readonly typeLabel?: string;
+  readonly defaultLabel?: string;
   readonly description?: string;
   readonly required: boolean;
 }
@@ -47,6 +49,8 @@ export interface SchemaOptionHelpEntry {
   readonly name: string;
   readonly short?: string;
   readonly type: undefined;
+  readonly typeLabel?: string;
+  readonly defaultLabel?: string;
   readonly description?: string;
   readonly required: boolean;
   readonly negatable: false;

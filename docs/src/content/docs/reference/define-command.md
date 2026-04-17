@@ -89,6 +89,20 @@ Identifier used as the key in `ctx.args`.
 
 A [Standard Schema](https://standardschema.dev) object (e.g. Zod, Valibot) for validation and transformation. Required/optional semantics are derived from the schema.
 
+##### `typeLabel`
+
+- **Type:** `string`
+- **Optional**
+
+Display-only type hint rendered as `<typeLabel>` in `--help` output (e.g. `"uuid"`, `"number"`). Has no effect on validation or type inference. Use this when the schema's runtime value shape is not otherwise communicated to the reader.
+
+##### `defaultLabel`
+
+- **Type:** `string`
+- **Optional**
+
+Display-only default-value label rendered as `(default: defaultLabel)` in `--help` output. Has no effect on required/optional handling, which is still derived from the schema itself. Keep this in sync with the schema's actual default if one is set.
+
 ##### `description`
 
 - **Type:** `string`
