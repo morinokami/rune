@@ -222,6 +222,21 @@ async function captureRuneCliResult(argv: readonly string[], cwd?: string) {
   return captureCommandResult(() => runRuneCli({ argv, cwd }));
 }
 
+async function createBuildProject(
+  files: Readonly<Record<string, string>>,
+  options?: { readonly fixturePath?: string; readonly packageName?: string },
+): Promise<{ readonly workspaceRoot: string; readonly projectRoot: string }> {
+  const { rootDirectory, fixtureDirectory } = await buildProjectFixtures.createFixture({
+    fixturePath: options?.fixturePath,
+    files: {
+      "package.json": JSON.stringify({ name: options?.packageName ?? "mycli" }, null, 2),
+      ...files,
+    },
+  });
+  await installRuneFixturePackage(fixtureDirectory);
+  return { workspaceRoot: rootDirectory, projectRoot: fixtureDirectory };
+}
+
 describe("build subcommand parsing", () => {
   test("runRuneCli shows help for `rune build --help`", async () => {
     const captured = await captureRuneCliResult(["build", "--help"]);
@@ -232,21 +247,18 @@ describe("build subcommand parsing", () => {
   });
 
   test("runRuneCli supports `rune build --project=<path>`", async () => {
-    const { rootDirectory: workspaceRoot, fixtureDirectory: projectRoot } =
-      await buildProjectFixtures.createFixture({
-        fixturePath: "fixture",
-        files: {
-          "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-          "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+    const { workspaceRoot, projectRoot } = await createBuildProject(
+      {
+        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Say hello",
   async run() {},
 });
 `,
-        },
-      });
-    await installRuneFixturePackage(projectRoot);
+      },
+      { fixturePath: "fixture" },
+    );
 
     const captured = await captureRuneCliResult(["build", "--project=./fixture"], workspaceRoot);
 
@@ -274,15 +286,13 @@ export default defineCommand({
 
 describe("build output", () => {
   test("runRuneCli builds a fixture project and emits a runnable dist CLI", async () => {
-    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "src/message.ts": [
-          "export function formatGreeting(name: string): string {",
-          "  return `hello ${name}`;",
-          "}",
-        ].join("\n"),
-        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+    const { projectRoot } = await createBuildProject({
+      "src/message.ts": [
+        "export function formatGreeting(name: string): string {",
+        "  return `hello ${name}`;",
+        "}",
+      ].join("\n"),
+      "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
 import { formatGreeting } from "../../message.ts";
 
 export default defineCommand({
@@ -293,9 +303,7 @@ export default defineCommand({
   },
 });
 `,
-      },
     });
-    await installRuneFixturePackage(projectRoot);
 
     const buildResult = await captureRuneCliResult(["build"], projectRoot);
 
@@ -329,19 +337,15 @@ export default defineCommand({
   });
 
   test("the built CLI shows help without invoking rune run", async () => {
-    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+    const { projectRoot } = await createBuildProject({
+      "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Say hello",
   async run() {},
 });
 `,
-      },
     });
-    await installRuneFixturePackage(projectRoot);
 
     const buildResult = await captureRuneCliResult(["build"], projectRoot);
     expect(buildResult.exitCode).toBe(0);
@@ -359,10 +363,8 @@ export default defineCommand({
   });
 
   test("runRuneCli builds a bare file command and emits the correct dist path", async () => {
-    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
+    const { projectRoot } = await createBuildProject({
+      "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Say hello",
@@ -372,9 +374,7 @@ export default defineCommand({
   },
 });
 `,
-      },
     });
-    await installRuneFixturePackage(projectRoot);
 
     const buildResult = await captureRuneCliResult(["build"], projectRoot);
 
@@ -402,21 +402,17 @@ export default defineCommand({
   });
 
   test("runRuneCli build copies non-TypeScript files and skips declaration files", async () => {
-    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "src/config.json": JSON.stringify({ greeting: "hello" }, null, 2),
-        "src/types.d.ts": "export interface Message { readonly text: string; }\n",
-        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+    const { projectRoot } = await createBuildProject({
+      "src/config.json": JSON.stringify({ greeting: "hello" }, null, 2),
+      "src/types.d.ts": "export interface Message { readonly text: string; }\n",
+      "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Say hello",
   async run() {},
 });
 `,
-      },
     });
-    await installRuneFixturePackage(projectRoot);
 
     const buildResult = await captureRuneCliResult(["build"], projectRoot);
     expect(buildResult.exitCode).toBe(0);
@@ -431,15 +427,13 @@ export default defineCommand({
 
 describe("build isolation and optimization", () => {
   test("runRuneCli build emits shared chunks for command dependencies", async () => {
-    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "src/shared.ts": [
-          "export function formatMessage(name: string): string {",
-          "  return `hello ${name}`;",
-          "}",
-        ].join("\n"),
-        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+    const { projectRoot } = await createBuildProject({
+      "src/shared.ts": [
+        "export function formatMessage(name: string): string {",
+        "  return `hello ${name}`;",
+        "}",
+      ].join("\n"),
+      "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
 import { formatMessage } from "../../shared.ts";
 
 export default defineCommand({
@@ -448,7 +442,7 @@ export default defineCommand({
   },
 });
 `,
-        "src/commands/goodbye/index.ts": `import { defineCommand } from "@rune-cli/rune";
+      "src/commands/goodbye/index.ts": `import { defineCommand } from "@rune-cli/rune";
 import { formatMessage } from "../../shared.ts";
 
 export default defineCommand({
@@ -457,9 +451,7 @@ export default defineCommand({
   },
 });
 `,
-      },
     });
-    await installRuneFixturePackage(projectRoot);
 
     const buildResult = await captureRuneCliResult(["build"], projectRoot);
     expect(buildResult.exitCode).toBe(0);
@@ -470,22 +462,20 @@ export default defineCommand({
   });
 
   test("runRuneCli build does not apply the project tsconfig to the built CLI entry", async () => {
-    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "tsconfig.json": JSON.stringify(
-          {
-            compilerOptions: {
-              baseUrl: ".",
-              paths: {
-                "@rune-cli/core": ["./broken-core.ts"],
-              },
+    const { projectRoot } = await createBuildProject({
+      "tsconfig.json": JSON.stringify(
+        {
+          compilerOptions: {
+            baseUrl: ".",
+            paths: {
+              "@rune-cli/core": ["./broken-core.ts"],
             },
           },
-          null,
-          2,
-        ),
-        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+        },
+        null,
+        2,
+      ),
+      "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Say hello",
@@ -496,9 +486,7 @@ export default defineCommand({
   },
 });
 `,
-      },
     });
-    await installRuneFixturePackage(projectRoot);
 
     const buildResult = await captureRuneCliResult(["build"], projectRoot);
 
@@ -516,11 +504,9 @@ export default defineCommand({
 
 describe("failure reporting", () => {
   test("runRuneCli build reports transpile failures", async () => {
-    const { fixtureDirectory: projectRoot } = await buildProjectFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "src/broken.ts": "export const = 1;\n",
-        "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+    const { projectRoot } = await createBuildProject({
+      "src/broken.ts": "export const = 1;\n",
+      "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
 import { value } from "../../broken.ts";
 
 export default defineCommand({
@@ -530,9 +516,7 @@ export default defineCommand({
   },
 });
 `,
-      },
     });
-    await installRuneFixturePackage(projectRoot);
 
     const buildResult = await captureRuneCliResult(["build"], projectRoot);
 

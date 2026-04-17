@@ -1,4 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vite-plus/test";
@@ -342,25 +341,23 @@ async function createJsonFixture(commandBody: string): Promise<{
   readonly manifest: CommandManifest;
 }> {
   const rootDirectory = await testFixtures.createRoot();
+  const sourceFilePath = path.join(rootDirectory, "commands", "list", "index.mjs");
 
-  const commandDir = path.join(rootDirectory, "commands", "list");
-  await mkdir(commandDir, { recursive: true });
-
-  const moduleContents = `import { CommandError, defineCommand } from ${coreEntryPath};
+  await writeFixtureFiles(rootDirectory, {
+    "commands/list/index.mjs": `import { CommandError, defineCommand } from ${coreEntryPath};
 
 export default defineCommand({
 ${commandBody}
 });
-`;
-
-  await writeFile(path.join(commandDir, "index.mjs"), moduleContents);
+`,
+  });
 
   const manifest: CommandManifest = {
     nodes: [
       groupNode({ pathSegments: [], childNames: ["list"] }),
       commandNode({
         pathSegments: ["list"],
-        sourceFilePath: path.join(commandDir, "index.mjs"),
+        sourceFilePath,
         description: "List items",
       }),
     ],
