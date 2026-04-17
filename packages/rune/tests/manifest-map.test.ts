@@ -1,11 +1,10 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import type { CommandManifest } from "../src/manifest/manifest-types";
-
 import {
   commandManifestPathToKey,
   createCommandManifestNodeMap,
 } from "../src/manifest/manifest-map";
+import { commandNode, groupNode, manifest as buildManifest } from "./helpers";
 
 describe("commandManifestPathToKey", () => {
   test("returns an empty string for the root path", () => {
@@ -23,19 +22,14 @@ describe("commandManifestPathToKey", () => {
 
 describe("createCommandManifestNodeMap", () => {
   test("indexes every node by its canonical joined path key", () => {
-    const manifest: CommandManifest = {
-      nodes: [
-        { pathSegments: [], kind: "group", aliases: [], childNames: ["project"] },
-        { pathSegments: ["project"], kind: "group", aliases: [], childNames: ["create"] },
-        {
-          pathSegments: ["project", "create"],
-          kind: "command",
-          sourceFilePath: "/tmp/project/create.mjs",
-          aliases: [],
-          childNames: [],
-        },
-      ],
-    };
+    const manifest = buildManifest([
+      groupNode({ pathSegments: [], childNames: ["project"] }),
+      groupNode({ pathSegments: ["project"], childNames: ["create"] }),
+      commandNode({
+        pathSegments: ["project", "create"],
+        sourceFilePath: "/tmp/project/create.mjs",
+      }),
+    ]);
 
     const map = createCommandManifestNodeMap(manifest);
 
@@ -46,18 +40,14 @@ describe("createCommandManifestNodeMap", () => {
   });
 
   test("registers each alias under its parent's canonical path", () => {
-    const manifest: CommandManifest = {
-      nodes: [
-        { pathSegments: [], kind: "group", aliases: [], childNames: ["deploy"] },
-        {
-          pathSegments: ["deploy"],
-          kind: "command",
-          sourceFilePath: "/tmp/deploy.mjs",
-          aliases: ["d", "dep"],
-          childNames: [],
-        },
-      ],
-    };
+    const manifest = buildManifest([
+      groupNode({ pathSegments: [], childNames: ["deploy"] }),
+      commandNode({
+        pathSegments: ["deploy"],
+        sourceFilePath: "/tmp/deploy.mjs",
+        aliases: ["d", "dep"],
+      }),
+    ]);
 
     const map = createCommandManifestNodeMap(manifest);
 
@@ -67,19 +57,15 @@ describe("createCommandManifestNodeMap", () => {
   });
 
   test("registers nested aliases keeping ancestor segments canonical", () => {
-    const manifest: CommandManifest = {
-      nodes: [
-        { pathSegments: [], kind: "group", aliases: [], childNames: ["project"] },
-        { pathSegments: ["project"], kind: "group", aliases: [], childNames: ["create"] },
-        {
-          pathSegments: ["project", "create"],
-          kind: "command",
-          sourceFilePath: "/tmp/project/create.mjs",
-          aliases: ["c", "new"],
-          childNames: [],
-        },
-      ],
-    };
+    const manifest = buildManifest([
+      groupNode({ pathSegments: [], childNames: ["project"] }),
+      groupNode({ pathSegments: ["project"], childNames: ["create"] }),
+      commandNode({
+        pathSegments: ["project", "create"],
+        sourceFilePath: "/tmp/project/create.mjs",
+        aliases: ["c", "new"],
+      }),
+    ]);
 
     const map = createCommandManifestNodeMap(manifest);
 
@@ -89,18 +75,10 @@ describe("createCommandManifestNodeMap", () => {
   });
 
   test("ignores aliases on the root node", () => {
-    const manifest: CommandManifest = {
-      nodes: [
-        { pathSegments: [], kind: "group", aliases: ["r"], childNames: ["hello"] },
-        {
-          pathSegments: ["hello"],
-          kind: "command",
-          sourceFilePath: "/tmp/hello.mjs",
-          aliases: [],
-          childNames: [],
-        },
-      ],
-    };
+    const manifest = buildManifest([
+      groupNode({ pathSegments: [], childNames: ["hello"], aliases: ["r"] }),
+      commandNode({ pathSegments: ["hello"], sourceFilePath: "/tmp/hello.mjs" }),
+    ]);
 
     const map = createCommandManifestNodeMap(manifest);
 

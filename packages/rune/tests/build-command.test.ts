@@ -2,12 +2,17 @@ import { spawn } from "node:child_process";
 import { cp, mkdir, open, realpath, readFile, readdir, symlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "vite-plus/test";
+import { afterAll, beforeAll, describe, expect, test } from "vite-plus/test";
 
 import { runRuneCli } from "../src/cli/rune-cli";
-import { captureCommandResult, createTempFixtureManager, pathExists } from "./helpers";
+import {
+  captureCommandResult,
+  createTempFixtureManager,
+  pathExists,
+  setupTempFixtures,
+} from "./helpers";
 
-const buildProjectFixtures = createTempFixtureManager();
+const buildProjectFixtures = setupTempFixtures();
 const packagedWorkspaces = createTempFixtureManager();
 const sourceCorePackageRoot = fileURLToPath(new URL("../../core", import.meta.url));
 const sourceRunePackageRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -20,10 +25,6 @@ const PACKAGED_ENTRIES = ["package.json", "src", "tsconfig.json", "vite.config.t
 
 beforeAll(async () => {
   await ensureBuiltPackageEnvironment();
-});
-
-afterEach(async () => {
-  await buildProjectFixtures.cleanup();
 });
 
 afterAll(async () => {

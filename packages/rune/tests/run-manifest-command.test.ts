@@ -6,15 +6,20 @@ import { afterEach, describe, expect, test } from "vite-plus/test";
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
 import { runManifestCommand } from "../src/manifest/runtime/run-manifest-command";
-import { captureCommandResult, createTempFixtureManager, writeFixtureFiles } from "./helpers";
+import {
+  captureCommandResult,
+  commandNode,
+  groupNode,
+  setupTempFixtures,
+  writeFixtureFiles,
+} from "./helpers";
 
 const coreEntryPath = JSON.stringify(
   fileURLToPath(new URL("../../core/src/index.ts", import.meta.url)),
 );
-const testFixtures = createTempFixtureManager();
+const testFixtures = setupTempFixtures();
 
-afterEach(async () => {
-  await testFixtures.cleanup();
+afterEach(() => {
   delete (globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules;
 });
 
@@ -48,41 +53,22 @@ async function createRuntimeFixture(
 
   const manifest: CommandManifest = {
     nodes: [
-      {
-        pathSegments: [],
-        kind: "group",
-        childNames: ["project"],
-        aliases: [],
-      },
-      {
-        pathSegments: ["project"],
-        kind: "group",
-        childNames: ["create", "list"],
-        aliases: [],
-      },
-      {
+      groupNode({ pathSegments: [], childNames: ["project"] }),
+      groupNode({ pathSegments: ["project"], childNames: ["create", "list"] }),
+      commandNode({
         pathSegments: ["project", "create"],
-        kind: "command",
         sourceFilePath: path.join(rootDirectory, "commands", "project", "create", "index.mjs"),
-        childNames: [],
-        aliases: [],
         description: "Create a project",
-      },
-      {
+      }),
+      commandNode({
         pathSegments: ["project", "list"],
-        kind: "command",
         sourceFilePath: path.join(rootDirectory, "commands", "project", "list", "index.mjs"),
-        childNames: [],
-        aliases: [],
         description: "List projects",
-      },
+      }),
     ],
   };
 
-  return {
-    rootDirectory,
-    manifest,
-  };
+  return { rootDirectory, manifest };
 }
 
 async function captureRunManifestCommandResult(options: Parameters<typeof runManifestCommand>[0]) {
@@ -371,20 +357,12 @@ ${commandBody}
 
   const manifest: CommandManifest = {
     nodes: [
-      {
-        pathSegments: [],
-        kind: "group",
-        childNames: ["list"],
-        aliases: [],
-      },
-      {
+      groupNode({ pathSegments: [], childNames: ["list"] }),
+      commandNode({
         pathSegments: ["list"],
-        kind: "command",
         sourceFilePath: path.join(commandDir, "index.mjs"),
-        childNames: [],
-        aliases: [],
         description: "List items",
-      },
+      }),
     ],
   };
 

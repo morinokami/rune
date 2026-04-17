@@ -1,20 +1,16 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { runRuneCli } from "../src/cli/rune-cli";
-import { captureCommandResult, createTempFixtureManager } from "./helpers";
+import { captureCommandResult, setupTempFixtures } from "./helpers";
 
 const coreEntryPath = JSON.stringify(
   fileURLToPath(new URL("../../core/src/index.ts", import.meta.url)),
 );
 
-const testFixtures = createTempFixtureManager();
-
-afterEach(async () => {
-  await testFixtures.cleanup();
-});
+const testFixtures = setupTempFixtures();
 
 async function captureRuneCliResult(argv: readonly string[], cwd?: string) {
   return captureCommandResult(() => runRuneCli({ argv, cwd }));

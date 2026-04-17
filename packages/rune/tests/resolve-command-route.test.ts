@@ -1,66 +1,39 @@
 import assert from "node:assert/strict";
 import { describe, expect, test } from "vite-plus/test";
 
-import type { CommandManifest } from "../src/manifest/manifest-types";
-
 import { resolveCommandRoute } from "../src/manifest/runtime/resolve-command-route";
+import { commandNode, groupNode, manifest as buildManifest } from "./helpers";
 
-const manifest: CommandManifest = {
-  nodes: [
-    {
-      pathSegments: [],
-      kind: "group",
-      childNames: ["hello", "project", "user"],
-      aliases: [],
-    },
-    {
-      pathSegments: ["hello"],
-      kind: "command",
-      sourceFilePath: "/commands/hello/index.ts",
-      childNames: [],
-      aliases: [],
-      description: "Say hello",
-    },
-    {
-      pathSegments: ["project"],
-      kind: "command",
-      sourceFilePath: "/commands/project/index.ts",
-      childNames: ["create", "list"],
-      aliases: [],
-      description: "Project commands",
-    },
-    {
-      pathSegments: ["project", "create"],
-      kind: "command",
-      sourceFilePath: "/commands/project/create/index.ts",
-      childNames: [],
-      aliases: [],
-      description: "Create a project",
-    },
-    {
-      pathSegments: ["project", "list"],
-      kind: "command",
-      sourceFilePath: "/commands/project/list/index.ts",
-      childNames: [],
-      aliases: [],
-      description: "List projects",
-    },
-    {
-      pathSegments: ["user"],
-      kind: "group",
-      childNames: ["delete"],
-      aliases: [],
-    },
-    {
-      pathSegments: ["user", "delete"],
-      kind: "command",
-      sourceFilePath: "/commands/user/delete/index.ts",
-      childNames: [],
-      aliases: [],
-      description: "Delete a user",
-    },
-  ],
-};
+const manifest = buildManifest([
+  groupNode({ pathSegments: [], childNames: ["hello", "project", "user"] }),
+  commandNode({
+    pathSegments: ["hello"],
+    sourceFilePath: "/commands/hello/index.ts",
+    description: "Say hello",
+  }),
+  commandNode({
+    pathSegments: ["project"],
+    sourceFilePath: "/commands/project/index.ts",
+    childNames: ["create", "list"],
+    description: "Project commands",
+  }),
+  commandNode({
+    pathSegments: ["project", "create"],
+    sourceFilePath: "/commands/project/create/index.ts",
+    description: "Create a project",
+  }),
+  commandNode({
+    pathSegments: ["project", "list"],
+    sourceFilePath: "/commands/project/list/index.ts",
+    description: "List projects",
+  }),
+  groupNode({ pathSegments: ["user"], childNames: ["delete"] }),
+  commandNode({
+    pathSegments: ["user", "delete"],
+    sourceFilePath: "/commands/user/delete/index.ts",
+    description: "Delete a user",
+  }),
+]);
 
 describe("command and group resolution", () => {
   test("resolveCommandRoute resolves executable commands and preserves remaining argv", () => {
@@ -88,30 +61,23 @@ describe("command and group resolution", () => {
   });
 
   test("resolveCommandRoute treats unmatched root tokens as command args when the root is executable", () => {
-    const manifest: CommandManifest = {
-      nodes: [
-        {
-          pathSegments: [],
-          kind: "command",
-          sourceFilePath: "/commands/index.ts",
-          childNames: ["hello"],
-          aliases: [],
-          description: "Create a project",
-        },
-        {
-          pathSegments: ["hello"],
-          kind: "command",
-          sourceFilePath: "/commands/hello/index.ts",
-          childNames: [],
-          aliases: [],
-          description: "Say hello",
-        },
-      ],
-    };
+    const rootExecutableManifest = buildManifest([
+      commandNode({
+        pathSegments: [],
+        sourceFilePath: "/commands/index.ts",
+        childNames: ["hello"],
+        description: "Create a project",
+      }),
+      commandNode({
+        pathSegments: ["hello"],
+        sourceFilePath: "/commands/hello/index.ts",
+        description: "Say hello",
+      }),
+    ]);
 
-    expect(resolveCommandRoute(manifest, ["mycli"])).toEqual({
+    expect(resolveCommandRoute(rootExecutableManifest, ["mycli"])).toEqual({
       kind: "command",
-      node: manifest.nodes[0],
+      node: rootExecutableManifest.nodes[0],
       matchedPath: [],
       remainingArgs: ["mycli"],
       helpRequested: false,
@@ -200,32 +166,20 @@ describe("argument passthrough", () => {
 
 describe("alias routing", () => {
   test("resolveCommandRoute resolves command aliases", () => {
-    const aliasManifest: CommandManifest = {
-      nodes: [
-        {
-          pathSegments: [],
-          kind: "group",
-          childNames: ["deploy", "dev"],
-          aliases: [],
-        },
-        {
-          pathSegments: ["deploy"],
-          kind: "command",
-          sourceFilePath: "/commands/deploy.ts",
-          childNames: [],
-          aliases: ["d"],
-          description: "Deploy the app",
-        },
-        {
-          pathSegments: ["dev"],
-          kind: "command",
-          sourceFilePath: "/commands/dev.ts",
-          childNames: [],
-          aliases: [],
-          description: "Start dev server",
-        },
-      ],
-    };
+    const aliasManifest = buildManifest([
+      groupNode({ pathSegments: [], childNames: ["deploy", "dev"] }),
+      commandNode({
+        pathSegments: ["deploy"],
+        sourceFilePath: "/commands/deploy.ts",
+        aliases: ["d"],
+        description: "Deploy the app",
+      }),
+      commandNode({
+        pathSegments: ["dev"],
+        sourceFilePath: "/commands/dev.ts",
+        description: "Start dev server",
+      }),
+    ]);
 
     const result = resolveCommandRoute(aliasManifest, ["d"]);
 
@@ -239,35 +193,23 @@ describe("alias routing", () => {
   });
 
   test("resolveCommandRoute resolves group aliases and child commands through them", () => {
-    const aliasManifest: CommandManifest = {
-      nodes: [
-        {
-          pathSegments: [],
-          kind: "group",
-          childNames: ["project"],
-          aliases: [],
-        },
-        {
-          pathSegments: ["project"],
-          kind: "group",
-          childNames: ["create"],
-          aliases: ["p"],
-          description: "Manage projects",
-        },
-        {
-          pathSegments: ["project", "create"],
-          kind: "command",
-          sourceFilePath: "/commands/project/create.ts",
-          childNames: [],
-          aliases: ["c"],
-          description: "Create a project",
-        },
-      ],
-    };
+    const aliasManifest = buildManifest([
+      groupNode({ pathSegments: [], childNames: ["project"] }),
+      groupNode({
+        pathSegments: ["project"],
+        childNames: ["create"],
+        aliases: ["p"],
+        description: "Manage projects",
+      }),
+      commandNode({
+        pathSegments: ["project", "create"],
+        sourceFilePath: "/commands/project/create.ts",
+        aliases: ["c"],
+        description: "Create a project",
+      }),
+    ]);
 
-    // Group alias
     const groupResult = resolveCommandRoute(aliasManifest, ["p"]);
-
     expect(groupResult).toEqual({
       kind: "group",
       node: aliasManifest.nodes[1],
@@ -276,9 +218,7 @@ describe("alias routing", () => {
       helpRequested: false,
     });
 
-    // Group alias + child canonical name
     const childResult = resolveCommandRoute(aliasManifest, ["p", "create"]);
-
     expect(childResult).toEqual({
       kind: "command",
       node: aliasManifest.nodes[2],
@@ -287,9 +227,7 @@ describe("alias routing", () => {
       helpRequested: false,
     });
 
-    // Group alias + child alias
     const aliasChainResult = resolveCommandRoute(aliasManifest, ["p", "c"]);
-
     expect(aliasChainResult).toEqual({
       kind: "command",
       node: aliasManifest.nodes[2],
@@ -300,32 +238,20 @@ describe("alias routing", () => {
   });
 
   test("resolveCommandRoute includes aliases in suggestion candidates", () => {
-    const aliasManifest: CommandManifest = {
-      nodes: [
-        {
-          pathSegments: [],
-          kind: "group",
-          childNames: ["deploy"],
-          aliases: [],
-        },
-        {
-          pathSegments: ["deploy"],
-          kind: "command",
-          sourceFilePath: "/commands/deploy.ts",
-          childNames: [],
-          aliases: ["dep"],
-          description: "Deploy the app",
-        },
-      ],
-    };
+    const aliasManifest = buildManifest([
+      groupNode({ pathSegments: [], childNames: ["deploy"] }),
+      commandNode({
+        pathSegments: ["deploy"],
+        sourceFilePath: "/commands/deploy.ts",
+        aliases: ["dep"],
+        description: "Deploy the app",
+      }),
+    ]);
 
-    // "depl" is close to "dep" (alias) and "deploy" (canonical)
     const result = resolveCommandRoute(aliasManifest, ["depl"]);
 
     expect(result.kind).toBe("unknown");
     assert(result.kind === "unknown");
-
-    // Suggestions should use canonical name
     expect(result.suggestions).toContain("deploy");
   });
 });

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { afterEach, describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import {
   assertCommandsDirectoryExists,
@@ -7,18 +7,12 @@ import {
   resolveProjectDirectories,
   resolveProjectPath,
 } from "../src/project/project-files";
-import { createTempFixtureManager, type FixtureFiles } from "./helpers";
+import { type FixtureFiles, setupTempFixtures } from "./helpers";
 
-const testFixtures = createTempFixtureManager();
-
-afterEach(async () => {
-  await testFixtures.cleanup();
-});
+const testFixtures = setupTempFixtures();
 
 async function createProjectFixture(files: FixtureFiles): Promise<string> {
-  const { fixtureDirectory } = await testFixtures.createFixture({
-    files,
-  });
+  const { fixtureDirectory } = await testFixtures.createFixture({ files });
   return fixtureDirectory;
 }
 
