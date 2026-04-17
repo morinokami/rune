@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.30
+
+### Patch Changes
+
+- [#110](https://github.com/morinokami/rune/pull/110) [`ba6b615`](https://github.com/morinokami/rune/commit/ba6b6156b6e208958fb37160c06dfedd14ac9592) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add typeLabel and defaultLabel for schema field help display
+
 ## 0.0.29
 
 ### Patch Changes
