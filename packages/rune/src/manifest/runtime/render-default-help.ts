@@ -35,12 +35,17 @@ function formatSubcommandLabel(entry: SubcommandHelpEntry): string {
 }
 
 function formatArgumentLabel(entry: ArgumentHelpEntry): string {
-  if (entry.type === undefined || entry.type === "boolean") return entry.name;
+  if (entry.type === undefined) {
+    return entry.typeLabel ? `${entry.name} <${entry.typeLabel}>` : entry.name;
+  }
+  if (entry.type === "boolean") return entry.name;
   return `${entry.name} <${entry.type}>`;
 }
 
 function formatArgumentDefaultSuffix(entry: ArgumentHelpEntry): string {
-  if (entry.type === undefined) return "";
+  if (entry.type === undefined) {
+    return entry.defaultLabel ? `(default: ${entry.defaultLabel})` : "";
+  }
   if (!("default" in entry) || entry.default === undefined) return "";
 
   const formatted =
@@ -62,7 +67,14 @@ function formatUsageArguments(entries: readonly ArgumentHelpEntry[]): string {
 }
 
 function formatUserOptionLabel(entry: PrimitiveOptionHelpEntry | SchemaOptionHelpEntry): string {
-  const typeHint = entry.type !== undefined && entry.type !== "boolean" ? ` <${entry.type}>` : "";
+  const typeHint =
+    entry.type === undefined
+      ? entry.typeLabel
+        ? ` <${entry.typeLabel}>`
+        : ""
+      : entry.type !== "boolean"
+        ? ` <${entry.type}>`
+        : "";
   const negationSuffix = entry.negatable ? `, --no-${entry.name}` : "";
   const longLabel = `--${entry.name}${typeHint}${negationSuffix}`;
 
@@ -72,7 +84,9 @@ function formatUserOptionLabel(entry: PrimitiveOptionHelpEntry | SchemaOptionHel
 function formatUserOptionDefaultSuffix(
   entry: PrimitiveOptionHelpEntry | SchemaOptionHelpEntry,
 ): string {
-  if (entry.type === undefined) return "";
+  if (entry.type === undefined) {
+    return entry.defaultLabel ? `(default: ${entry.defaultLabel})` : "";
+  }
   if (!("default" in entry) || entry.default === undefined) return "";
   if (entry.type === "boolean") return "";
 

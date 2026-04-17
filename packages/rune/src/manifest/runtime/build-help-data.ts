@@ -148,6 +148,8 @@ export async function buildCommandHelpData(
         type: undefined,
         description: field.description,
         required,
+        ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
+        ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
       });
     } else {
       const entry: PrimitiveArgumentHelpEntry = {
@@ -174,6 +176,8 @@ export async function buildCommandHelpData(
         description: field.description,
         required,
         negatable: false as const,
+        ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
+        ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
       });
     } else {
       const entry: PrimitiveOptionHelpEntry = {

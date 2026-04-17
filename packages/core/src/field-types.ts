@@ -53,6 +53,19 @@ interface SchemaFieldBase<
    * semantics are derived from the schema itself.
    */
   readonly schema: TSchema;
+  /**
+   * Display-only type hint shown in `--help` output (e.g. `"uuid"`, `"port"`).
+   * Rendered as `<typeLabel>` next to the field name. Has no effect on
+   * validation or type inference.
+   */
+  readonly typeLabel?: string | undefined;
+  /**
+   * Display-only default-value label shown in `--help` output (e.g. `"3000"`).
+   * Rendered as `(default: defaultLabel)` in the description column. Has no
+   * effect on required/optional handling, which is still derived from the
+   * schema itself.
+   */
+  readonly defaultLabel?: string | undefined;
   readonly type?: never;
   readonly required?: never;
   readonly default?: never;

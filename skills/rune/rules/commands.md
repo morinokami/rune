@@ -116,7 +116,7 @@ import { z } from "zod";
 
 export default defineCommand({
   args: [
-    { name: "id", schema: z.string().uuid() },
+    { name: "id", schema: z.uuid() },
     { name: "mode", schema: z.string().optional() },
   ],
   options: [
@@ -134,6 +134,7 @@ export default defineCommand({
 - `flag: true` (schema options only): parsed as a boolean flag with no value. The schema receives `true` when the flag is present, `undefined` when absent.
 - Required/optional/default semantics come from the schema itself.
 - Validation uses the Standard Schema contract (`schema["~standard"].validate(value)`). Do not call library-specific APIs such as Zod `.parse()`.
+- `typeLabel` / `defaultLabel` (schema fields only, display-only): shown in `--help` as `<typeLabel>` and `(default: defaultLabel)`. No effect on validation or type inference. Use when the schema's shape or default is not otherwise discoverable from the help output.
 
 ### Argument ordering
 

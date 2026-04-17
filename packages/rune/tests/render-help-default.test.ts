@@ -187,6 +187,42 @@ describe("renderDefaultHelp", () => {
     expect(help).toContain("  --mode  Build mode");
   });
 
+  test("renders typeLabel and defaultLabel for schema fields", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["serve"],
+      subcommands: [],
+      arguments: [
+        {
+          name: "id",
+          type: undefined,
+          typeLabel: "uuid",
+          description: "Resource id",
+          required: true,
+        },
+      ],
+      options: [
+        {
+          name: "port",
+          type: undefined,
+          typeLabel: "number",
+          defaultLabel: "3000",
+          description: "Port to listen on",
+          required: false,
+          negatable: false,
+        },
+      ],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("  id <uuid>  Resource id");
+    expect(help).toContain("  --port <number>  Port to listen on (default: 3000)");
+  });
+
   test("renders command help without [options] when only framework options exist", () => {
     const data: CommandHelpData = {
       kind: "command",
