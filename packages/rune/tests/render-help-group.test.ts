@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vite-plus/test";
+import { assert, describe, expect, test } from "vite-plus/test";
 
 import type { CommandManifest, CommandManifestGroupNode } from "../src/manifest/manifest-types";
 
@@ -50,11 +50,13 @@ describe("group help", () => {
   test("group help lists child commands using manifest metadata only", () => {
     const userGroup = manifest.nodes[5];
 
-    if (userGroup.kind !== "group") {
-      throw new Error("Expected user node to be a group");
-    }
+    assert(userGroup.kind === "group");
 
-    const help = renderGroupHelpText({ manifest, node: userGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({
+      manifest,
+      node: userGroup,
+      cliName: "mycli",
+    });
 
     expect(help).toContain("Usage: mycli user <command>");
     expect(help).toContain("delete  Delete a user");
@@ -65,9 +67,7 @@ describe("group help", () => {
   test("group help shows --version for the root group when version is set", () => {
     const rootGroup = manifest.nodes[0];
 
-    if (rootGroup.kind !== "group") {
-      throw new Error("Expected root node to be a group");
-    }
+    assert(rootGroup.kind === "group");
 
     const help = renderGroupHelpText({
       manifest,
@@ -83,11 +83,13 @@ describe("group help", () => {
   test("group help does not show --version for the root group when version is not set", () => {
     const rootGroup = manifest.nodes[0];
 
-    if (rootGroup.kind !== "group") {
-      throw new Error("Expected root node to be a group");
-    }
+    assert(rootGroup.kind === "group");
 
-    const help = renderGroupHelpText({ manifest, node: rootGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({
+      manifest,
+      node: rootGroup,
+      cliName: "mycli",
+    });
 
     expect(help).not.toContain("--version");
     expect(help).toContain("-h, --help");
@@ -114,9 +116,7 @@ describe("group help", () => {
 
     const groupNodeFixture = manifestWithGroupDescription.nodes[0];
 
-    if (groupNodeFixture.kind !== "group") {
-      throw new Error("Expected group node");
-    }
+    assert(groupNodeFixture.kind === "group");
 
     const help = renderGroupHelpText({
       manifest: manifestWithGroupDescription,
@@ -137,11 +137,13 @@ describe("group help", () => {
   test("group help omits description section when not present", () => {
     const userGroup = manifest.nodes[5];
 
-    if (userGroup.kind !== "group") {
-      throw new Error("Expected user node to be a group");
-    }
+    assert(userGroup.kind === "group");
 
-    const help = renderGroupHelpText({ manifest, node: userGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({
+      manifest,
+      node: userGroup,
+      cliName: "mycli",
+    });
 
     const lines = help.split("\n");
     expect(lines[0]).toBe("Usage: mycli user <command>");
@@ -172,9 +174,7 @@ describe("group help", () => {
 
     const rootGroup = aliasManifest.nodes[0];
 
-    if (rootGroup.kind !== "group") {
-      throw new Error("Expected root node to be a group");
-    }
+    assert(rootGroup.kind === "group");
 
     const help = renderGroupHelpText({
       manifest: aliasManifest,
@@ -208,9 +208,7 @@ describe("group help", () => {
 
     const groupNodeFixture = manifestWithExamples.nodes[0];
 
-    if (groupNodeFixture.kind !== "group") {
-      throw new Error("Expected group node");
-    }
+    assert(groupNodeFixture.kind === "group");
 
     const help = renderGroupHelpText({
       manifest: manifestWithExamples,
@@ -226,11 +224,13 @@ describe("group help", () => {
   test("group help omits examples section when no examples are present", () => {
     const userGroup = manifest.nodes[5];
 
-    if (userGroup.kind !== "group") {
-      throw new Error("Expected user node to be a group");
-    }
+    assert(userGroup.kind === "group");
 
-    const help = renderGroupHelpText({ manifest, node: userGroup, cliName: "mycli" });
+    const help = renderGroupHelpText({
+      manifest,
+      node: userGroup,
+      cliName: "mycli",
+    });
 
     expect(help).not.toContain("Examples:");
   });

@@ -1,6 +1,6 @@
 import type { CommandHelpData } from "@rune-cli/core";
 
-import { describe, expect, test } from "vite-plus/test";
+import { assert, describe, expect, test } from "vite-plus/test";
 
 import type { CommandManifestGroupNode } from "../src/manifest/manifest-types";
 import type {
@@ -86,7 +86,12 @@ describe("renderDefaultHelp", () => {
       description: "Create a project",
       subcommands: [],
       arguments: [
-        { name: "id", type: "string", description: "Project identifier", required: true },
+        {
+          name: "id",
+          type: "string",
+          description: "Project identifier",
+          required: true,
+        },
       ],
       options: [
         {
@@ -154,14 +159,21 @@ describe("renderDefaultHelp", () => {
       cliName: "mycli",
       pathSegments: ["run"],
       subcommands: [],
-      arguments: [{ name: "target", type: undefined, description: "Build target", required: true }],
+      arguments: [
+        {
+          name: "target",
+          type: undefined,
+          description: "Build target",
+          required: true,
+        },
+      ],
       options: [
         {
           name: "mode",
           type: undefined,
           description: "Build mode",
           required: false,
-          negatable: false as const,
+          negatable: false,
         },
       ],
       frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
@@ -265,7 +277,11 @@ describe("help data builders", () => {
 
   test("buildGroupHelpData omits version option for non-root group", () => {
     const userGroup = manifest.nodes[5] as CommandManifestGroupNode;
-    const data = buildGroupHelpData({ manifest, node: userGroup, cliName: "mycli" });
+    const data = buildGroupHelpData({
+      manifest,
+      node: userGroup,
+      cliName: "mycli",
+    });
 
     expect(data.cliName).toBe("mycli");
     expect(data.pathSegments).toEqual(["user"]);
@@ -286,7 +302,11 @@ describe("help data builders", () => {
     ]);
 
     const rootGroup = aliasManifest.nodes[0] as CommandManifestGroupNode;
-    const data = buildGroupHelpData({ manifest: aliasManifest, node: rootGroup, cliName: "mycli" });
+    const data = buildGroupHelpData({
+      manifest: aliasManifest,
+      node: rootGroup,
+      cliName: "mycli",
+    });
 
     expect(data.subcommands[0]).toEqual({
       name: "deploy",
@@ -298,10 +318,27 @@ describe("help data builders", () => {
   test("buildCommandHelpData produces correct argument and option entries", async () => {
     const command = defineCommand({
       description: "Create a project",
-      args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
+      args: [
+        {
+          name: "id",
+          type: "string",
+          required: true,
+          description: "Project identifier",
+        },
+      ],
       options: [
-        { name: "name", type: "string", required: true, description: "Project name" },
-        { name: "color", type: "boolean", default: true, description: "Colorize output" },
+        {
+          name: "name",
+          type: "string",
+          required: true,
+          description: "Project name",
+        },
+        {
+          name: "color",
+          type: "boolean",
+          default: true,
+          description: "Colorize output",
+        },
       ],
       json: true,
       async run() {},
@@ -376,9 +413,7 @@ describe("help data builders", () => {
   test("buildUnknownCommandHelpData preserves all route data", () => {
     const route = resolveCommandRoute(manifest, ["project", "cretae"]);
 
-    if (route.kind !== "unknown") {
-      throw new Error("Expected unknown route");
-    }
+    assert(route.kind === "unknown");
 
     const data = buildUnknownCommandHelpData(route, "mycli", manifest);
 
@@ -398,10 +433,27 @@ describe("help data builders", () => {
     const route = resolveCommandRoute(manifest, ["project", "create", "--help"]);
     const command = defineCommand({
       description: "Create a project",
-      args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
+      args: [
+        {
+          name: "id",
+          type: "string",
+          required: true,
+          description: "Project identifier",
+        },
+      ],
       options: [
-        { name: "name", type: "string", default: "my-project", description: "Project name" },
-        { name: "force", type: "boolean", short: "f", description: "Force overwrite" },
+        {
+          name: "name",
+          type: "string",
+          default: "my-project",
+          description: "Project name",
+        },
+        {
+          name: "force",
+          type: "boolean",
+          short: "f",
+          description: "Force overwrite",
+        },
       ],
       async run() {},
     });

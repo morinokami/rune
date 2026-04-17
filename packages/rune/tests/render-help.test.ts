@@ -1,6 +1,6 @@
 import type { CommandHelpData } from "@rune-cli/core";
 
-import { describe, expect, test } from "vite-plus/test";
+import { assert, describe, expect, test } from "vite-plus/test";
 
 import { defineCommand } from "../src";
 import { renderDefaultHelp } from "../src/manifest/runtime/render-default-help";
@@ -209,10 +209,11 @@ describe("defineCommand.help", () => {
     });
 
     expect(receivedData).toBeDefined();
-    expect(receivedData!.kind).toBe("command");
-    expect(receivedData!.cliName).toBe("mycli");
-    expect(receivedData!.arguments).toHaveLength(1);
-    expect(receivedData!.options).toHaveLength(1);
+    assert(receivedData);
+    expect(receivedData.kind).toBe("command");
+    expect(receivedData.cliName).toBe("mycli");
+    expect(receivedData.arguments).toHaveLength(1);
+    expect(receivedData.options).toHaveLength(1);
   });
 
   test("command without help falls back to renderDefaultHelp", async () => {
