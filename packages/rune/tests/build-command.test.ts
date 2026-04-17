@@ -4,9 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, test } from "vite-plus/test";
 
-import { runRuneCli } from "../src/cli/rune-cli";
 import {
-  captureCommandResult,
+  captureRuneCliResult,
   createTempFixtureManager,
   pathExists,
   setupTempFixtures,
@@ -218,10 +217,6 @@ async function captureBuiltCliResult(
   }
 }
 
-async function captureRuneCliResult(argv: readonly string[], cwd?: string) {
-  return captureCommandResult(() => runRuneCli({ argv, cwd }));
-}
-
 async function createBuildProject(
   files: Readonly<Record<string, string>>,
   options?: { readonly fixturePath?: string; readonly packageName?: string },
@@ -414,9 +409,9 @@ export default defineCommand({
 `,
     });
 
-    const buildResult = await captureRuneCliResult(["build"], projectRoot);
-    expect(buildResult.exitCode).toBe(0);
-    expect(buildResult.stderr).toBe("");
+    const captured = await captureRuneCliResult(["build"], projectRoot);
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stderr).toBe("");
 
     expect(await readFile(path.join(projectRoot, "dist", "config.json"), "utf8")).toBe(
       JSON.stringify({ greeting: "hello" }, null, 2),
@@ -453,9 +448,9 @@ export default defineCommand({
 `,
     });
 
-    const buildResult = await captureRuneCliResult(["build"], projectRoot);
-    expect(buildResult.exitCode).toBe(0);
-    expect(buildResult.stderr).toBe("");
+    const captured = await captureRuneCliResult(["build"], projectRoot);
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stderr).toBe("");
 
     expect(await pathExists(path.join(projectRoot, "dist", "shared.js"))).toBe(false);
     expect((await readdir(path.join(projectRoot, "dist", "chunks"))).length).toBeGreaterThan(0);
@@ -518,11 +513,11 @@ export default defineCommand({
 `,
     });
 
-    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    const captured = await captureRuneCliResult(["build"], projectRoot);
 
-    expect(buildResult.exitCode).toBe(1);
-    expect(buildResult.stdout).toBe("");
-    expect(buildResult.stderr).toContain("Failed to compile");
-    expect(buildResult.stderr).toContain("src/broken.ts");
+    expect(captured.exitCode).toBe(1);
+    expect(captured.stdout).toBe("");
+    expect(captured.stderr).toContain("Failed to compile");
+    expect(captured.stderr).toContain("src/broken.ts");
   });
 });

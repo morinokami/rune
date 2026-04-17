@@ -10,6 +10,8 @@ import type {
   CommandManifestGroupNode,
 } from "../src/manifest/manifest-types";
 
+import { runRuneCli } from "../src/cli/rune-cli";
+
 // ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------
@@ -233,4 +235,11 @@ export async function captureCommandResult(
       spy.mockRestore();
     }
   }
+}
+
+export async function captureRuneCliResult(
+  argv: readonly string[],
+  cwd?: string,
+): Promise<CapturedCommandResult> {
+  return captureCommandResult(() => runRuneCli({ argv, cwd }));
 }
