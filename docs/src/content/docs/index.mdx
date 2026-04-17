@@ -1,9 +1,12 @@
 ---
 title: Introduction
-description: Rune is an agent-native CLI framework for building agent-native CLIs.
+description: Rune is an agent-native CLI framework designed for the agentic era.
 ---
 
-Rune is an agent-native CLI framework for building agent-native CLIs. It is designed not only to be easy for humans to use, but also to let agents build CLIs with Rune easily and to ensure the resulting CLIs are automatically agent-friendly.
+Rune is an agent-native CLI framework designed for the agentic era. It is built around two principles:
+
+- Rune must be a CLI framework that is easy to understand not only for humans, but also for agents
+- CLIs built with Rune must likewise be easy to work with for both humans and agents
 
 :::note
 Rune is currently experimental. APIs and behavior may change.
@@ -22,6 +25,10 @@ There is no manifest to maintain by hand. You can understand the entire CLI stru
 Types for arguments and options are inferred from the definition you pass to `defineCommand()`. There is no need to write complex type annotations manually.
 
 Mistakes such as placing an optional argument before a required one, duplicating short option names, or creating a name collision with `--no-<name>` flags are caught at definition time. Hyphenated field names can also be accessed in camelCase, with type safety and autocompletion preserved.
+
+### Standard Schema Support
+
+Command arguments and options can be validated with any [Standard Schema](https://standardschema.dev/)-compatible library, such as Zod, Valibot, or ArkType. Rune calls validators through the Standard Schema contract, so you are free to choose the schema library that best fits your project without being locked into a specific one.
 
 ### Test Utilities
 

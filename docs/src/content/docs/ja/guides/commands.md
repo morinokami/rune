@@ -192,9 +192,9 @@ export default defineCommand({
 ```
 
 ```bash
-$ my-cli             # options.color → true（デフォルト）
-$ my-cli --color     # options.color → true
-$ my-cli --no-color  # options.color → false
+$ my-cli             # options.color -> true（デフォルト）
+$ my-cli --color     # options.color -> true
+$ my-cli --no-color  # options.color -> false
 ```
 
 `--help` 出力には両方の形式がまとめて表示されます:

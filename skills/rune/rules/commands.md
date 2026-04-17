@@ -175,9 +175,9 @@ When a primitive boolean option has `default: true`, Rune auto-generates `--no-<
 defineCommand({
   options: [{ name: "color", type: "boolean", default: true }],
   run({ options }) {
-    // my-cli             → options.color = true
-    // my-cli --color     → options.color = true
-    // my-cli --no-color  → options.color = false
+    // my-cli             -> options.color = true
+    // my-cli --color     -> options.color = true
+    // my-cli --no-color  -> options.color = false
   },
 });
 ```
@@ -224,15 +224,15 @@ Error output in JSON mode:
 
 ```
 src/commands/
-├── index.ts              → root command (my-cli)
-├── hello.ts              → my-cli hello
+├── index.ts       -> root command (my-cli)
+├── hello.ts       -> my-cli hello
 ├── project/
-│   ├── index.ts          → my-cli project (executable, can have subcommands)
-│   ├── create.ts         → my-cli project create
-│   └── list.ts           → my-cli project list
+│   ├── index.ts   -> my-cli project (executable, can have subcommands)
+│   ├── create.ts  -> my-cli project create
+│   └── list.ts    -> my-cli project list
 └── user/
-    ├── _group.ts         → my-cli user (help-only group)
-    └── delete.ts         → my-cli user delete
+    ├── _group.ts  -> my-cli user (help-only group)
+    └── delete.ts  -> my-cli user delete
 ```
 
 Rules:

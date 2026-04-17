@@ -192,9 +192,9 @@ export default defineCommand({
 ```
 
 ```bash
-$ my-cli          # options.color → true (default)
-$ my-cli --color     # options.color → true
-$ my-cli --no-color  # options.color → false
+$ my-cli             # options.color -> true (default)
+$ my-cli --color     # options.color -> true
+$ my-cli --no-color  # options.color -> false
 ```
 
 The `--help` output shows both forms together:
