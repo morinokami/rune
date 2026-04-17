@@ -140,8 +140,8 @@ importers:
   examples/starter:
     devDependencies:
       '@rune-cli/rune':
-        specifier: ^0.0.29
-        version: 0.0.29(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
+        specifier: ^0.0.30
+        version: 0.0.30(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1895,8 +1895,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@rune-cli/rune@0.0.29':
-    resolution: {integrity: sha512-GLiK6Qxfp5Xd3AQ8KcL82204aakFcplfrASjwDnmKeejB12I6JUIsNlmBOLCv2D/v/iM1c0MQQuBP3UhiP8yvg==}
+  '@rune-cli/rune@0.0.30':
+    resolution: {integrity: sha512-X+AH9vIIdixmlLi8u64EXqmmt0nilWqQNwkML4SRd93FD9bOJRM5H0YkCWFxK7W1Wkwexz/fjLPRZgvvzRXwmg==}
     engines: {node: '>=24.12.0'}
     hasBin: true
 
@@ -5481,7 +5481,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.60.0':
     optional: true
 
-  '@rune-cli/rune@0.0.29(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)':
+  '@rune-cli/rune@0.0.30(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)':
     dependencies:
       oxc-parser: 0.124.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
       rolldown: 1.0.0-rc.15
