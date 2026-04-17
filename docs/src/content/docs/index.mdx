@@ -16,7 +16,7 @@ Rune is currently experimental. APIs and behavior may change.
 
 ### File-based Command Routing
 
-In Rune, the file structure under `src/commands` determines the CLI's command tree. An `index.ts` file makes its directory path executable as a command, while other `.ts` files become subcommands.
+In Rune, the file structure under `src/commands` determines the CLI's command tree. An `index.ts` file makes its directory executable as a command. Other `.ts` files in the same directory become sibling subcommands under that directory.
 
 There is no manifest to maintain by hand. You can understand the entire CLI structure at a glance just by looking at the directory layout. At runtime, only the matched command module is loaded, so no unnecessary code is loaded.
 
