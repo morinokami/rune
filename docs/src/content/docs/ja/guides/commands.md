@@ -150,6 +150,36 @@ Options:
 
 `_group.ts` で定義したグループではこのように、グループの説明文は `Description:` セクション見出しなしで `Usage:` の前にそのまま表示され、実行時には一致した leaf command モジュールだけが読み込まれます。
 
+## enum フィールド
+
+値を固定された選択肢のいずれかに制限したい場合は、`type: "enum"` と `values` のリストを使用します。文字列と数値の両方を値として指定でき、許可された値の union 型は自動的に推論されます（`as const` は不要です）。選択肢は `--help` にも表示されます。
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Build the project",
+  args: [{ name: "target", type: "enum", values: ["web", "node"], required: true }],
+  options: [
+    {
+      name: "mode",
+      type: "enum",
+      values: ["dev", "prod"],
+      default: "dev",
+      description: "Build mode",
+    },
+  ],
+  run({ args, options, output }) {
+    // args.target は "web" | "node"、options.mode は "dev" | "prod"
+    output.log(`Building ${args.target} in ${options.mode} mode`);
+  },
+});
+```
+
+CLI のトークンは宣言された値と厳密な文字列比較で照合されます。そのため `values: [1, 2]` は `--level 1` を受け付けますが、`--level 01` は受け付けません。`values` に含まれない値が渡された場合は、許可された選択肢を含む分かりやすいエラーが表示されます。
+
+実行時に正規表現や一意性のチェック、値の変換などが必要な場合は Standard Schema フィールドを使用してください。詳細は [Standard Schema](/ja/guides/standard-schema/) を参照してください。
+
 ## kebab-case のフィールド名
 
 引数やオプションの名前にハイフンを含む場合（例: `dry-run`）、`ctx.args` や `ctx.options` ではもとの名前に加えて camelCase 形式でもアクセスできます:

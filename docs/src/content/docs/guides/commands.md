@@ -150,6 +150,36 @@ Options:
 
 This is the shape to expect for a group defined with `_group.ts`: the group description is printed above `Usage:` without a `Description:` section header, and only the matched leaf command module is loaded at runtime.
 
+## Enum Fields
+
+When a field should accept only one of a fixed set of choices, use `type: "enum"` with a `values` list. Both string and number values are allowed, the union of allowed values is inferred automatically (no `as const` needed), and the allowed values are rendered in `--help`.
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Build the project",
+  args: [{ name: "target", type: "enum", values: ["web", "node"], required: true }],
+  options: [
+    {
+      name: "mode",
+      type: "enum",
+      values: ["dev", "prod"],
+      default: "dev",
+      description: "Build mode",
+    },
+  ],
+  run({ args, options, output }) {
+    // args.target is "web" | "node"; options.mode is "dev" | "prod"
+    output.log(`Building ${args.target} in ${options.mode} mode`);
+  },
+});
+```
+
+CLI tokens are matched against the declared values using strict string comparison, so `values: [1, 2]` accepts `--level 1` but not `--level 01`. Providing a value that is not listed produces a helpful error that echoes the allowed choices.
+
+For choices that need runtime validation (regex checks, uniqueness, transformation, etc.), use a Standard Schema field — see [Standard Schema](/guides/standard-schema/).
+
 ## Kebab-case Field Names
 
 When an argument or option name contains hyphens (e.g. `dry-run`), it can be accessed on `ctx.args` or `ctx.options` using either the original name or its camelCase form:

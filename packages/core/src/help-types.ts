@@ -20,6 +20,15 @@ export interface PrimitiveArgumentHelpEntry {
   readonly required: boolean;
 }
 
+export interface EnumArgumentHelpEntry {
+  readonly name: string;
+  readonly type: "enum";
+  readonly values: readonly (string | number)[];
+  readonly description?: string;
+  readonly default?: string | number;
+  readonly required: boolean;
+}
+
 export interface SchemaArgumentHelpEntry {
   readonly name: string;
   readonly type: undefined;
@@ -29,7 +38,10 @@ export interface SchemaArgumentHelpEntry {
   readonly required: boolean;
 }
 
-export type ArgumentHelpEntry = PrimitiveArgumentHelpEntry | SchemaArgumentHelpEntry;
+export type ArgumentHelpEntry =
+  | PrimitiveArgumentHelpEntry
+  | EnumArgumentHelpEntry
+  | SchemaArgumentHelpEntry;
 
 // ---------------------------------------------------------------------------
 // Public types – options (discriminated via `type`)
@@ -43,6 +55,17 @@ export interface PrimitiveOptionHelpEntry {
   readonly default?: string | number | boolean;
   readonly required: boolean;
   readonly negatable: boolean;
+}
+
+export interface EnumOptionHelpEntry {
+  readonly name: string;
+  readonly short?: string;
+  readonly type: "enum";
+  readonly values: readonly (string | number)[];
+  readonly description?: string;
+  readonly default?: string | number;
+  readonly required: boolean;
+  readonly negatable: false;
 }
 
 export interface SchemaOptionHelpEntry {
@@ -62,7 +85,10 @@ export interface FrameworkOptionHelpEntry {
   readonly description: string;
 }
 
-export type UserOptionHelpEntry = PrimitiveOptionHelpEntry | SchemaOptionHelpEntry;
+export type UserOptionHelpEntry =
+  | PrimitiveOptionHelpEntry
+  | EnumOptionHelpEntry
+  | SchemaOptionHelpEntry;
 
 export type OptionHelpEntry = UserOptionHelpEntry | FrameworkOptionHelpEntry;
 

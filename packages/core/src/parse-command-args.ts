@@ -3,6 +3,7 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { parseArgs } from "node:util";
 
 import type { DefinedCommand, InferNamedFields } from "./command-types";
+import type { EnumField } from "./enum-field";
 import type {
   CommandArgField,
   CommandOptionField,
@@ -11,6 +12,7 @@ import type {
 } from "./field-types";
 
 import { addCamelCaseAliases } from "./camel-case-aliases";
+import { formatEnumValueForDisplay, isEnumField, matchEnumValue } from "./enum-field";
 import { isSchemaField } from "./schema-field";
 
 // Parsed command input ready to be passed into the low-level executor.
@@ -63,7 +65,12 @@ type ParseArgsOptionConfig = {
 // ---------------------------------------------------------------------------
 
 function isNegatableOption(field: CommandOptionField): boolean {
-  return !isSchemaField(field) && field.type === "boolean" && field.default === true;
+  return (
+    !isSchemaField(field) &&
+    !isEnumField(field) &&
+    field.type === "boolean" &&
+    field.default === true
+  );
 }
 
 function negationName(name: string): string {
@@ -75,7 +82,7 @@ function negationName(name: string): string {
 // ---------------------------------------------------------------------------
 
 function formatTypeHint(field: CommandOptionField): string {
-  if (isSchemaField(field) || field.type === "boolean") {
+  if (isSchemaField(field) || isEnumField(field) || field.type === "boolean") {
     return "";
   }
 
@@ -279,12 +286,43 @@ async function validateSchemaValue(
   };
 }
 
+function parseEnumValue(field: EnumField, rawValue: unknown): FieldValueParseResult {
+  if (typeof rawValue !== "string") {
+    return {
+      ok: false,
+      error: {
+        message: `Expected one of: ${field.values.map(formatEnumValueForDisplay).join(", ")}. Received: ${JSON.stringify(rawValue)}.`,
+      },
+    };
+  }
+
+  const matched = matchEnumValue(field.values, rawValue);
+
+  if (matched === undefined) {
+    return {
+      ok: false,
+      error: {
+        message: `Expected one of: ${field.values.map(formatEnumValueForDisplay).join(", ")}. Received: ${JSON.stringify(rawValue)}.`,
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    value: matched,
+  };
+}
+
 async function parseProvidedField(
   field: CommandArgField | CommandOptionField,
   rawValue: unknown,
 ): Promise<FieldValueParseResult> {
   if (isSchemaField(field)) {
     return validateSchemaValue(field.schema, rawValue);
+  }
+
+  if (isEnumField(field)) {
+    return parseEnumValue(field, rawValue);
   }
 
   return parsePrimitiveValue(field, rawValue);

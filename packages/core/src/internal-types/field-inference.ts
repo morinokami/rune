@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { PrimitiveFieldType, PrimitiveFieldValue } from "../field-types";
+import type { EnumFieldValue, PrimitiveFieldType, PrimitiveFieldValue } from "../field-types";
 import type { KebabToCamelCase } from "./utils";
 
 // Type-level helpers for field value inference and arg-order validation.
@@ -21,9 +21,14 @@ type IsOptionalSchemaOutput<TValue> = undefined extends TValue ? true : false;
 
 export type FieldValue<TField> = TField extends { readonly schema: infer TSchema }
   ? Exclude<InferSchemaOutput<TSchema>, undefined>
-  : TField extends { readonly type: infer TType extends PrimitiveFieldType }
-    ? PrimitiveFieldValue<TType>
-    : never;
+  : TField extends {
+        readonly type: "enum";
+        readonly values: infer TValues extends readonly EnumFieldValue[];
+      }
+    ? TValues[number]
+    : TField extends { readonly type: infer TType extends PrimitiveFieldType }
+      ? PrimitiveFieldValue<TType>
+      : never;
 
 type HasDefaultValue<TField> = TField extends { readonly default: infer TDefault }
   ? [TDefault] extends [undefined]
@@ -58,7 +63,7 @@ type IsArgOptional<TField> = TField extends { readonly schema: infer TSchema }
     : undefined extends InferSchemaInput<TSchema>
       ? true
       : false
-  : TField extends { readonly type: PrimitiveFieldType }
+  : TField extends { readonly type: PrimitiveFieldType | "enum" }
     ? HasDefaultValue<TField> extends true
       ? true
       : TField extends { readonly required: true }

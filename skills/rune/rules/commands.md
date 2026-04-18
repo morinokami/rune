@@ -85,7 +85,7 @@ Always use `output.log()` instead of `console.log()`. This allows:
 
 ## Field types
 
-A field uses either `type` (primitive) or `schema` (Standard Schema), never both.
+A field uses exactly one of: a primitive `type` (`"string" | "number" | "boolean"`), `type: "enum"` with `values`, or `schema` (Standard Schema). Never mix these.
 
 ### Primitive fields
 
@@ -106,6 +106,26 @@ Primitive types: `"string"` | `"number"` | `"boolean"`
 - Primitive defaults are shown in `--help`, except for boolean options
 - Primitive boolean options default to `false` even without an explicit `default`
 - `short` (options only): single ASCII letter for shorthand (e.g. `-f`). The short name `"h"` is reserved for `--help`
+
+### Enum fields
+
+Restrict a field to a fixed set of string or number choices without introducing a schema library:
+
+```ts
+// Args
+{ name: "target", type: "enum", values: ["web", "node"], required: true }
+
+// Options
+{ name: "mode", type: "enum", values: ["dev", "prod"], default: "dev", short: "m" }
+{ name: "level", type: "enum", values: ["low", 1, "high"] }
+```
+
+- `values` is a `readonly (string | number)[]`. The union of allowed values is inferred automatically — no `as const` needed
+- Matching is strict string comparison: `values: [1, 2]` accepts `"1"` and `"2"`, never `"007"` or `"1.0"`
+- `default` must be one of `values`
+- Empty strings, `NaN`, `Infinity`, and duplicates (after string conversion) are rejected at definition time
+- `--help` displays the allowed values inline, e.g. `--mode <dev|prod>`
+- For choices that also need format validation or transformation, use a schema field (`z.enum([...]).transform(...)`, etc.)
 
 ### Schema fields
 

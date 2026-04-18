@@ -80,6 +80,41 @@ export interface PrimitiveArgField<
   readonly flag?: never;
 }
 
+// Values allowed as enum choices.
+export type EnumFieldValue = string | number;
+
+// Shared base for enum-backed arg/option fields. Internal to core.
+interface EnumFieldBase<
+  TName extends string,
+  TValues extends readonly EnumFieldValue[],
+> extends NamedField<TName> {
+  /** Discriminator for enum (choice) fields. */
+  readonly type: "enum";
+  /**
+   * Allowed values for this field. The CLI raw token is matched against each
+   * entry using string comparison (`String(value) === rawToken`), so
+   * `values: [1, 2]` accepts `"1"` or `"2"` but not `"007"` / `"1.0"`.
+   */
+  readonly values: TValues;
+  /**
+   * When `true`, the field must be provided by the user.
+   * Omitted or `false` makes the field optional.
+   */
+  readonly required?: boolean | undefined;
+  /** Value used when the user does not provide this field. Must be one of `values`. */
+  readonly default?: TValues[number] | undefined;
+  readonly schema?: never;
+}
+
+// A positional argument that accepts one of a fixed set of values.
+export interface EnumArgField<
+  TName extends string = string,
+  TValues extends readonly EnumFieldValue[] = readonly EnumFieldValue[],
+> extends EnumFieldBase<TName, TValues> {
+  readonly short?: never;
+  readonly flag?: never;
+}
+
 // A positional argument backed by a Standard Schema object.
 export interface SchemaArgField<
   TName extends string = string,
@@ -113,11 +148,22 @@ export interface SchemaOptionField<
   readonly flag?: true | undefined;
 }
 
+// An option that accepts one of a fixed set of values.
+export interface EnumOptionField<
+  TName extends string = string,
+  TValues extends readonly EnumFieldValue[] = readonly EnumFieldValue[],
+> extends EnumFieldBase<TName, TValues> {
+  /** Single-character shorthand (e.g. `"m"` for `--mode` → `-m`). */
+  readonly short?: SingleLetter | undefined;
+  // Enum options always take a value, so the flag form is disallowed.
+  readonly flag?: never;
+}
+
 // Any supported positional argument field.
-export type CommandArgField = PrimitiveArgField | SchemaArgField;
+export type CommandArgField = PrimitiveArgField | SchemaArgField | EnumArgField;
 
 // Any supported option field.
-export type CommandOptionField = PrimitiveOptionField | SchemaOptionField;
+export type CommandOptionField = PrimitiveOptionField | SchemaOptionField | EnumOptionField;
 
 // Replaces omitted field arrays with a stable empty tuple type.
 export type NormalizeFields<

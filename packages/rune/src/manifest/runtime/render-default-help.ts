@@ -1,13 +1,20 @@
 import type {
   ArgumentHelpEntry,
   CommandHelpData,
+  EnumOptionHelpEntry,
   FrameworkOptionHelpEntry,
   PrimitiveOptionHelpEntry,
   SchemaOptionHelpEntry,
   SubcommandHelpEntry,
 } from "@rune-cli/core";
 
+import { formatEnumValueForDisplay } from "@rune-cli/core";
+
 import type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./build-help-data";
+
+function formatEnumValuesTypeHint(values: readonly (string | number)[]): string {
+  return `<${values.map(formatEnumValueForDisplay).join("|")}>`;
+}
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -39,6 +46,7 @@ function formatArgumentLabel(entry: ArgumentHelpEntry): string {
     return entry.typeLabel ? `${entry.name} <${entry.typeLabel}>` : entry.name;
   }
   if (entry.type === "boolean") return entry.name;
+  if (entry.type === "enum") return `${entry.name} ${formatEnumValuesTypeHint(entry.values)}`;
   return `${entry.name} <${entry.type}>`;
 }
 
@@ -66,15 +74,19 @@ function formatUsageArguments(entries: readonly ArgumentHelpEntry[]): string {
   return entries.map((entry) => (entry.required ? `<${entry.name}>` : `[${entry.name}]`)).join(" ");
 }
 
-function formatUserOptionLabel(entry: PrimitiveOptionHelpEntry | SchemaOptionHelpEntry): string {
+function formatUserOptionLabel(
+  entry: PrimitiveOptionHelpEntry | EnumOptionHelpEntry | SchemaOptionHelpEntry,
+): string {
   const typeHint =
     entry.type === undefined
       ? entry.typeLabel
         ? ` <${entry.typeLabel}>`
         : ""
-      : entry.type !== "boolean"
-        ? ` <${entry.type}>`
-        : "";
+      : entry.type === "enum"
+        ? ` ${formatEnumValuesTypeHint(entry.values)}`
+        : entry.type !== "boolean"
+          ? ` <${entry.type}>`
+          : "";
   const negationSuffix = entry.negatable ? `, --no-${entry.name}` : "";
   const longLabel = `--${entry.name}${typeHint}${negationSuffix}`;
 
@@ -82,7 +94,7 @@ function formatUserOptionLabel(entry: PrimitiveOptionHelpEntry | SchemaOptionHel
 }
 
 function formatUserOptionDefaultSuffix(
-  entry: PrimitiveOptionHelpEntry | SchemaOptionHelpEntry,
+  entry: PrimitiveOptionHelpEntry | EnumOptionHelpEntry | SchemaOptionHelpEntry,
 ): string {
   if (entry.type === undefined) {
     return entry.defaultLabel ? `(default: ${entry.defaultLabel})` : "";
