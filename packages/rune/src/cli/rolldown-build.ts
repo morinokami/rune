@@ -1,40 +1,29 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { build, type BundleError, type InputOptions, type Plugin } from "rolldown";
+import { build, type Plugin } from "rolldown";
 
 import type { CommandManifest } from "../manifest/manifest-types";
 
 import { toPosixPath } from "./path-utils";
+import {
+  createSharedBuildConfig,
+  pathExists,
+  resolveBuildTsconfig,
+  stripFileExtension,
+} from "./rolldown-shared";
+
+export { formatBuildFailure, isBuildFailure } from "./rolldown-shared";
 
 export const BUILD_CLI_FILENAME = "cli.mjs";
 export const BUILD_MANIFEST_FILENAME = "manifest.json";
 
-const BUILD_TARGET = "node24";
 const BUILD_CONFIG_FILENAME = "config.mjs";
 const RUNE_PACKAGE_NAME = "@rune-cli/rune";
 const BUILT_CLI_ENTRY_ID = "virtual:rune-built-cli-entry";
 
 interface RunePackageJson {
   readonly name?: string | undefined;
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    const stats = await stat(filePath);
-    return stats.isFile();
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-
-    throw error;
-  }
-}
-
-function stripFileExtension(filePath: string): string {
-  const parsedPath = path.parse(filePath);
-  return path.join(parsedPath.dir, parsedPath.name);
 }
 
 function renderBuiltCliEntry(
@@ -148,12 +137,6 @@ async function resolveRunePackageRoot(): Promise<string> {
   }
 }
 
-async function resolveBuildTsconfig(projectRoot: string): Promise<false | string> {
-  const tsconfigPath = path.join(projectRoot, "tsconfig.json");
-
-  return (await pathExists(tsconfigPath)) ? tsconfigPath : false;
-}
-
 async function resolveRuntimeHelperEntryPath(): Promise<string> {
   const packageRoot = await resolveRunePackageRoot();
   const sourceRuntimePath = path.join(packageRoot, "src", "runtime.ts");
@@ -169,48 +152,6 @@ async function resolveRuntimeHelperEntryPath(): Promise<string> {
   }
 
   throw new Error("Could not locate Rune runtime helper entry");
-}
-
-function createSharedBuildConfig(
-  cwd: string,
-  tsconfig: false | string,
-): Pick<InputOptions, "cwd" | "platform" | "tsconfig" | "transform" | "logLevel"> {
-  return {
-    cwd,
-    platform: "node",
-    tsconfig,
-    transform: {
-      target: BUILD_TARGET,
-    },
-    logLevel: "silent",
-  };
-}
-
-export function isBuildFailure(error: unknown): error is BundleError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "errors" in error &&
-    Array.isArray((error as { errors?: unknown }).errors)
-  );
-}
-
-export function formatBuildFailure(projectRoot: string, error: BundleError): string {
-  const [firstError] = error.errors ?? [];
-
-  if (!firstError) {
-    return "Failed to build project";
-  }
-
-  if (!firstError.loc?.file) {
-    return `Failed to compile: ${firstError.message}`;
-  }
-
-  const filePath = path.isAbsolute(firstError.loc.file)
-    ? path.relative(projectRoot, firstError.loc.file)
-    : firstError.loc.file;
-
-  return `Failed to compile ${filePath}:${firstError.loc.line}:${firstError.loc.column + 1}: ${firstError.message}`;
 }
 
 export async function buildCommandEntries(
