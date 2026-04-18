@@ -8,6 +8,9 @@ import { captureRuneCliResult, setupTempFixtures } from "./helpers";
 const coreEntryPath = JSON.stringify(
   fileURLToPath(new URL("../../core/src/index.ts", import.meta.url)),
 );
+const defineConfigPath = JSON.stringify(
+  fileURLToPath(new URL("../src/define-config.ts", import.meta.url)),
+);
 
 const testFixtures = setupTempFixtures();
 
@@ -400,6 +403,170 @@ export default defineCommand({
     expect(captured.exitCode).toBe(0);
     expect(captured.stdout).toBe("mycli v1.2.3\n");
     expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli resolves extensionless relative imports in user commands", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli", type: "module" }, null, 2),
+        "tsconfig.json": JSON.stringify(
+          {
+            compilerOptions: {
+              target: "esnext",
+              module: "preserve",
+              moduleResolution: "bundler",
+              strict: true,
+            },
+            include: ["src"],
+          },
+          null,
+          2,
+        ),
+        "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
+import { greet } from "./hello-greet";
+
+export default defineCommand({
+  async run({ output }) {
+    output.log(greet("world"));
+  },
+});
+`,
+        "src/commands/hello-greet.ts": `export function greet(name: string): string {
+  return \`hello \${name}\`;
+}
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "hello"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("hello world\n");
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli resolves `.js`-suffixed relative imports that target `.ts` files", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli", type: "module" }, null, 2),
+        "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
+import { greet } from "./hello-greet.js";
+
+export default defineCommand({
+  async run({ output }) {
+    output.log(greet("world"));
+  },
+});
+`,
+        "src/commands/hello-greet.ts": `export function greet(name: string): string {
+  return \`hi \${name}\`;
+}
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "hello"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("hi world\n");
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli preserves source layout so `import.meta.url`-relative assets resolve", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli", type: "module" }, null, 2),
+        "src/data/message.txt": "hello from asset\n",
+        "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+export default defineCommand({
+  async run({ output }) {
+    const assetUrl = new URL("../data/message.txt", import.meta.url);
+    const contents = await readFile(fileURLToPath(assetUrl), "utf8");
+    output.log(contents.trimEnd());
+  },
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "hello"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("hello from asset\n");
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli bundles rune.config.ts only when help is rendered", async () => {
+    // Config with an extensionless relative import would fail under native
+    // type-stripping. The Rolldown-bundled help path should resolve it, while
+    // the direct execution path should not even load the config.
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli", type: "module" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+import { renderer } from "./config-support/renderer";
+
+export default defineConfig({ renderHelp: renderer });
+`,
+        "config-support/renderer.ts": `export function renderer(data: { kind: string; pathSegments?: readonly string[] }): string {
+  const segments = data.pathSegments?.join(" ") ?? "<root>";
+  return \`CUSTOM HELP for \${segments}\\n\`;
+}
+`,
+        "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run({ output }) {
+    output.log("hello");
+  },
+});
+`,
+      },
+    });
+
+    const helpResult = await captureRuneCliResult(["run", "hello", "--help"], projectRoot);
+
+    expect(helpResult.exitCode).toBe(0);
+    expect(helpResult.stdout).toContain("CUSTOM HELP for hello");
+    expect(helpResult.stderr).toBe("");
+
+    const runResult = await captureRuneCliResult(["run", "hello"], projectRoot);
+
+    expect(runResult.exitCode).toBe(0);
+    expect(runResult.stdout).toBe("hello\n");
+    expect(runResult.stderr).toBe("");
+  });
+
+  test("runRuneCli falls back to default help when rune.config.ts fails to build", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli", type: "module" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+import { renderer } from "./does-not-exist";
+
+export default defineConfig({ renderHelp: renderer });
+`,
+        "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run({ output }) {
+    output.log("hello");
+  },
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "hello", "--help"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toContain("Usage: mycli hello");
+    expect(captured.stderr).toContain("Warning: Failed to load rune.config.ts.");
   });
 
   test("runRuneCli reports plain object default exports with a clear error", async () => {

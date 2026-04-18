@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { CommandManifest, CommandManifestCommandNode } from "../manifest/manifest-types";
@@ -14,6 +14,7 @@ import {
   resolveProjectDirectories,
   resolveProjectPath,
 } from "../project/project-files";
+import { copyBuiltAssets } from "./copy-assets";
 import { toPosixPath } from "./path-utils";
 import {
   BUILD_CLI_FILENAME,
@@ -31,27 +32,9 @@ export interface RunBuildCommandOptions {
   readonly projectPath?: string | undefined;
 }
 
-const CODE_SOURCE_EXTENSIONS = new Set([
-  ".ts",
-  ".tsx",
-  ".mts",
-  ".cts",
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".cjs",
-]);
 // ---------------------------------------------------------------------------
 // Manifest & path helpers
 // ---------------------------------------------------------------------------
-
-function isCodeSourceFile(filePath: string): boolean {
-  return CODE_SOURCE_EXTENSIONS.has(path.extname(filePath));
-}
-
-function isDeclarationFile(filePath: string): boolean {
-  return filePath.endsWith(".d.ts") || filePath.endsWith(".d.mts") || filePath.endsWith(".d.cts");
-}
 
 function replaceFileExtension(filePath: string, extension: string): string {
   const parsedPath = path.parse(filePath);
@@ -73,33 +56,6 @@ function createBuiltManifest(manifest: CommandManifest, sourceDirectory: string)
       } satisfies CommandManifestCommandNode;
     }),
   };
-}
-
-async function copyBuiltAssets(sourceDirectory: string, distDirectory: string): Promise<void> {
-  const entries = await readdir(sourceDirectory, { withFileTypes: true });
-
-  await Promise.all(
-    entries.map(async (entry) => {
-      const sourceEntryPath = path.join(sourceDirectory, entry.name);
-      const distEntryPath = path.join(distDirectory, entry.name);
-
-      if (entry.isDirectory()) {
-        await copyBuiltAssets(sourceEntryPath, distEntryPath);
-        return;
-      }
-
-      if (isDeclarationFile(sourceEntryPath)) {
-        return;
-      }
-
-      if (isCodeSourceFile(sourceEntryPath)) {
-        return;
-      }
-
-      await mkdir(path.dirname(distEntryPath), { recursive: true });
-      await cp(sourceEntryPath, distEntryPath);
-    }),
-  );
 }
 
 async function writeBuiltRuntimeFiles(
