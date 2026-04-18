@@ -1,6 +1,6 @@
 {
   "name": "@rune-cli/rune",
-  "version": "0.0.30",
+  "version": "0.0.31",
   "description": "Rune is an agent-native CLI framework designed for the agentic era.",
   "homepage": "https://github.com/morinokami/rune#readme",
   "bugs": {

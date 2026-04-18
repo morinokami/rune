@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.31
+
+### Patch Changes
+
+- [`89bc2a3`](https://github.com/morinokami/rune/commit/89bc2a3f549badbe0fe88b0d90ec2333b2116206) Thanks [@morinokami](https://github.com/morinokami)! - feat(core): add enum primitive field type
+
 ## 0.0.30
 
 ### Patch Changes
