@@ -12,7 +12,7 @@ import type {
 } from "./field-types";
 
 import { addCamelCaseAliases } from "./camel-case-aliases";
-import { formatEnumValueForDisplay, isEnumField, matchEnumValue } from "./enum-field";
+import { isEnumField, matchEnumValue } from "./enum-field";
 import { isSchemaField } from "./schema-field";
 
 // Parsed command input ready to be passed into the low-level executor.
@@ -291,7 +291,7 @@ function parseEnumValue(field: EnumField, rawValue: unknown): FieldValueParseRes
     return {
       ok: false,
       error: {
-        message: `Expected one of: ${field.values.map(formatEnumValueForDisplay).join(", ")}. Received: ${JSON.stringify(rawValue)}.`,
+        message: `Expected one of: ${field.values.join(", ")}. Received: ${JSON.stringify(rawValue)}.`,
       },
     };
   }
@@ -302,7 +302,7 @@ function parseEnumValue(field: EnumField, rawValue: unknown): FieldValueParseRes
     return {
       ok: false,
       error: {
-        message: `Expected one of: ${field.values.map(formatEnumValueForDisplay).join(", ")}. Received: ${JSON.stringify(rawValue)}.`,
+        message: `Expected one of: ${field.values.join(", ")}. Received: ${JSON.stringify(rawValue)}.`,
       },
     };
   }

@@ -123,6 +123,7 @@ Restrict a field to a fixed set of string or number choices without introducing 
 - `values` is a `readonly (string | number)[]`. The union of allowed values is inferred automatically — no `as const` needed
 - Matching is strict string comparison: `values: [1, 2]` accepts `"1"` and `"2"`, never `"007"` or `"1.0"`
 - `default` must be one of `values`
+- String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`); spaces or other special characters are rejected at definition time
 - Empty strings, `NaN`, `Infinity`, and duplicates (after string conversion) are rejected at definition time
 - `--help` displays the allowed values inline, e.g. `--mode <dev|prod>`
 - For choices that also need format validation or transformation, use a schema field (`z.enum([...]).transform(...)`, etc.)

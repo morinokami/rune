@@ -8,12 +8,10 @@ import type {
   SubcommandHelpEntry,
 } from "@rune-cli/core";
 
-import { formatEnumValueForDisplay } from "@rune-cli/core";
-
 import type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./build-help-data";
 
 function formatEnumValuesTypeHint(values: readonly (string | number)[]): string {
-  return `<${values.map(formatEnumValueForDisplay).join("|")}>`;
+  return `<${values.join("|")}>`;
 }
 
 // ---------------------------------------------------------------------------

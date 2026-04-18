@@ -174,22 +174,6 @@ describe("enum field parsing", () => {
     });
   });
 
-  test("quotes non-identifier values in error messages", async () => {
-    const command = defineCommand({
-      options: [{ name: "mode", type: "enum", values: ["a b", "c"], required: true }],
-      async run() {},
-    });
-
-    const result = await parseCommandArgs(command, ["--mode", "x"]);
-
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        message: 'Invalid value for option --mode:\n\n  Expected one of: "a b", c. Received: "x".',
-      },
-    });
-  });
-
   test("supports enum option short names", async () => {
     const command = defineCommand({
       options: [
@@ -237,6 +221,37 @@ describe("enum definition-time validation", () => {
         async run() {},
       }),
     ).toThrow(/empty string/);
+  });
+
+  test("rejects string values with disallowed characters", () => {
+    expect(() =>
+      defineCommand({
+        options: [{ name: "mode", type: "enum", values: ["a b", "c"] }],
+        async run() {},
+      }),
+    ).toThrow(/invalid string value/);
+
+    expect(() =>
+      defineCommand({
+        options: [{ name: "mode", type: "enum", values: ["ok", "a|b"] }],
+        async run() {},
+      }),
+    ).toThrow(/invalid string value/);
+  });
+
+  test("accepts identifier-like string values including dots and hyphens", () => {
+    expect(() =>
+      defineCommand({
+        options: [
+          {
+            name: "mode",
+            type: "enum",
+            values: ["dev", "prod", "v1.0", "low-latency", "snake_case"],
+          },
+        ],
+        async run() {},
+      }),
+    ).not.toThrow();
   });
 
   test("rejects NaN and Infinity", () => {

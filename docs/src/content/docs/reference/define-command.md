@@ -92,7 +92,7 @@ Identifier used as the key in `ctx.args`.
 - **Type:** `readonly (string | number)[]`
 - **Required**
 
-Allowed values. The raw CLI token is matched against each entry using strict string comparison (`String(value) === rawToken`), so `values: [1, 2]` accepts `"1"` or `"2"` but not `"007"` or `"1.0"`. Empty strings, `NaN`, and `Infinity` are rejected at definition time, as are duplicates (after string conversion).
+Allowed values. The raw CLI token is matched against each entry using strict string comparison (`String(value) === rawToken`), so `values: [1, 2]` accepts `"1"` or `"2"` but not `"007"` or `"1.0"`. String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`) — values that contain spaces or other special characters are rejected at definition time. Empty strings, `NaN`, `Infinity`, and duplicates (after string conversion) are rejected as well.
 
 ##### `required`
 

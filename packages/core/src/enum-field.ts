@@ -14,17 +14,10 @@ export function isEnumField(field: CommandArgField | CommandOptionField): field 
   return field.type === "enum";
 }
 
-const BARE_ENUM_VALUE_RE = /^[A-Za-z0-9_.-]+$/;
-
-// Formats a single enum value for user-facing display. Numbers render as-is;
-// strings that match identifier-like characters render bare, otherwise they
-// are JSON-encoded so whitespace and special characters remain unambiguous.
-export function formatEnumValueForDisplay(value: EnumFieldValue): string {
-  if (typeof value === "number") {
-    return String(value);
-  }
-  return BARE_ENUM_VALUE_RE.test(value) ? value : JSON.stringify(value);
-}
+// Allowed shape for string enum values. Restricted to identifier-like tokens
+// so values render unambiguously in help/error output and play well with
+// shell completion. Can be relaxed later without breaking existing users.
+export const ENUM_STRING_VALUE_PATTERN = /^[A-Za-z0-9_.-]+$/;
 
 // Looks up a raw CLI token against an enum field's allowed values using
 // stringified comparison (`String(value) === raw`). Returns the matched

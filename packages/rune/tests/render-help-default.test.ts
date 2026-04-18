@@ -215,7 +215,7 @@ describe("renderDefaultHelp", () => {
         {
           name: "level",
           type: "enum",
-          values: ["low", 1, "a b"],
+          values: ["low", 1, "high"],
           description: "Level",
           required: false,
           negatable: false,
@@ -229,7 +229,7 @@ describe("renderDefaultHelp", () => {
 
     expect(help).toContain("  target <web|node>  Build target");
     expect(help).toContain('  --mode <dev|prod>  Build mode (default: "dev")');
-    expect(help).toContain('  --level <low|1|"a b">  Level');
+    expect(help).toContain("  --level <low|1|high>  Level");
   });
 
   test("renders typeLabel and defaultLabel for schema fields", () => {

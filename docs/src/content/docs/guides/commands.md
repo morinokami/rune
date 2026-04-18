@@ -183,6 +183,8 @@ export default defineCommand({
 
 CLI tokens are matched against the declared values using strict string comparison, so `values: [1, 2]` accepts `--level 1` but not `--level 01`. Providing a value that is not listed produces a helpful error that echoes the allowed choices.
 
+String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`) and are rejected at definition time otherwise. If you need free-form strings, use a `type: "string"` field or a schema field instead.
+
 For choices that need runtime validation (regex checks, uniqueness, transformation, etc.), use a [Standard Schema](/guides/standard-schema/) field.
 
 ## Kebab-case Field Names

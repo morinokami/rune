@@ -10,7 +10,7 @@ import type {
 } from "./validate-types";
 
 import { kebabToCamelCase } from "./camel-case-aliases";
-import { isEnumField } from "./enum-field";
+import { ENUM_STRING_VALUE_PATTERN, isEnumField } from "./enum-field";
 import { isSchemaField } from "./schema-field";
 import { validateCommandAliases } from "./validate-command-aliases";
 
@@ -105,6 +105,12 @@ function validateEnumFields(
 
       if (typeof value === "string" && value === "") {
         throw new Error(`Enum ${kind} "${field.name}" values must not include the empty string.`);
+      }
+
+      if (typeof value === "string" && !ENUM_STRING_VALUE_PATTERN.test(value)) {
+        throw new Error(
+          `Enum ${kind} "${field.name}" has invalid string value ${JSON.stringify(value)}. String values must match ${ENUM_STRING_VALUE_PATTERN.toString()} (letters, digits, "_", ".", "-").`,
+        );
       }
 
       if (typeof value === "number" && !Number.isFinite(value)) {
