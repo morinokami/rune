@@ -21,6 +21,8 @@ Key features:
 
 ## Getting Started
 
+Rune requires Node.js `v22.12.0` or higher.
+
 Scaffold a new project:
 
 ```sh

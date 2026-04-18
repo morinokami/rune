@@ -7,7 +7,7 @@ import path from "node:path";
 // Shared constants
 // ---------------------------------------------------------------------------
 
-export const BUILD_TARGET = "node24";
+export const BUILD_TARGET = "node22";
 
 // ---------------------------------------------------------------------------
 // Filesystem helpers
