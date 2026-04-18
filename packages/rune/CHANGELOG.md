@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.32
+
+### Patch Changes
+
+- [`2bc984f`](https://github.com/morinokami/rune/commit/2bc984ff55e362932fa62e44bdb4a1791b3dd959) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): bundle `rune run` through Rolldown for parity with `rune build`
+
 ## 0.0.31
 
 ### Patch Changes
