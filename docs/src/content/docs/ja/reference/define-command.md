@@ -75,17 +75,6 @@ Rune が生のトークンをパースする型。
 
 #### enum フィールド
 
-enum フィールドは、値を固定された選択肢（文字列または数値）のいずれかに制限します。外部スキーマへの依存は不要です。許可された値の union 型は自動的に推論されるため、呼び出し側で `as const` を付ける必要はありません。
-
-```ts
-defineCommand({
-  args: [{ name: "mode", type: "enum", values: ["dev", "prod"], required: true }],
-  run(ctx) {
-    ctx.args.mode; // "dev" | "prod"
-  },
-});
-```
-
 ##### `name`
 
 - **型:** `string`

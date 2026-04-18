@@ -111,12 +111,12 @@ export default defineGroup({
 
 ディレクトリパス自体を実行可能なコマンドにしたい場合は `index.ts` を使い、子コマンドを整理するためのヘルプ専用ノードにしたい場合は `_group.ts` を使います。
 
-| こうしたい場合 | 使うもの |
+| やりたいこと | 使うもの |
 |---|---|
 | 引数なしの `your-cli` で何かを実行したい | `src/commands/index.ts` |
-| `your-cli project` 自体も実行可能にしつつ、`your-cli project create` のような子コマンドも持たせたい | `src/commands/project/index.ts` |
+| `your-cli project` 自体も実行可能にしつつ、`your-cli project create` のような子コマンドももたせたい | `src/commands/project/index.ts` |
 | `your-cli project` は `create` や `list` を束ねるだけのヘルプ用ノードにしたい | `src/commands/project/_group.ts` |
-| `your-cli hello` のような子を持たない単純な leaf command を定義したい | `src/commands/hello.ts` または `src/commands/hello/index.ts` |
+| `your-cli hello` のような子をもたない単純な leaf command を定義したい | `src/commands/hello.ts` または `src/commands/hello/index.ts` |
 
 目安としては、実行可能なコマンドには `index.ts`、ヘルプ専用の親ノードには `_group.ts` を選ぶのが自然です。
 
@@ -152,14 +152,19 @@ Options:
 
 ## enum フィールド
 
-値を固定された選択肢のいずれかに制限したい場合は、`type: "enum"` と `values` のリストを使用します。文字列と数値の両方を値として指定でき、許可された値の union 型は自動的に推論されます（`as const` は不要です）。選択肢は `--help` にも表示されます。
+値を固定された選択肢のいずれかに制限したい場合は、`type: "enum"` と `values` のリストを使用します。文字列と数値を値として指定でき、許可された値の union 型は自動的に推論されます。選択肢は `--help` にも表示されます。
 
 ```ts
 import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Build the project",
-  args: [{ name: "target", type: "enum", values: ["web", "node"], required: true }],
+  args: [{
+    name: "target",
+    type: "enum",
+    values: ["web", "node"],
+    required: true,
+  }],
   options: [
     {
       name: "mode",
@@ -176,9 +181,9 @@ export default defineCommand({
 });
 ```
 
-CLI のトークンは宣言された値と厳密な文字列比較で照合されます。そのため `values: [1, 2]` は `--level 1` を受け付けますが、`--level 01` は受け付けません。`values` に含まれない値が渡された場合は、許可された選択肢を含む分かりやすいエラーが表示されます。
+CLI のトークンは宣言された値と厳密な文字列比較で照合されます。そのため、たとえば `values: [1, 2]` は `--level 1` を受け付けますが、`--level 01` は受け付けません。`values` に含まれない値が渡された場合は、許可された選択肢を含む分かりやすいエラーが表示されます。
 
-実行時に正規表現や一意性のチェック、値の変換などが必要な場合は Standard Schema フィールドを使用してください。詳細は [Standard Schema](/ja/guides/standard-schema/) を参照してください。
+実行時に正規表現や一意性のチェック、値の変換などが必要な場合は [Standard Schema](/ja/guides/standard-schema/) フィールドを使用してください。
 
 ## kebab-case のフィールド名
 

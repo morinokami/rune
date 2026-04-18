@@ -75,17 +75,6 @@ Help text shown in `--help` output.
 
 #### Enum field
 
-An enum field restricts the value to one of a fixed set of string or number choices, with no external schema dependency. The union of allowed values is inferred automatically — callers can write `values: ["dev", "prod"]` without `as const`.
-
-```ts
-defineCommand({
-  args: [{ name: "mode", type: "enum", values: ["dev", "prod"], required: true }],
-  run(ctx) {
-    ctx.args.mode; // "dev" | "prod"
-  },
-});
-```
-
 ##### `name`
 
 - **Type:** `string`

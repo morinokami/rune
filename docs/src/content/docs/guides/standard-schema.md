@@ -12,7 +12,7 @@ A single field uses exactly one of `type` or `schema`, never both. Which one you
 | What you want | Use |
 |---|---|
 | Simple string, number, or boolean input | `type: "string" \| "number" \| "boolean"` |
-| Fixed set of string or number choices with no schema dependency | `type: "enum"` with `values` |
+| Fixed set of string or number choices | `type: "enum"` with `values` |
 | Format validation (UUID, email, etc.) | `schema` |
 | Range constraints (min/max, etc.) | `schema` |
 | Coercion from string to another type (`z.coerce.number()`, etc.) | `schema` |

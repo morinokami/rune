@@ -159,7 +159,12 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Build the project",
-  args: [{ name: "target", type: "enum", values: ["web", "node"], required: true }],
+  args: [{
+    name: "target",
+    type: "enum",
+    values: ["web", "node"],
+    required: true,
+  }],
   options: [
     {
       name: "mode",
@@ -178,7 +183,7 @@ export default defineCommand({
 
 CLI tokens are matched against the declared values using strict string comparison, so `values: [1, 2]` accepts `--level 1` but not `--level 01`. Providing a value that is not listed produces a helpful error that echoes the allowed choices.
 
-For choices that need runtime validation (regex checks, uniqueness, transformation, etc.), use a Standard Schema field — see [Standard Schema](/guides/standard-schema/).
+For choices that need runtime validation (regex checks, uniqueness, transformation, etc.), use a [Standard Schema](/guides/standard-schema/) field.
 
 ## Kebab-case Field Names
 
