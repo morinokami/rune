@@ -105,7 +105,7 @@ export default defineGroup({
 | Property      | Description                                              |
 | ------------- | -------------------------------------------------------- |
 | `name`        | Identifier used as the key in `ctx.args` / `ctx.options` |
-| `type`        | `"string"`, `"number"`, or `"boolean"`                   |
+| `type`        | `"string"`, `"number"`, `"boolean"`, or `"enum"`         |
 | `required`    | Whether the field must be provided                       |
 | `default`     | Default value; shown in `--help` output                  |
 | `description` | Help text                                                |
@@ -123,6 +123,22 @@ defineCommand({
   },
 });
 ```
+
+### Enum Fields
+
+Use `type: "enum"` with a `values` list to accept only a fixed set of string or number choices. The allowed-values union is inferred automatically and rendered in `--help`.
+
+```ts
+defineCommand({
+  args: [{ name: "target", type: "enum", values: ["web", "node"], required: true }],
+  options: [{ name: "mode", type: "enum", values: ["dev", "prod"], default: "dev" }],
+  run({ args, options }) {
+    // args.target: "web" | "node", options.mode: "dev" | "prod"
+  },
+});
+```
+
+String values must match `/^[A-Za-z0-9_.-]+$/`. For free-form strings or runtime validation (regex, uniqueness, transformation), use a `type: "string"` field or a schema field.
 
 ### Standard Schema Fields
 

@@ -35,7 +35,7 @@ TypeScript-first, agent-friendly CLI framework. Directory structure maps directl
 
 ## Documentation & Skills
 
-- When changing public API behavior, update the corresponding documentation in `docs/src/content/docs/` for both English and Japanese (`ja/`) versions, and the relevant skills in `skills/`.
+- When changing public API behavior, update the corresponding documentation in `docs/src/content/docs/` for both English and Japanese (`ja/`) versions, the relevant skills in `skills/`, and the `README.md` if affected.
 
 ## Testing
 
