@@ -10,6 +10,7 @@ import type {
 } from "./validate-types";
 
 import { kebabToCamelCase } from "./camel-case-aliases";
+import { ENUM_STRING_VALUE_PATTERN, isEnumField } from "./enum-field";
 import { isSchemaField } from "./schema-field";
 import { validateCommandAliases } from "./validate-command-aliases";
 
@@ -65,7 +66,12 @@ function validateNegationCollisions(options: readonly CommandOptionField[]): voi
   const allNames = new Set(options.map((field) => field.name));
 
   for (const field of options) {
-    if (!isSchemaField(field) && field.type === "boolean" && field.default === true) {
+    if (
+      !isSchemaField(field) &&
+      !isEnumField(field) &&
+      field.type === "boolean" &&
+      field.default === true
+    ) {
       const negName = `no-${field.name}`;
 
       if (allNames.has(negName)) {
@@ -73,6 +79,59 @@ function validateNegationCollisions(options: readonly CommandOptionField[]): voi
           `Option "${negName}" conflicts with the automatic negation of boolean option "${field.name}".`,
         );
       }
+    }
+  }
+}
+
+function validateEnumFields(
+  fields: readonly (CommandArgField | CommandOptionField)[],
+  kind: "argument" | "option",
+): void {
+  for (const field of fields) {
+    if (!isEnumField(field)) {
+      continue;
+    }
+
+    if (field.values.length === 0) {
+      throw new Error(`Enum ${kind} "${field.name}" must declare at least one value in "values".`);
+    }
+
+    const seen = new Set<string>();
+
+    for (const value of field.values) {
+      if (typeof value !== "string" && typeof value !== "number") {
+        throw new Error(`Enum ${kind} "${field.name}" values must be strings or numbers.`);
+      }
+
+      if (typeof value === "string" && value === "") {
+        throw new Error(`Enum ${kind} "${field.name}" values must not include the empty string.`);
+      }
+
+      if (typeof value === "string" && !ENUM_STRING_VALUE_PATTERN.test(value)) {
+        throw new Error(
+          `Enum ${kind} "${field.name}" has invalid string value ${JSON.stringify(value)}. String values must match ${ENUM_STRING_VALUE_PATTERN.toString()} (letters, digits, "_", ".", "-").`,
+        );
+      }
+
+      if (typeof value === "number" && !Number.isFinite(value)) {
+        throw new Error(`Enum ${kind} "${field.name}" values must not include NaN or Infinity.`);
+      }
+
+      const key = String(value);
+
+      if (seen.has(key)) {
+        throw new Error(
+          `Enum ${kind} "${field.name}" has duplicate value "${key}". Values must be unique after string conversion.`,
+        );
+      }
+
+      seen.add(key);
+    }
+
+    if (field.default !== undefined && !seen.has(String(field.default))) {
+      throw new Error(
+        `Default value "${String(field.default)}" for enum ${kind} "${field.name}" is not listed in "values".`,
+      );
     }
   }
 }
@@ -274,6 +333,7 @@ export function defineCommand<
   }
   if (input.args) {
     validateArgNames(input.args);
+    validateEnumFields(input.args, "argument");
     validateUniqueFieldAndAliasNames(input.args, "argument");
     validateArgOrdering(input.args);
   }
@@ -281,6 +341,7 @@ export function defineCommand<
     validateOptionNames(input.options);
     validateReservedNames(input.options, jsonEnabled);
     validateOptionShortNameFormat(input.options);
+    validateEnumFields(input.options, "option");
     validateUniqueFieldAndAliasNames(input.options, "option");
     validateUniqueOptionShortNames(input.options);
     validateNegationCollisions(input.options);

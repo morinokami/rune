@@ -1,6 +1,8 @@
 import type {
   ArgumentHelpEntry,
   CommandHelpData,
+  EnumArgumentHelpEntry,
+  EnumOptionHelpEntry,
   FrameworkOptionHelpEntry,
   PrimitiveArgumentHelpEntry,
   PrimitiveOptionHelpEntry,
@@ -9,6 +11,7 @@ import type {
 } from "@rune-cli/core";
 
 import {
+  isEnumField,
   isSchemaField,
   type CommandArgField,
   type CommandOptionField,
@@ -71,12 +74,12 @@ export type HelpData = GroupHelpData | CommandHelpData | UnknownCommandHelpData;
 // ---------------------------------------------------------------------------
 
 async function resolveFieldRequired(field: CommandArgField | CommandOptionField): Promise<boolean> {
-  if (!isSchemaField(field)) {
-    return field.required === true && field.default === undefined;
+  if (isSchemaField(field)) {
+    const omittedValidation = await field.schema["~standard"].validate(undefined);
+    return !("value" in omittedValidation);
   }
 
-  const omittedValidation = await field.schema["~standard"].validate(undefined);
-  return !("value" in omittedValidation);
+  return field.required === true && field.default === undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,6 +154,16 @@ export async function buildCommandHelpData(
         ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
         ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
       });
+    } else if (isEnumField(field)) {
+      const entry: EnumArgumentHelpEntry = {
+        name: field.name,
+        type: "enum",
+        values: [...field.values],
+        description: field.description,
+        required,
+        ...(field.default !== undefined ? { default: field.default } : {}),
+      };
+      argumentEntries.push(entry);
     } else {
       const entry: PrimitiveArgumentHelpEntry = {
         name: field.name,
@@ -179,6 +192,18 @@ export async function buildCommandHelpData(
         ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
         ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
       });
+    } else if (isEnumField(field)) {
+      const entry: EnumOptionHelpEntry = {
+        name: field.name,
+        short: field.short,
+        type: "enum",
+        values: [...field.values],
+        description: field.description,
+        required,
+        negatable: false as const,
+        ...(field.default !== undefined ? { default: field.default } : {}),
+      };
+      optionEntries.push(entry);
     } else {
       const entry: PrimitiveOptionHelpEntry = {
         name: field.name,

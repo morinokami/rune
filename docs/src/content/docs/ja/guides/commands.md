@@ -111,12 +111,12 @@ export default defineGroup({
 
 ディレクトリパス自体を実行可能なコマンドにしたい場合は `index.ts` を使い、子コマンドを整理するためのヘルプ専用ノードにしたい場合は `_group.ts` を使います。
 
-| こうしたい場合 | 使うもの |
+| やりたいこと | 使うもの |
 |---|---|
 | 引数なしの `your-cli` で何かを実行したい | `src/commands/index.ts` |
-| `your-cli project` 自体も実行可能にしつつ、`your-cli project create` のような子コマンドも持たせたい | `src/commands/project/index.ts` |
+| `your-cli project` 自体も実行可能にしつつ、`your-cli project create` のような子コマンドももたせたい | `src/commands/project/index.ts` |
 | `your-cli project` は `create` や `list` を束ねるだけのヘルプ用ノードにしたい | `src/commands/project/_group.ts` |
-| `your-cli hello` のような子を持たない単純な leaf command を定義したい | `src/commands/hello.ts` または `src/commands/hello/index.ts` |
+| `your-cli hello` のような子をもたない単純な leaf command を定義したい | `src/commands/hello.ts` または `src/commands/hello/index.ts` |
 
 目安としては、実行可能なコマンドには `index.ts`、ヘルプ専用の親ノードには `_group.ts` を選ぶのが自然です。
 
@@ -149,6 +149,43 @@ Options:
 ```
 
 `_group.ts` で定義したグループではこのように、グループの説明文は `Description:` セクション見出しなしで `Usage:` の前にそのまま表示され、実行時には一致した leaf command モジュールだけが読み込まれます。
+
+## enum フィールド
+
+値を固定された選択肢のいずれかに制限したい場合は、`type: "enum"` と `values` のリストを使用します。文字列と数値を値として指定でき、許可された値の union 型は自動的に推論されます。選択肢は `--help` にも表示されます。
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Build the project",
+  args: [{
+    name: "target",
+    type: "enum",
+    values: ["web", "node"],
+    required: true,
+  }],
+  options: [
+    {
+      name: "mode",
+      type: "enum",
+      values: ["dev", "prod"],
+      default: "dev",
+      description: "Build mode",
+    },
+  ],
+  run({ args, options, output }) {
+    // args.target は "web" | "node"、options.mode は "dev" | "prod"
+    output.log(`Building ${args.target} in ${options.mode} mode`);
+  },
+});
+```
+
+CLI のトークンは宣言された値と厳密な文字列比較で照合されます。そのため、たとえば `values: [1, 2]` は `--level 1` を受け付けますが、`--level 01` は受け付けません。`values` に含まれない値が渡された場合は、許可された選択肢を含む分かりやすいエラーが表示されます。
+
+文字列の値は `/^[A-Za-z0-9_.-]+$/`（英数字、`_`、`.`、`-`）に一致する必要があり、それ以外は定義時に拒否されます。任意の文字列を受け付けたい場合は `type: "string"` フィールドまたはスキーマフィールドを使用してください。
+
+実行時に正規表現や一意性のチェック、値の変換などが必要な場合は [Standard Schema](/ja/guides/standard-schema/) フィールドを使用してください。
 
 ## kebab-case のフィールド名
 

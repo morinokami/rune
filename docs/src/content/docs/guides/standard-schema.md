@@ -3,21 +3,22 @@ title: Standard Schema
 description: Learn how to use Standard Schema for validation and transformation in Rune commands.
 ---
 
-In addition to the primitive types (`"string" | "number" | "boolean"`) declared via the `type` property, Rune's arguments and options accept any [Standard Schema](https://standardschema.dev) compliant object through the `schema` property. This lets you plug in schema libraries like Zod or Valibot to apply validation and transformation that goes well beyond simple type checks.
+In addition to the primitive types (`"string" | "number" | "boolean"`) and the built-in enum type (`type: "enum"` with `values`) declared via the `type` property, Rune's arguments and options accept any [Standard Schema](https://standardschema.dev) compliant object through the `schema` property. This lets you plug in schema libraries like Zod or Valibot to apply validation and transformation that goes well beyond simple type checks.
 
 ## Choosing between primitives and schemas
 
-A single field can use either `type` or `schema`, never both. Which one you pick depends on how much validation and transformation the argument or option needs.
+A single field uses exactly one of `type` or `schema`, never both. Which one you pick depends on how much validation and transformation the argument or option needs.
 
 | What you want | Use |
 |---|---|
 | Simple string, number, or boolean input | `type: "string" \| "number" \| "boolean"` |
+| Fixed set of string or number choices | `type: "enum"` with `values` |
 | Format validation (UUID, email, etc.) | `schema` |
 | Range constraints (min/max, etc.) | `schema` |
 | Coercion from string to another type (`z.coerce.number()`, etc.) | `schema` |
-| Enumerated values | `schema` |
+| Enumerated values with additional validation or transformation | `schema` |
 
-Primitive types are concise to declare, and `--help` automatically shows the type hint (e.g. `<string>`) and default value. Schemas give you the full expressive power of the underlying library, but you'll need to supplement the help output with `typeLabel` / `defaultLabel` (covered below).
+Primitive and enum types are concise to declare, and `--help` automatically shows the type hint (e.g. `<string>` or `<dev|prod>`) and default value. Schemas give you the full expressive power of the underlying library, but you'll need to supplement the help output with `typeLabel` / `defaultLabel` (covered below).
 
 ## Basic usage
 

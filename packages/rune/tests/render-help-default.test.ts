@@ -187,6 +187,51 @@ describe("renderDefaultHelp", () => {
     expect(help).toContain("  --mode  Build mode");
   });
 
+  test("renders enum fields with the allowed values type hint", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["build"],
+      subcommands: [],
+      arguments: [
+        {
+          name: "target",
+          type: "enum",
+          values: ["web", "node"],
+          description: "Build target",
+          required: true,
+        },
+      ],
+      options: [
+        {
+          name: "mode",
+          type: "enum",
+          values: ["dev", "prod"],
+          default: "dev",
+          description: "Build mode",
+          required: true,
+          negatable: false,
+        },
+        {
+          name: "level",
+          type: "enum",
+          values: ["low", 1, "high"],
+          description: "Level",
+          required: false,
+          negatable: false,
+        },
+      ],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("  target <web|node>  Build target");
+    expect(help).toContain('  --mode <dev|prod>  Build mode (default: "dev")');
+    expect(help).toContain("  --level <low|1|high>  Level");
+  });
+
   test("renders typeLabel and defaultLabel for schema fields", () => {
     const data: CommandHelpData = {
       kind: "command",

@@ -3,21 +3,22 @@ title: Standard Schema
 description: Rune のコマンドで Standard Schema によるバリデーションと変換を利用する方法について学ぶ。
 ---
 
-Rune の引数やオプションは、`type` プロパティで指定するプリミティブ型（`"string" | "number" | "boolean"`）に加えて、`schema` プロパティで [Standard Schema](https://standardschema.dev) に準拠した任意のスキーマを指定できます。これにより、Zod や Valibot などのスキーマライブラリをそのまま活用して、単純な型チェックを超えたバリデーションと変換を引数・オプションに適用できます。
+Rune の引数やオプションは、`type` プロパティで指定するプリミティブ型（`"string" | "number" | "boolean"`）と組み込みの enum 型（`type: "enum"` と `values`）に加えて、`schema` プロパティで [Standard Schema](https://standardschema.dev) に準拠した任意のスキーマを指定できます。これにより、Zod や Valibot などのスキーマライブラリをそのまま活用して、単純な型チェックを超えたバリデーションと変換を引数・オプションに適用できます。
 
 ## プリミティブ型との使い分け
 
-`type` と `schema` は同じフィールドに対して同時に指定できません。どちらを選ぶかは、その引数・オプションに必要な検証・変換のレベルによって決めます。
+`type` と `schema` は同じフィールドに対していずれか一方のみを使用できます。どちらを選ぶかは、その引数・オプションに必要な検証・変換のレベルによって決まります。
 
 | やりたいこと | 使うもの |
 |---|---|
 | 単純な文字列・数値・真偽値の受け取りで十分 | `type: "string" \| "number" \| "boolean"` |
+| 固定された文字列／数値の選択肢に制限したい | `type: "enum"` と `values` |
 | フォーマット検証（UUID、メールアドレスなど）をおこないたい | `schema` |
 | 値の範囲制約（最小・最大など）を課したい | `schema` |
 | 文字列を特定の型に変換（`z.coerce.number()` など）したい | `schema` |
-| 列挙値として扱いたい | `schema` |
+| 列挙値に対して追加のバリデーションや変換をおこないたい | `schema` |
 
-プリミティブ型は宣言が簡潔で、`--help` 出力にも `<string>` のような型ヒントとデフォルト値が自動で表示されます。一方、Standard Schema はライブラリの表現力をそのまま使えますが、ヘルプ表示は後述の `typeLabel` / `defaultLabel` で補う必要があります。
+プリミティブ型や enum 型は宣言が簡潔で、`--help` 出力にも `<string>` や `<dev|prod>` のような型ヒントとデフォルト値が自動で表示されます。一方、Standard Schema はライブラリの表現力をそのまま使えますが、ヘルプ表示は後述の `typeLabel` / `defaultLabel` で補う必要があります。
 
 ## 基本的な使い方
 

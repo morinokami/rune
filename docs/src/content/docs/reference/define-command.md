@@ -34,7 +34,7 @@ A one-line summary shown in `--help` output.
 
 Positional arguments declared in the order they appear on the command line. Required arguments must come before optional ones.
 
-Each entry is either a **primitive field** or a **schema field**. A field must use either `type` or `schema`, never both.
+Each entry is a **primitive field**, an **enum field**, or a **schema field**. A field must use exactly one of `type` with a primitive type, `type: "enum"` with `values`, or `schema` — never a mix.
 
 #### Primitive field
 
@@ -72,6 +72,48 @@ Value used when the user omits the argument. Primitive defaults are shown in `--
 - **Optional**
 
 Help text shown in `--help` output.
+
+#### Enum field
+
+##### `name`
+
+- **Type:** `string`
+- **Required**
+
+Identifier used as the key in `ctx.args`.
+
+##### `type`
+
+- **Type:** `"enum"`
+- **Required**
+
+##### `values`
+
+- **Type:** `readonly (string | number)[]`
+- **Required**
+
+Allowed values. The raw CLI token is matched against each entry using strict string comparison (`String(value) === rawToken`), so `values: [1, 2]` accepts `"1"` or `"2"` but not `"007"` or `"1.0"`. String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`) — values that contain spaces or other special characters are rejected at definition time. Empty strings, `NaN`, `Infinity`, and duplicates (after string conversion) are rejected as well.
+
+##### `required`
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+When `true`, the field must be provided by the user.
+
+##### `default`
+
+- **Type:** One of `values`
+- **Optional**
+
+Value used when the user omits the field. Must be listed in `values`.
+
+##### `description`
+
+- **Type:** `string`
+- **Optional**
+
+Help text shown in `--help` output. The allowed values are rendered alongside the name as `<a|b|c>`.
 
 #### Schema field
 
@@ -117,7 +159,7 @@ Help text shown in `--help` output.
 
 Options declared as `--name` flags.
 
-Each entry is either a **primitive field** or a **schema field**, with the same base properties as `args` plus the following additional properties. Primitive defaults are shown in `--help`, except for boolean options. Primitive boolean options always default to `false`, even when `required` and `default` are omitted. When a primitive boolean option sets `default: true`, a `--no-<name>` flag is automatically generated so users can override the default. See [Negatable boolean options](#negatable-boolean-options) for details.
+Each entry is a **primitive field**, an **enum field**, or a **schema field**, with the same base properties as `args` plus the following additional properties. Primitive defaults are shown in `--help`, except for boolean options. Primitive boolean options always default to `false`, even when `required` and `default` are omitted. When a primitive boolean option sets `default: true`, a `--no-<name>` flag is automatically generated so users can override the default. See [Negatable boolean options](#negatable-boolean-options) for details.
 
 The option name `"help"` is reserved by the framework and cannot be used. When `json: true` is set, the name `"json"` is also reserved because the framework manages the built-in `--json` flag.
 
