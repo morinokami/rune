@@ -5,7 +5,7 @@ description: Learn how to enable JSON output in Rune commands.
 
 Rune aims to make it easy to build CLIs that treat both humans and agents as first-class users, balancing DX (Developer Experience) with AX (Agent Experience). As part of this foundation for AX, Rune provides a built-in mechanism for outputting command results in machine-readable JSON format.
 
-## Enabling JSON Mode
+## Enabling JSON mode
 
 Set `json: true` in `defineCommand()` to enable JSON mode for a command. In JSON mode, the return value of the `run()` function becomes the command's structured output:
 
@@ -27,7 +27,7 @@ export default defineCommand({
 
 Without `json`, `run()` is typed as returning `void`. When `json: true` is set, `run()` can return a value, and that return type is preserved by helpers such as `runCommand().data`. The return value must be serializable by `JSON.stringify()`. If a non-serializable value such as `BigInt` is returned, Rune treats it as an error.
 
-## Output Behavior
+## Output behavior
 
 When a user runs the command with the `--json` flag, the return value of `run()` is printed to stdout as formatted JSON:
 
@@ -76,7 +76,7 @@ export default defineCommand({
 
 Only output written through the framework's `output` API is suppressed in JSON mode. Output written directly via `console.log()` or `process.stdout.write()` is not suppressed and will corrupt the JSON payload. Always use `output.log()` and `output.error()` for command output.
 
-## Why `output.log()` Matters
+## Why `output.log()` matters
 
 Rune's output helpers are not just a style preference:
 
@@ -93,7 +93,7 @@ If `run()` does not return an explicit value (i.e. returns `undefined`), the JSO
 The `--json` flag is only recognized before the `--` terminator. If placed after `--` (e.g. `-- --json`), it is treated as a regular argument.
 :::
 
-## Error Output
+## Error output
 
 When a command fails in JSON mode, error information is output to stdout as a JSON object. This applies not only to failures within `run()`, but also to argument parsing errors such as missing required arguments:
 

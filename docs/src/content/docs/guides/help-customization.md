@@ -5,7 +5,7 @@ description: Learn how to customize the help output of your CLI.
 
 Rune automatically generates help output from a command's `description`, `args`, `options`, and `examples`. If you need more control over the generated help output, you can customize it per command with `defineCommand({ help })`, or apply a project-wide style through `rune.config.ts`.
 
-## Per-command Customization
+## Per-command customization
 
 Pass a `help` function to `defineCommand()` to take full control of that command's `--help` output. The function receives a structured `CommandHelpData` object and returns the string to display:
 
@@ -43,7 +43,7 @@ Options:
 
 `CommandHelpData` includes the command name, path segments, arguments, options, and subcommand definitions. You can use these fields to build an entirely custom layout from scratch. See the [`defineCommand()` reference](/reference/define-command/#help) for details.
 
-## Project-level Customization
+## Project-level customization
 
 To apply a consistent style across all commands, create a `rune.config.ts` at the project root and define a `renderHelp` function with `defineConfig()`:
 
@@ -113,6 +113,6 @@ export default defineConfig({
 
 You can also skip the default output entirely and build a completely custom format from the fields in `data`.
 
-## Fallback on Errors
+## Fallback on errors
 
 If a function provided via `defineCommand({ help })` or `defineConfig({ renderHelp })` throws an exception, Rune falls back to the default help renderer and prints a warning to stderr. The same fallback also applies when `rune.config.ts` fails to load or does not export a valid `defineConfig()` result. This ensures that `--help` always works, even when a custom renderer or config has a bug.

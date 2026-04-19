@@ -14,43 +14,43 @@ Rune is currently experimental. APIs and behavior may change.
 
 ## Features
 
-### File-based Command Routing
+### File-based command routing
 
 In Rune, the file structure under `src/commands` determines the CLI's command tree. An `index.ts` file makes its directory executable as a command. Other `.ts` files in the same directory become sibling subcommands under that directory.
 
 There is no manifest to maintain by hand. You can understand the entire CLI structure at a glance just by looking at the directory layout. At runtime, only the matched command module is loaded, so no unnecessary code is loaded.
 
-### Type-safe Command Definitions
+### Type-safe command definitions
 
 Types for arguments and options are inferred from the definition you pass to `defineCommand()`. There is no need to write complex type annotations manually.
 
 Mistakes such as placing an optional argument before a required one, duplicating short option names, or creating a name collision with `--no-<name>` flags are caught at definition time. Hyphenated field names can also be accessed in camelCase, with type safety and autocompletion preserved.
 
-### Standard Schema Support
+### Standard Schema support
 
 Command arguments and options can be validated with any [Standard Schema](https://standardschema.dev/)-compatible library, such as Zod, Valibot, or ArkType. Rune calls validators through the Standard Schema contract, so you are free to choose the schema library that best fits your project without being locked into a specific one.
 
-### Test Utilities
+### Test utilities
 
 `runCommand()` lets you test commands in-process without spawning a child process. It runs the full command execution as-is, including argument parsing, type coercion, validation, and default value resolution. You can assert directly on the result's `exitCode`, `stdout`, `stderr`, `error`, and `data`, making command tests fast and reliable.
 
-### JSON Output
+### JSON output
 
 Setting `json: true` in `defineCommand()` enables a built-in `--json` flag. When the flag is passed, the command's return value is written to stdout as structured JSON.
 
 In this mode, human-readable stdout from `output.log()` is automatically suppressed, while `output.error()` continues to write to stderr so diagnostic messages are not lost. Without `--json`, the command behaves as a normal text CLI, so a single implementation can serve both humans and machines.
 
-### Automatic Help Generation
+### Automatic help generation
 
 Help output for `--help` is generated automatically from a command's `description`, `args`, `options`, and `examples`. Argument descriptions, primitive defaults, short options, negation flags, and subcommand listings are all included, so there is no help text to maintain separately.
 
 When you need more control, you can customize help rendering per command with `defineCommand({ help })` or project-wide with `rune.config.ts` via `defineConfig()`, while still building on `renderDefaultHelp()`.
 
-### Structured Errors
+### Structured errors
 
 `CommandError` lets you define structured errors with `kind`, `message`, `hint`, and `details`. In normal execution, they are displayed in a human-friendly format; in `--json` mode, they are emitted as machine-readable error information.
 
-### Agent Skills
+### Agent skills
 
 Rune provides an official [Agent Skill](https://agentskills.io/home), an open format for giving AI agents procedural knowledge and project-specific context they can load on demand. The format is supported by multiple AI development tools.
 

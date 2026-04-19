@@ -3,7 +3,7 @@ title: Commands
 description: Learn how to define commands in Rune.
 ---
 
-## Defining Commands
+## Defining commands
 
 As described in the [Routing](/guides/routing/) guide, commands in Rune are defined by `index.ts` or regular `.ts` files inside `src/commands`. Each command file uses the `defineCommand()` function, which takes an object specifying the command's description, arguments, options, `run` function, and more. The returned command object must be the file's default export so that Rune can recognize it as a command.
 
@@ -58,9 +58,9 @@ $ my-cli foo --loud
 HELLO, FOO!
 ```
 
-Use `output.log()` for normal stdout and `output.error()` for stderr. This keeps command output testable with `runCommand()` and allows Rune to suppress human-readable stdout when a `json: true` command is run with `--json`. For details, see the [JSON Output](/guides/json/) guide.
+Use `output.log()` for normal stdout and `output.error()` for stderr. This keeps command output testable with `runCommand()` and allows Rune to suppress human-readable stdout when a `json: true` command is run with `--json`. For details, see the [JSON output](/guides/json/) guide.
 
-## Command File Types
+## Command file types
 
 The type of file you place under `src/commands` determines how it is registered as a command.
 
@@ -107,7 +107,7 @@ In this example, running `your-cli project` displays help output that includes t
 
 `_group.ts` and `index.ts` cannot coexist in the same directory. Use `index.ts` when the directory path itself should be an executable command, and `_group.ts` when it should only serve as a group of subcommands.
 
-### Choosing Between `index.ts` and `_group.ts`
+### Choosing between `index.ts` and `_group.ts`
 
 Use the directory path as an executable command when it should do work or render command-specific help on its own. Use a group when the directory exists only to organize child commands.
 
@@ -120,7 +120,7 @@ Use the directory path as an executable command when it should do work or render
 
 As a rule of thumb, choose `index.ts` for executable commands and `_group.ts` for help-only parent nodes.
 
-## Full Help Example
+## Full help example
 
 The following layout combines a root command, a help-only group, and two leaf commands:
 
@@ -150,7 +150,7 @@ Options:
 
 This is the shape to expect for a group defined with `_group.ts`: the group description is printed above `Usage:` without a `Description:` section header, and only the matched leaf command module is loaded at runtime.
 
-## Enum Fields
+## Enum fields
 
 When a field should accept only one of a fixed set of choices, use `type: "enum"` with a `values` list. Both string and number values are allowed, the union of allowed values is inferred automatically (no `as const` needed), and the allowed values are rendered in `--help`.
 
@@ -187,7 +187,7 @@ String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`) 
 
 For choices that need runtime validation (regex checks, uniqueness, transformation, etc.), use a [Standard Schema](/guides/standard-schema/) field.
 
-## Kebab-case Field Names
+## Kebab-case field names
 
 When an argument or option name contains hyphens (e.g. `dry-run`), it can be accessed on `ctx.args` or `ctx.options` using either the original name or its camelCase form:
 
@@ -206,7 +206,7 @@ export default defineCommand({
 
 This mapping is also enforced at the type level, so both forms get full autocompletion.
 
-## Negatable Boolean Options
+## Negatable boolean options
 
 When a primitive boolean option has `default: true`, Rune automatically generates a `--no-<name>` flag so users can override the default:
 

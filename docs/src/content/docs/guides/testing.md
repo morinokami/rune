@@ -9,7 +9,7 @@ Rune provides the `runCommand()` function for testing commands in-process. `runC
 The examples in this guide use [Vitest](https://vitest.dev/) as the test framework.
 :::
 
-## How runCommand Works
+## How runCommand works
 
 `runCommand()` takes a `string[]` of CLI tokens as input, in the same format a user would type in a terminal. Internally, it runs a single command through Rune's command-level parse-and-execute pipeline, so argv parsing, type coercion, validation, and default handling all work the same way as a real invocation. Note that top-level CLI behavior such as command routing and help rendering is not included. `runCommand()` exercises only the resolved command itself.
 
@@ -21,7 +21,7 @@ Because no child process is spawned, tests run fast. The result is returned as a
 - `error`: structured error information if the command failed
 - `data`: return value from `run()` when the command uses `json: true` (typed from the command's `run()` return value)
 
-## Basic Testing
+## Basic testing
 
 `runCommand()` takes a command created with `defineCommand()` and executes it with the given arguments. Import the command you want to test and pass it as the first argument.
 
@@ -51,7 +51,7 @@ test("greets loudly with --loud flag", async () => {
 });
 ```
 
-## Testing Errors
+## Testing errors
 
 When a command throws a [`CommandError`](/reference/command-error/), `runCommand()` captures it in `result.error`:
 
@@ -86,7 +86,7 @@ test("returns structured error", async () => {
 
 Unexpected exceptions are wrapped with `kind: "rune/unexpected"`.
 
-## Testing JSON Mode
+## Testing JSON mode
 
 For commands with `json: true`, the return value of `run()` is captured in `result.data`. Passing the `--json` flag suppresses `output.log()`, while `output.error()` continues to output:
 
@@ -113,7 +113,7 @@ test("returns structured data", async () => {
 
 `result.data` is populated even without the `--json` flag. The `--json` flag controls whether `output.log()` is suppressed, not whether `data` is captured.
 
-## Injecting Context
+## Injecting context
 
 Pass a context object as the third argument to `runCommand()` to override `ctx.cwd` without changing `process.cwd()`:
 
