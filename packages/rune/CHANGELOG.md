@@ -1,5 +1,13 @@
 # @rune-cli/rune
 
+## 0.0.33
+
+### Patch Changes
+
+- [#117](https://github.com/morinokami/rune/pull/117) [`122fd64`](https://github.com/morinokami/rune/commit/122fd6418678a8ad3df990d1094d1d8d0548e01a) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): unify help description layout across commands and groups
+
+- [#120](https://github.com/morinokami/rune/pull/120) [`8977a80`](https://github.com/morinokami/rune/commit/8977a800e981dfaf99169f1790eee8aebd01a7e4) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): externalize third-party dependencies in build and run
+
 ## 0.0.32
 
 ### Patch Changes
