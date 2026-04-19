@@ -73,7 +73,7 @@ export default defineConfig({
             { slug: "guides/help-customization" },
             { slug: "guides/standard-schema" },
             { slug: "guides/skills" },
-            // { slug: "guides/deployment" },
+            { slug: "guides/deployment" },
           ],
         },
         {
