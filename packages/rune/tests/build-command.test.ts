@@ -419,6 +419,186 @@ export default defineCommand({
     );
     expect(await pathExists(path.join(projectRoot, "dist", "types.d.ts"))).toBe(false);
   });
+
+  test("runRuneCli build leaves third-party package imports external", async () => {
+    const { projectRoot } = await createBuildProject({
+      "package.json": JSON.stringify(
+        {
+          name: "mycli",
+          dependencies: {
+            "cjs-pkg": "0.0.0",
+          },
+        },
+        null,
+        2,
+      ),
+      "node_modules/cjs-pkg/package.json": JSON.stringify(
+        { name: "cjs-pkg", version: "0.0.0", main: "index.js" },
+        null,
+        2,
+      ),
+      "node_modules/cjs-pkg/index.js": [
+        "'use strict';",
+        "module.exports = {",
+        "  describe: function describe(name) {",
+        "    return 'hello ' + name;",
+        "  },",
+        "};",
+        "",
+      ].join("\n"),
+      "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
+import pkg from "cjs-pkg";
+
+export default defineCommand({
+  description: "Uses an external dependency",
+  options: [{ name: "name", type: "string", required: true }],
+  async run(ctx) {
+    ctx.output.log(pkg.describe(ctx.options.name));
+  },
+});
+`,
+    });
+
+    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    expect(buildResult.exitCode).toBe(0);
+    expect(buildResult.stderr).toBe("");
+
+    const builtCommandSource = await readFile(
+      path.join(projectRoot, "dist", "commands", "hello.mjs"),
+      "utf8",
+    );
+    expect(builtCommandSource).toContain(`from "cjs-pkg"`);
+
+    const result = await captureBuiltCliResult(projectRoot, ["hello", "--name", "rune"]);
+    expect(result).toEqual({
+      exitCode: 0,
+      stdout: "hello rune\n",
+      stderr: "",
+    });
+  });
+
+  test("runRuneCli build warns when runtime dependencies are only in devDependencies", async () => {
+    const { projectRoot } = await createBuildProject({
+      "package.json": JSON.stringify(
+        {
+          name: "mycli",
+          devDependencies: {
+            "cjs-pkg": "0.0.0",
+          },
+        },
+        null,
+        2,
+      ),
+      "node_modules/cjs-pkg/package.json": JSON.stringify(
+        { name: "cjs-pkg", version: "0.0.0", main: "index.js" },
+        null,
+        2,
+      ),
+      "node_modules/cjs-pkg/index.js": `module.exports = { value: "ok" };\n`,
+      "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
+import pkg from "cjs-pkg";
+
+export default defineCommand({
+  description: "Uses a misplaced dependency",
+  async run(ctx) {
+    ctx.output.log(pkg.value);
+  },
+});
+`,
+    });
+
+    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    expect(buildResult.exitCode).toBe(0);
+    expect(buildResult.stderr).toContain(
+      'Warning: Runtime dependency "cjs-pkg" is listed in devDependencies.',
+    );
+  });
+
+  test("runRuneCli build does not warn for type-only imports from devDependencies", async () => {
+    const { projectRoot } = await createBuildProject({
+      "package.json": JSON.stringify(
+        {
+          name: "mycli",
+          devDependencies: {
+            "types-only-pkg": "0.0.0",
+          },
+        },
+        null,
+        2,
+      ),
+      "node_modules/types-only-pkg/package.json": JSON.stringify(
+        { name: "types-only-pkg", version: "0.0.0", types: "index.d.ts" },
+        null,
+        2,
+      ),
+      "node_modules/types-only-pkg/index.d.ts": `export interface Payload { readonly message: string; }\n`,
+      "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
+import type { Payload } from "types-only-pkg";
+
+export default defineCommand({
+  description: "Uses a type-only dependency",
+  async run(ctx) {
+    const payload: Payload = { message: "hello" };
+    ctx.output.log(payload.message);
+  },
+});
+`,
+    });
+
+    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    expect(buildResult.exitCode).toBe(0);
+    expect(buildResult.stderr).toBe("");
+
+    const result = await captureBuiltCliResult(projectRoot, ["hello"]);
+    expect(result).toEqual({
+      exitCode: 0,
+      stdout: "hello\n",
+      stderr: "",
+    });
+  });
+
+  test("runRuneCli build does not warn for tsconfig path aliases that resolve locally", async () => {
+    const { projectRoot } = await createBuildProject({
+      "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+      "tsconfig.json": JSON.stringify(
+        {
+          compilerOptions: {
+            baseUrl: ".",
+            paths: {
+              "@utils": ["./src/utils.ts"],
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "src/utils.ts": `export function greet(name: string): string {
+  return \`hello \${name}\`;
+}
+`,
+      "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
+import { greet } from "@utils";
+
+export default defineCommand({
+  description: "Uses a tsconfig alias",
+  async run(ctx) {
+    ctx.output.log(greet("rune"));
+  },
+});
+`,
+    });
+
+    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    expect(buildResult.exitCode).toBe(0);
+    expect(buildResult.stderr).toBe("");
+
+    const result = await captureBuiltCliResult(projectRoot, ["hello"]);
+    expect(result).toEqual({
+      exitCode: 0,
+      stdout: "hello rune\n",
+      stderr: "",
+    });
+  });
 });
 
 describe("build isolation and optimization", () => {

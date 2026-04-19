@@ -10,6 +10,7 @@ import {
 import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
+  readProjectPackageJson,
   resolveConfigPath,
   resolveProjectDirectories,
   resolveProjectPath,
@@ -25,6 +26,8 @@ import {
   formatBuildFailure,
   isBuildFailure,
 } from "./rolldown-build";
+import { createExternalDependenciesContext } from "./rolldown-shared";
+import { getRuntimeDependencyWarnings } from "./runtime-dependency-warnings";
 import { writeStderrLine, writeStdout } from "./write-result";
 
 export interface RunBuildCommandOptions {
@@ -85,16 +88,32 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
     const sourceManifest = await generateCommandManifest({ commandsDirectory });
     const builtManifest = createBuiltManifest(sourceManifest, sourceDirectory);
     const cliInfo = await readProjectCliInfo(projectRoot);
+    const packageJson = await readProjectPackageJson(projectRoot);
     const configPath = await resolveConfigPath(projectRoot);
+    const externalDependenciesContext = createExternalDependenciesContext();
 
     await rm(distDirectory, { recursive: true, force: true });
     await writeBuiltRuntimeFiles(distDirectory, builtManifest);
     await Promise.all([
-      buildCommandEntries(projectRoot, sourceDirectory, distDirectory, sourceManifest),
+      buildCommandEntries(
+        projectRoot,
+        sourceDirectory,
+        distDirectory,
+        sourceManifest,
+        externalDependenciesContext,
+      ),
       buildCliEntry(distDirectory, cliInfo.name, cliInfo.version, configPath !== undefined),
-      ...(configPath ? [buildConfigEntry(projectRoot, distDirectory, configPath)] : []),
+      ...(configPath
+        ? [buildConfigEntry(projectRoot, distDirectory, configPath, externalDependenciesContext)]
+        : []),
       copyBuiltAssets(sourceDirectory, distDirectory),
     ]);
+    for (const warning of getRuntimeDependencyWarnings(
+      packageJson,
+      externalDependenciesContext.getExternalPackages(),
+    )) {
+      await writeStderrLine(warning);
+    }
 
     await writeStdout(`Built CLI to ${path.join(distDirectory, BUILD_CLI_FILENAME)}\n`);
     return 0;

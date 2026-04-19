@@ -7,6 +7,7 @@ import type { CommandManifest } from "../manifest/manifest-types";
 
 import { toPosixPath } from "./path-utils";
 import {
+  createExternalDependenciesContext,
   createSharedBuildConfig,
   pathExists,
   resolveBuildTsconfig,
@@ -159,6 +160,7 @@ export async function buildCommandEntries(
   sourceDirectory: string,
   distDirectory: string,
   manifest: CommandManifest,
+  externalDependenciesContext = createExternalDependenciesContext(),
 ): Promise<void> {
   const input = createCommandInputMap(manifest, sourceDirectory);
 
@@ -169,6 +171,7 @@ export async function buildCommandEntries(
   await build({
     ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
     input,
+    plugins: [externalDependenciesContext.plugin],
     output: {
       // Rune assembles dist across multiple builds, so each step must preserve prior output.
       dir: distDirectory,
@@ -184,10 +187,12 @@ export async function buildConfigEntry(
   projectRoot: string,
   distDirectory: string,
   configPath: string,
+  externalDependenciesContext = createExternalDependenciesContext(),
 ): Promise<void> {
   await build({
     ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
     input: configPath,
+    plugins: [externalDependenciesContext.plugin],
     output: {
       // Rune assembles dist across multiple builds, so each step must preserve prior output.
       file: path.join(distDirectory, BUILD_CONFIG_FILENAME),
@@ -205,11 +210,17 @@ export async function buildCliEntry(
 ): Promise<void> {
   const runtimeHelperEntryPath = await resolveRuntimeHelperEntryPath();
   const runtimeHelperDirectory = path.dirname(runtimeHelperEntryPath);
+  const externalDependenciesContext = createExternalDependenciesContext();
 
   await build({
     ...createSharedBuildConfig(runtimeHelperDirectory, false),
     input: BUILT_CLI_ENTRY_ID,
     plugins: [
+      // The built CLI entry currently imports only the in-repo runtime helper.
+      // Keep it on the same shared externalization plugin for consistency, but
+      // do not surface its package set in warnings unless this template grows
+      // third-party runtime imports in the future.
+      externalDependenciesContext.plugin,
       createBuiltCliEntryPlugin(
         renderBuiltCliEntry(
           cliName,

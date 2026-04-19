@@ -104,6 +104,8 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
     let runtimeConfigPath = configPath;
 
     if (route.kind === "command") {
+      // TODO: Mirror `rune build`'s runtime dependency warnings here so
+      // dev-only imports are surfaced during local iteration as well.
       const builtSourceFilePath = await bundleCommandForRun(
         projectRoot,
         sourceDirectory,
