@@ -5,7 +5,7 @@ sidebar:
   label: Installation
 ---
 
-import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Run the `create rune-app` command and answer a few prompts to quickly scaffold a new Rune project.
 
@@ -105,7 +105,7 @@ Run the `create rune-app` command and answer a few prompts to quickly scaffold a
      <TabItem label="pnpm">
      ```sh
      cd my-cli
-     pnpm run start hello
+     pnpm start hello
      ```
      </TabItem>
      <TabItem label="npm">
@@ -117,16 +117,26 @@ Run the `create rune-app` command and answer a few prompts to quickly scaffold a
      <TabItem label="yarn">
      ```sh
      cd my-cli
-     yarn run start hello
+     yarn start hello
      ```
      </TabItem>
      <TabItem label="bun">
      ```sh
      cd my-cli
-     bun run start hello
+     bun start hello
      ```
      </TabItem>
    </Tabs>
+
+   <Aside type="tip" title="npm">
+     When using `npm run`, pass the command arguments after an extra `--`.
+
+     ```sh
+     npm run start -- hello # Run the hello command
+     npm run start -- --help # Show help for the my-cli CLI
+     npm run start -- hello --help # Show help for the hello command
+     ```
+   </Aside>
 
    If you see the following output, you're all set.
 

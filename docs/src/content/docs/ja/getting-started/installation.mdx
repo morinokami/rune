@@ -5,7 +5,7 @@ sidebar:
   label: インストール
 ---
 
-import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 `create rune-app` コマンドを実行していくつかの質問に回答することにより、新しい Rune プロジェクトを素早く作成できます。
 
@@ -105,7 +105,7 @@ import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
      <TabItem label="pnpm">
      ```sh
      cd my-cli
-     pnpm run start hello
+     pnpm start hello
      ```
      </TabItem>
      <TabItem label="npm">
@@ -117,16 +117,26 @@ import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
      <TabItem label="yarn">
      ```sh
      cd my-cli
-     yarn run start hello
+     yarn start hello
      ```
      </TabItem>
      <TabItem label="bun">
      ```sh
      cd my-cli
-     bun run start hello
+     bun start hello
      ```
      </TabItem>
    </Tabs>
+
+   <Aside type="tip" title="npm">
+     `npm run` では、実行したいコマンドの引数を `--` の後ろに渡します。
+
+     ```sh
+     npm run start -- hello  # hello コマンドを実行
+     npm run start -- --help  # my-cli コマンドのヘルプを表示
+     npm run start -- hello --help  # hello コマンドのヘルプを表示
+     ```
+   </Aside>
 
    以下のような出力が表示されれば成功です。
 

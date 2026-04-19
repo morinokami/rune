@@ -10,7 +10,7 @@
   ],
   "type": "module",
   "scripts": {
-    "start": "rune run",
+    "start": "rune run --",
     "build": "rune build",
     "test": "vitest run",
     "rune": "rune"
