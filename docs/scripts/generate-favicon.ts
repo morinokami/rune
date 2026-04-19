@@ -59,13 +59,14 @@ function renderCell(char: string, cx: number, cy: number, w: number, h: number):
 
 const CELL_W = 10;
 const CELL_H = 16;
+const OPTICAL_OFFSET_X = 4;
 const maxCols = Math.max(...R_LINES.map((l) => Array.from(l).length));
 const contentW = maxCols * CELL_W;
 const contentH = R_LINES.length * CELL_H;
 
 // Make it square with padding
 const size = Math.max(contentW, contentH) + 16;
-const offsetX = (size - contentW) / 2;
+const offsetX = (size - contentW) / 2 + OPTICAL_OFFSET_X;
 const offsetY = (size - contentH) / 2 + 3;
 
 const allRects: string[] = [];
