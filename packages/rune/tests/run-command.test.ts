@@ -499,6 +499,44 @@ export default defineCommand({
     expect(captured.stderr).toBe("");
   });
 
+  test("runRuneCli resolves third-party packages from node_modules without bundling them", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify(
+          {
+            name: "mycli",
+            dependencies: {
+              "cjs-pkg": "0.0.0",
+            },
+          },
+          null,
+          2,
+        ),
+        "node_modules/cjs-pkg/package.json": JSON.stringify(
+          { name: "cjs-pkg", version: "0.0.0", main: "index.js" },
+          null,
+          2,
+        ),
+        "node_modules/cjs-pkg/index.js": `module.exports = { greet(name) { return "hello " + name; } };\n`,
+        "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
+import pkg from "cjs-pkg";
+
+export default defineCommand({
+  async run({ output }) {
+    output.log(pkg.greet("rune"));
+  },
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "hello"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("hello rune\n");
+    expect(captured.stderr).toBe("");
+  });
+
   test("runRuneCli bundles rune.config.ts only when help is rendered", async () => {
     // Config with an extensionless relative import would fail under native
     // type-stripping. The Rolldown-bundled help path should resolve it, while
