@@ -31,10 +31,9 @@ export default defineCommand({
 $ my-cli deploy --help
 🚀 Deploy Command
 
-Usage: my-cli deploy [options]
+Deploy to production
 
-Description:
-  Deploy to production
+Usage: my-cli deploy [options]
 
 Options:
   -t, --target <string>  Deploy target

@@ -39,10 +39,9 @@ Running this command produces the following output:
 
 ```bash
 $ my-cli --help
-Usage: my-cli <name> [options]
+Greet someone
 
-Description:
-  Greet someone
+Usage: my-cli <name> [options]
 
 Arguments:
   name <string>
@@ -148,7 +147,7 @@ Options:
   -h, --help  Show help
 ```
 
-This is the shape to expect for a group defined with `_group.ts`: the group description is printed above `Usage:` without a `Description:` section header, and only the matched leaf command module is loaded at runtime.
+This is the default shape for help output when a description is present: the description is printed above `Usage:`.
 
 ## Enum fields
 

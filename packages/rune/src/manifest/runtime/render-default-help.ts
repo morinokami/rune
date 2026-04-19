@@ -158,11 +158,13 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
     .filter((part) => part.length > 0)
     .join(" ");
 
-  const parts = [`Usage: ${usageParts}`];
+  const parts: string[] = [];
 
   if (data.description) {
-    parts.push(`Description:\n  ${data.description}`);
+    parts.push(data.description);
   }
+
+  parts.push(`Usage: ${usageParts}`);
 
   if (data.subcommands.length > 0) {
     parts.push(

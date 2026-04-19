@@ -39,10 +39,9 @@ export default defineCommand({
 
 ```bash
 $ my-cli --help
-Usage: my-cli <name> [options]
+Greet someone
 
-Description:
-  Greet someone
+Usage: my-cli <name> [options]
 
 Arguments:
   name <string>
@@ -148,7 +147,7 @@ Options:
   -h, --help  Show help
 ```
 
-`_group.ts` で定義したグループではこのように、グループの説明文は `Description:` セクション見出しなしで `Usage:` の前にそのまま表示され、実行時には一致した leaf command モジュールだけが読み込まれます。
+description がある場合のデフォルトのヘルプ出力はこのかたちとなり、説明文は `Usage:` の前に表示されます。
 
 ## enum フィールド
 
