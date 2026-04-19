@@ -354,7 +354,8 @@ export default defineCommand({
     const commandHelpResult = await captureBuiltCliResult(projectRoot, ["hello", "--help"]);
     expect(commandHelpResult.exitCode).toBe(0);
     expect(commandHelpResult.stdout).toContain("Usage: mycli hello");
-    expect(commandHelpResult.stdout).toContain("Description:\n  Say hello");
+    expect(commandHelpResult.stdout).toContain("Say hello\n\nUsage: mycli hello");
+    expect(commandHelpResult.stdout).not.toContain("Description:");
   });
 
   test("runRuneCli builds a bare file command and emits the correct dist path", async () => {
