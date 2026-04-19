@@ -7,6 +7,7 @@ import type { CommandManifestCommandNode } from "../manifest/manifest-types";
 import { copyBuiltAssets } from "./copy-assets";
 import { toPosixPath } from "./path-utils";
 import {
+  createExternalDependenciesContext,
   createSharedBuildConfig,
   resolveBuildTsconfig,
   stripFileExtension,
@@ -35,10 +36,12 @@ export async function bundleCommandForRun(
 ): Promise<string> {
   const relativeSourceFilePath = path.relative(sourceDirectory, leaf.sourceFilePath);
   const entryName = toPosixPath(stripFileExtension(relativeSourceFilePath));
+  const externalDependenciesContext = createExternalDependenciesContext();
 
   await build({
     ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
     input: { [entryName]: leaf.sourceFilePath },
+    plugins: [externalDependenciesContext.plugin],
     output: {
       dir: runDirectory,
       format: "es",
@@ -60,10 +63,12 @@ export async function bundleConfigForRun(
   configPath: string,
 ): Promise<string> {
   const outputPath = path.join(runDirectory, RUN_CONFIG_FILENAME);
+  const externalDependenciesContext = createExternalDependenciesContext();
 
   await build({
     ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
     input: configPath,
+    plugins: [externalDependenciesContext.plugin],
     output: {
       file: outputPath,
       format: "es",

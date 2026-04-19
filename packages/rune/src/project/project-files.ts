@@ -10,9 +10,13 @@ const COMMANDS_DIRECTORY_NAME = path.join(SOURCE_DIRECTORY_NAME, "commands");
 const DIST_DIRECTORY_NAME = "dist";
 const CONFIG_FILENAME = "rune.config.ts";
 
-interface ProjectPackageJson {
+export interface ProjectPackageJson {
   readonly bin?: string | Readonly<Record<string, string>> | undefined;
+  readonly dependencies?: Readonly<Record<string, string>> | undefined;
+  readonly devDependencies?: Readonly<Record<string, string>> | undefined;
   readonly name?: string | undefined;
+  readonly optionalDependencies?: Readonly<Record<string, string>> | undefined;
+  readonly peerDependencies?: Readonly<Record<string, string>> | undefined;
   readonly version?: string | undefined;
 }
 
@@ -75,24 +79,30 @@ function resolveCliNameFromPackageJson(packageJson: ProjectPackageJson): string 
 // ---------------------------------------------------------------------------
 
 export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCliInfo> {
+  const packageJson = await readProjectPackageJson(projectRoot);
+  const name = packageJson ? resolveCliNameFromPackageJson(packageJson) : undefined;
+
+  return {
+    name: name ?? path.basename(projectRoot),
+    version: packageJson?.version,
+  };
+}
+
+export async function readProjectPackageJson(
+  projectRoot: string,
+): Promise<ProjectPackageJson | undefined> {
   const packageJsonPath = path.join(projectRoot, "package.json");
 
   try {
     const packageJsonContents = await readFile(packageJsonPath, "utf8");
-    const packageJson = JSON.parse(packageJsonContents) as ProjectPackageJson;
-    const name = resolveCliNameFromPackageJson(packageJson);
-
-    return {
-      name: name ?? path.basename(projectRoot),
-      version: packageJson.version,
-    };
+    return JSON.parse(packageJsonContents) as ProjectPackageJson;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error;
     }
   }
 
-  return { name: path.basename(projectRoot) };
+  return undefined;
 }
 
 export async function resolveConfigPath(projectRoot: string): Promise<string | undefined> {
