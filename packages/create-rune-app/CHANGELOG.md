@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.12
+
+### Patch Changes
+
+- [#123](https://github.com/morinokami/rune/pull/123) [`65b3d3c`](https://github.com/morinokami/rune/commit/65b3d3cc4ba9f322e00ea9837f65ac42a37ad77b) Thanks [@morinokami](https://github.com/morinokami)! - feat(create-rune-app): use std-env to detect CI and AI agent environments
+
 ## 0.0.11
 
 ### Patch Changes
