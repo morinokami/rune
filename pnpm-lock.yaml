@@ -178,13 +178,13 @@ importers:
       '@bluwy/giget-core':
         specifier: 'catalog:'
         version: 0.1.7
+      '@clack/prompts':
+        specifier: 'catalog:'
+        version: 1.2.0
       std-env:
         specifier: 'catalog:'
         version: 4.1.0
     devDependencies:
-      '@clack/prompts':
-        specifier: 'catalog:'
-        version: 1.2.0
       '@rune-cli/rune':
         specifier: workspace:*
         version: link:../rune

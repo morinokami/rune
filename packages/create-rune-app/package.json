@@ -30,10 +30,10 @@
   },
   "dependencies": {
     "@bluwy/giget-core": "catalog:",
+    "@clack/prompts": "catalog:",
     "std-env": "catalog:"
   },
   "devDependencies": {
-    "@clack/prompts": "catalog:",
     "@rune-cli/rune": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
