@@ -1,4 +1,5 @@
 import { defineCommand } from "@rune-cli/rune";
+import { hasTTY, isAgent, isCI } from "std-env";
 
 import type { Services } from "../services/index.ts";
 
@@ -56,7 +57,7 @@ export interface CreateRuneAppDeps {
 
 export const defaultCreateRuneAppDeps: CreateRuneAppDeps = {
   services: defaultServices,
-  isInteractive: () => process.stdin.isTTY === true,
+  isInteractive: () => hasTTY && !isCI && !isAgent,
   runInteractive,
   runNonInteractive,
 };

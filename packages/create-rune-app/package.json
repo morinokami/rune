@@ -29,7 +29,8 @@
     "check": "vp check"
   },
   "dependencies": {
-    "@bluwy/giget-core": "catalog:"
+    "@bluwy/giget-core": "catalog:",
+    "std-env": "catalog:"
   },
   "devDependencies": {
     "@clack/prompts": "catalog:",
