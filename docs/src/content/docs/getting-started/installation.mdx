@@ -72,7 +72,7 @@ Run the `create rune-app` command and answer a few prompts to quickly scaffold a
      </TabItem>
    </Tabs>
 
-   To scaffold into the current directory, pass `.` instead of a project name. The directory must not contain files that conflict with the template (e.g. `package.json`, `src/`).
+   To scaffold into the current directory, pass `.` instead of a project name. The directory must not contain files that conflict with the template (e.g. `.gitignore`, `package.json`, `tsconfig.json`, `src/`, or `tests/`).
 
    <Tabs syncKey="pkg">
      <TabItem label="pnpm">
@@ -148,7 +148,7 @@ Run the `create rune-app` command and answer a few prompts to quickly scaffold a
 
 ## Non-interactive mode
 
-Pass the `--yes` (`-y`) flag to skip all interactive prompts and use default values. This also happens automatically in non-TTY environments such as CI pipelines or agent-driven workflows.
+Pass the `--yes` (`-y`) flag to skip all interactive prompts and use default values. This also happens automatically in CI pipelines, agent-driven workflows, and other environments without a TTY.
 
 ```sh
 npx create-rune-app my-cli --yes

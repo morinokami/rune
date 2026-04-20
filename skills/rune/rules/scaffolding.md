@@ -30,7 +30,7 @@ pnpm create rune-app .
 
 ### Non-interactive mode
 
-Activates when `--yes` is passed or stdin is not a TTY (CI, agent-driven workflows).
+Activates when `--yes` is passed, when there is no TTY, or when running in CI / agent-driven workflows.
 
 ```bash
 # Defaults: install deps + init git
@@ -46,15 +46,15 @@ create-rune-app my-cli --yes --no-install --no-git
 In non-interactive mode:
 
 - Project name is **required** as an argument (fails with `missing-project-name` error if omitted)
-- Target directory must **not** already exist (fails with `directory-exists` error)
-- When `.` is used, the current directory must not contain files that conflict with the template (fails with `directory-has-conflicts` error)
+- When a new directory name is used, the target directory must **not** already exist (fails with `directory-exists` error)
+- When `.` or `./` is used, the current directory must not contain files that conflict with the template (fails with `directory-has-conflicts` error)
 - All defaults or explicitly-passed flags are used without prompting
 
 ### Interactive mode
 
 Default when running in a TTY without `--yes`. Prompts for:
 
-1. **Project name** (if not provided as argument; skipped when `.` is used) — validates non-empty and directory available
+1. **Project name** (if not already provided as an argument; skipped for provided names such as `my-cli`, `.`, or `./`) — validates non-empty and directory available
 2. **Install dependencies** (unless `--install` or `--no-install` explicitly passed)
 3. **Initialize git** (unless `--git` or `--no-git` explicitly passed, or git is unavailable / already in a repo)
 
@@ -76,15 +76,20 @@ Automatically detects the invoking package manager from `npm_config_user_agent`.
 my-cli/
 ├── src/
 │   └── commands/
-│       └── hello.ts        # Sample command
+│       ├── hello.ts              # Sample command
+│       └── text/
+│           ├── _group.ts         # Sample command group metadata
+│           └── count.ts          # Sample nested command
 ├── tests/
 │   └── commands/
-│       └── hello.test.ts   # Sample test
+│       ├── hello.test.ts         # Sample test
+│       └── text/
+│           └── count.test.ts     # Sample nested command test
 ├── package.json
 └── tsconfig.json
 ```
 
-The `src/commands/` directory is where file-based routing begins. Each `.ts` file or directory maps to a CLI command path. See [commands.md](./commands.md) for details.
+The `src/commands/` directory is where file-based routing begins. Each `.ts` file or directory maps to a CLI command path. The starter intentionally includes both a flat `hello` command and a nested `text` command group. See [commands.md](./commands.md) for details.
 
 ## Running and building
 

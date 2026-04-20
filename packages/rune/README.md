@@ -26,7 +26,7 @@ Rune requires Node.js `v22.12.0` or higher.
 Scaffold a new project:
 
 ```sh
-npm create rune-app my-cli
+npm create rune-app@latest my-cli
 cd my-cli
 npm install
 ```
@@ -288,7 +288,7 @@ Rune ships an official [Agent Skill](https://agentskills.io/home) that gives AI 
 
 ## Documentation
 
-Full documentation is available at the [Rune docs site](https://github.com/morinokami/rune).
+Full documentation is available at the [Rune docs site](https://rune-cli.org/).
 
 ## License
 

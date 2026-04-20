@@ -72,7 +72,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
      </TabItem>
    </Tabs>
 
-   プロジェクト名の代わりに `.` を渡すと、現在のディレクトリにプロジェクトを作成できます。テンプレートと衝突するファイル（`package.json`、`src/` など）が含まれているとエラーになります。
+   プロジェクト名の代わりに `.` を渡すと、現在のディレクトリにプロジェクトを作成できます。テンプレートと衝突するファイル（`.gitignore`、`package.json`、`tsconfig.json`、`src/`、`tests/` など）が含まれているとエラーになります。
 
    <Tabs syncKey="pkg">
      <TabItem label="pnpm">
@@ -148,7 +148,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## 非対話モード
 
-`--yes`（`-y`）フラグを渡すか、TTY のない環境（CI やエージェントなど）で実行すると、対話プロンプトをスキップしてデフォルト値で実行されます。
+`--yes`（`-y`）フラグを渡すか、CI、エージェント環境、または TTY のない環境で実行すると、対話プロンプトをスキップしてデフォルト値で実行されます。
 
 ```sh
 npx create-rune-app my-cli --yes

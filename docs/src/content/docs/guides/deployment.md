@@ -16,7 +16,7 @@ Before publishing to npm, make sure at least these fields are set correctly:
 - `bin`: the CLI entry point. In the starter, this defaults to `dist/cli.mjs`
 - `files`: the files included in the published package. In the starter, this defaults to `["dist"]`
 - `type`: `"module"` so the package is published as ESM
-- `private`: remove `true` before publishing
+- `private`: generated projects remove this automatically; if you copied the in-repo starter directly, remove `true` before publishing
 - `engines`: the supported Node.js version range
 
 In the starter, the main publishing-related fields in `package.json` look like this:
@@ -25,7 +25,6 @@ In the starter, the main publishing-related fields in `package.json` look like t
 {
   "name": "my-cli",
   "version": "0.0.0",
-  "private": true,
   "bin": {
     "my-cli": "dist/cli.mjs"
   },
@@ -39,7 +38,7 @@ In the starter, the main publishing-related fields in `package.json` look like t
 }
 ```
 
-Before you publish, replace `name` and `version` with your real package values, and remove `private: true` or change it to `false`.
+Before you publish, replace `name` and `version` with your real package values. If you copied the in-repo starter directly instead of scaffolding through `create-rune-app`, also remove `private: true` or change it to `false`.
 
 ## Run `rune build`
 
@@ -121,7 +120,7 @@ my-cli hello
 
 ## Common mistakes
 
-- `private: true` is still present in `package.json`
+- `private: true` is still present in `package.json` after copying the in-repo starter directly
 - `rune build` was not run before publishing
 - A runtime dependency was placed in `devDependencies`
 - The package is scoped, but `npm publish --access public` was omitted
