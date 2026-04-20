@@ -44,14 +44,14 @@ Options:
 
 ## Project-level customization
 
-To apply a consistent style across all commands, create a `rune.config.ts` at the project root and define a `renderHelp` function with `defineConfig()`:
+To apply a consistent style across all commands, create a `rune.config.ts` at the project root and define a `help` function with `defineConfig()`:
 
 ```ts
 // rune.config.ts
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     return `My CLI v1.0\n\n${renderDefaultHelp(data)}`;
   },
 });
@@ -66,7 +66,7 @@ The `data` argument is a `HelpData` union, and you can branch on `data.kind` to 
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     if (data.kind === "unknown") {
       return renderDefaultHelp(data);
     }
@@ -89,10 +89,10 @@ See the [`defineConfig()` reference](/reference/define-config/) for details.
 Help rendering follows a three-level priority chain:
 
 1. `defineCommand({ help })`: command-specific renderer
-2. `defineConfig({ renderHelp })`: project-wide renderer
+2. `defineConfig({ help })`: project-wide renderer
 3. Rune's built-in default renderer
 
-When a command defines its own `help` function, that function is always used; neither `renderHelp` from `rune.config.ts` nor the default renderer is called. For commands without a `help` function, as well as groups and unknown commands, `renderHelp` is used if defined. If neither is present, Rune falls back to the built-in default renderer.
+When a command defines its own `help` function, that function is always used; neither `help` from `rune.config.ts` nor the default renderer is called. For commands without a `help` function, as well as groups and unknown commands, the project-wide `help` is used if defined. If neither is present, Rune falls back to the built-in default renderer.
 
 ## Using `renderDefaultHelp`
 
@@ -102,7 +102,7 @@ When a command defines its own `help` function, that function is always used; ne
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     const header = "my-tool — A modern build tool\n";
     const footer = "\nDocumentation: https://example.com/docs";
     return `${header}\n${renderDefaultHelp(data)}${footer}\n`;
@@ -114,4 +114,4 @@ You can also skip the default output entirely and build a completely custom form
 
 ## Fallback on errors
 
-If a function provided via `defineCommand({ help })` or `defineConfig({ renderHelp })` throws an exception, Rune falls back to the default help renderer and prints a warning to stderr. The same fallback also applies when `rune.config.ts` fails to load or does not export a valid `defineConfig()` result. This ensures that `--help` always works, even when a custom renderer or config has a bug.
+If a function provided via `defineCommand({ help })` or `defineConfig({ help })` throws an exception, Rune falls back to the default help renderer and prints a warning to stderr. The same fallback also applies when `rune.config.ts` fails to load or does not export a valid `defineConfig()` result. This ensures that `--help` always works, even when a custom renderer or config has a bug.

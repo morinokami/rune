@@ -43,7 +43,7 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
       options.manifest,
       options.version,
     );
-    const render = config?.renderHelp ?? renderDefaultHelp;
+    const render = config?.help ?? renderDefaultHelp;
     return renderHelpSafe(render, data);
   }
 
@@ -54,7 +54,7 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
       cliName: options.cliName,
       version: options.version,
     });
-    const render = config?.renderHelp ?? renderDefaultHelp;
+    const render = config?.help ?? renderDefaultHelp;
     return renderHelpSafe(render, data);
   }
 
@@ -79,6 +79,6 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
     subcommands,
   });
 
-  const render = command.help ?? config?.renderHelp ?? renderDefaultHelp;
+  const render = command.help ?? config?.help ?? renderDefaultHelp;
   return renderHelpSafe(render, data);
 }

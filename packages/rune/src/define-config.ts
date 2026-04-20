@@ -20,12 +20,12 @@ export interface RuneConfigInput {
    * A per-command `help` function defined via `defineCommand` takes precedence
    * over this global renderer.
    */
-  readonly renderHelp?: ((data: HelpData) => string) | undefined;
+  readonly help?: ((data: HelpData) => string) | undefined;
 }
 
 /** The resolved configuration object returned by {@link defineConfig}. */
 export interface RuneConfig {
-  readonly renderHelp?: ((data: HelpData) => string) | undefined;
+  readonly help?: ((data: HelpData) => string) | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ export interface RuneConfig {
  * import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
  *
  * export default defineConfig({
- *   renderHelp(data) {
+ *   help(data) {
  *     return `My CLI\n\n${renderDefaultHelp(data)}`;
  *   },
  * });
@@ -52,7 +52,7 @@ export interface RuneConfig {
  */
 export function defineConfig(input: RuneConfigInput): RuneConfig {
   const config: RuneConfig = {
-    renderHelp: input.renderHelp,
+    help: input.help,
   };
 
   Object.defineProperty(config, RUNE_CONFIG_BRAND, {

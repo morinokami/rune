@@ -593,16 +593,16 @@ describe("buildUnknownCommandHelpData with SubcommandHelpEntry", () => {
 });
 
 describe("defineConfig", () => {
-  test("defineConfig returns a config with renderHelp", () => {
+  test("defineConfig returns a config with help", () => {
     const config = defineConfig({
-      renderHelp() {
+      help() {
         return "custom\n";
       },
     });
 
-    expect(config.renderHelp).toBeDefined();
+    expect(config.help).toBeDefined();
     expect(
-      config.renderHelp!({
+      config.help!({
         kind: "group",
         cliName: "test",
         pathSegments: [],
@@ -613,8 +613,8 @@ describe("defineConfig", () => {
     ).toBe("custom\n");
   });
 
-  test("defineConfig with empty input returns config without renderHelp", () => {
+  test("defineConfig with empty input returns config without help", () => {
     const config = defineConfig({});
-    expect(config.renderHelp).toBeUndefined();
+    expect(config.help).toBeUndefined();
   });
 });

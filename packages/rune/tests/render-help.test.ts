@@ -238,7 +238,7 @@ describe("defineCommand.help", () => {
 });
 
 describe("help priority chain", () => {
-  test("command.help takes priority over config.renderHelp", async () => {
+  test("command.help takes priority over config.help", async () => {
     const command = defineCommand({
       description: "Deploy",
       help() {
@@ -261,7 +261,7 @@ describe("help priority chain", () => {
     expect(output).toBe("command-level\n");
   });
 
-  test("config.renderHelp is used for group help", async () => {
+  test("config.help is used for group help", async () => {
     const route = resolveCommandRoute(manifest, []);
     const output = await renderResolvedHelp({
       manifest,

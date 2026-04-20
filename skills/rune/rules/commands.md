@@ -56,7 +56,7 @@ For project-wide help customization, create `rune.config.ts` at the project root
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     return renderDefaultHelp(data);
   },
 });
@@ -65,7 +65,7 @@ export default defineConfig({
 Priority order:
 
 1. `defineCommand({ help })`
-2. `defineConfig({ renderHelp })`
+2. `defineConfig({ help })`
 3. `renderDefaultHelp()`
 
 ### CommandContext (`ctx`)

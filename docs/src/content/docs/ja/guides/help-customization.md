@@ -44,14 +44,14 @@ Options:
 
 ## プロジェクトレベルのカスタマイズ
 
-すべてのコマンドに共通のスタイルを適用するには、プロジェクトルートに `rune.config.ts` を作成し、`defineConfig()` で `renderHelp` を定義します:
+すべてのコマンドに共通のスタイルを適用するには、プロジェクトルートに `rune.config.ts` を作成し、`defineConfig()` で `help` を定義します:
 
 ```ts
 // rune.config.ts
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     return `My CLI v1.0\n\n${renderDefaultHelp(data)}`;
   },
 });
@@ -59,14 +59,14 @@ export default defineConfig({
 
 この設定により、すべてのコマンド、グループ、未知のコマンド時のヘルプ画面の先頭に「My CLI v1.0」が表示されるようになります。
 
-`renderHelp` の `data` 引数は `HelpData` union で、`data.kind` によってケースを分岐できます:
+`help` の `data` 引数は `HelpData` union で、`data.kind` によってケースを分岐できます:
 
 ```ts
 // rune.config.ts
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     if (data.kind === "unknown") {
       return renderDefaultHelp(data);
     }
@@ -89,10 +89,10 @@ export default defineConfig({
 ヘルプのレンダリングには 3 段階の優先順位があります:
 
 1. `defineCommand({ help })`: コマンド固有のレンダラー
-2. `defineConfig({ renderHelp })`: プロジェクト全体のレンダラー
+2. `defineConfig({ help })`: プロジェクト全体のレンダラー
 3. Rune の組み込みデフォルトレンダラー
 
-コマンドに `help` が定義されていれば常にそれが使われ、`rune.config.ts` の `renderHelp` やデフォルトレンダラーは呼ばれません。`help` が定義されていないコマンドや、グループ・未知のコマンドには `renderHelp` が適用されます。どちらも定義されていなければ、Rune の組み込みデフォルトレンダラーが使われます。
+コマンドに `help` が定義されていれば常にそれが使われ、`rune.config.ts` の `help` やデフォルトレンダラーは呼ばれません。`help` が定義されていないコマンドや、グループ・未知のコマンドには、プロジェクト全体の `help` が適用されます。どちらも定義されていなければ、Rune の組み込みデフォルトレンダラーが使われます。
 
 ## `renderDefaultHelp` を活用する
 
@@ -102,7 +102,7 @@ export default defineConfig({
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     const header = "my-tool — A modern build tool\n";
     const footer = "\nDocumentation: https://example.com/docs";
     return `${header}\n${renderDefaultHelp(data)}${footer}\n`;
@@ -114,4 +114,4 @@ export default defineConfig({
 
 ## エラー時のフォールバック
 
-`defineCommand({ help })` や `defineConfig({ renderHelp })` で指定した関数が例外を投げた場合、Rune はデフォルトのヘルプレンダラーにフォールバックし、stderr に警告を出力します。同じフォールバックは、`rune.config.ts` の読み込みに失敗した場合や、有効な `defineConfig()` の結果がデフォルトエクスポートされていない場合にも適用されます。これにより、カスタムレンダラーや設定にバグがあっても `--help` 自体は常に利用可能です。
+`defineCommand({ help })` や `defineConfig({ help })` で指定した関数が例外を投げた場合、Rune はデフォルトのヘルプレンダラーにフォールバックし、stderr に警告を出力します。同じフォールバックは、`rune.config.ts` の読み込みに失敗した場合や、有効な `defineConfig()` の結果がデフォルトエクスポートされていない場合にも適用されます。これにより、カスタムレンダラーや設定にバグがあっても `--help` 自体は常に利用可能です。

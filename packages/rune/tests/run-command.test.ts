@@ -547,7 +547,7 @@ export default defineCommand({
         "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
 import { renderer } from "./config-support/renderer";
 
-export default defineConfig({ renderHelp: renderer });
+export default defineConfig({ help: renderer });
 `,
         "config-support/renderer.ts": `export function renderer(data: { kind: string; pathSegments?: readonly string[] }): string {
   const segments = data.pathSegments?.join(" ") ?? "<root>";
@@ -586,7 +586,7 @@ export default defineCommand({
         "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
 import { renderer } from "./does-not-exist";
 
-export default defineConfig({ renderHelp: renderer });
+export default defineConfig({ help: renderer });
 `,
         "src/commands/hello.ts": `import { defineCommand } from ${coreEntryPath};
 
