@@ -38,6 +38,14 @@ my-cli/
   src/
     commands/
       hello.ts
+      text/
+        _group.ts
+        count.ts
+  tests/
+    commands/
+      hello.test.ts
+      text/
+        count.test.ts
   package.json
   tsconfig.json
 ```
