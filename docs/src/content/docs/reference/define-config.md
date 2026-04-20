@@ -9,7 +9,7 @@ description: API reference for the defineConfig function.
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     return `My CLI\n\n${renderDefaultHelp(data)}`;
   },
 });
@@ -17,7 +17,7 @@ export default defineConfig({
 
 ## Properties
 
-### `renderHelp`
+### `help`
 
 - **Type:** `(data: HelpData) => string`
 - **Optional**
@@ -36,7 +36,7 @@ Use `data.kind` to branch on the current case.
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
-  renderHelp(data) {
+  help(data) {
     if (data.kind === "unknown") {
       return renderDefaultHelp(data);
     }
@@ -50,16 +50,16 @@ export default defineConfig({
 
 ### Priority
 
-Global `renderHelp` is used only when the matched command does not define its own `help` function via [`defineCommand()`](/reference/define-command/).
+Global `help` is used only when the matched command does not define its own `help` function via [`defineCommand()`](/reference/define-command/).
 
 Priority order:
 
 1. `defineCommand({ help })`
-2. `defineConfig({ renderHelp })`
+2. `defineConfig({ help })`
 3. Rune's built-in default help renderer
 
 ### Failure handling
 
-If `rune.config.ts` fails to load, does not export a valid `defineConfig()` result, or if `renderHelp()` throws, Rune falls back to the default help renderer and writes a warning to stderr.
+If `rune.config.ts` fails to load, does not export a valid `defineConfig()` result, or if `help()` throws, Rune falls back to the default help renderer and writes a warning to stderr.
 
 This keeps `--help` available even when the custom renderer is broken.
