@@ -1,0 +1,15 @@
+{
+  "name": "@rune-bench/rune-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rune build"
+  },
+  "dependencies": {
+    "typescript": "catalog:"
+  },
+  "devDependencies": {
+    "@rune-cli/rune": "workspace:*"
+  }
+}

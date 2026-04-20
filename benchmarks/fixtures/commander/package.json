@@ -1,0 +1,13 @@
+{
+  "name": "@rune-bench/commander-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ./build.mjs"
+  },
+  "dependencies": {
+    "commander": "14.0.3",
+    "typescript": "catalog:"
+  }
+}

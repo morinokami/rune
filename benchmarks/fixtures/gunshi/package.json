@@ -1,0 +1,13 @@
+{
+  "name": "@rune-bench/gunshi-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ./build.mjs"
+  },
+  "dependencies": {
+    "gunshi": "0.29.4",
+    "typescript": "catalog:"
+  }
+}

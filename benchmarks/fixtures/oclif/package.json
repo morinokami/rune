@@ -1,0 +1,36 @@
+{
+  "name": "@rune-bench/oclif-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "bench-cli": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "src",
+    "bin",
+    "oclif.manifest.json"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "node ./build.mjs"
+  },
+  "dependencies": {
+    "@oclif/core": "4.10.5",
+    "typescript": "catalog:"
+  },
+  "devDependencies": {
+    "oclif": "4.23.0"
+  },
+  "oclif": {
+    "bin": "bench-cli",
+    "commands": "./src/commands",
+    "dirname": "bench-cli",
+    "topicSeparator": " ",
+    "topics": {
+      "math": {
+        "description": "Math utilities"
+      }
+    }
+  }
+}

@@ -3,7 +3,7 @@
   "tags": ["-lintignore"],
   "ignoreExportsUsedInFile": true,
   "exclude": ["catalog"],
-  "ignoreWorkspaces": ["examples/*"],
+  "ignoreWorkspaces": ["examples/*", "benchmarks/fixtures/*"],
   "workspaces": {
     ".": {
       "entry": ["vite.config.ts"],

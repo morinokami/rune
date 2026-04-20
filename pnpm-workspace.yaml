@@ -2,6 +2,7 @@ packages:
   - docs
   - examples/*
   - packages/*
+  - benchmarks/fixtures/*
 
 catalog:
   "@arethetypeswrong/cli": 0.18.2

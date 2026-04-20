@@ -1,0 +1,4 @@
+results/
+fixtures/*/dist/
+fixtures/*/node_modules/
+fixtures/oclif/oclif.manifest.json
