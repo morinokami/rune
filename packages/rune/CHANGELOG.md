@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.34
+
+### Patch Changes
+
+- [#121](https://github.com/morinokami/rune/pull/121) [`3534551`](https://github.com/morinokami/rune/commit/35345517755d962bdf34c658495198fc3ccc5b4b) Thanks [@morinokami](https://github.com/morinokami)! - refactor: rename defineConfig `renderHelp` to `help`
+
 ## 0.0.33
 
 ### Patch Changes
