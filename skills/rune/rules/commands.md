@@ -24,16 +24,16 @@ export default defineCommand({
 
 ### Properties
 
-| Property      | Type                                | Required | Description                                                              |
-| ------------- | ----------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `description` | `string`                            | No       | One-line summary for `--help`                                            |
-| `args`        | `CommandArgField[]`                 | No       | Positional arguments, in CLI order                                       |
-| `options`     | `CommandOptionField[]`              | No       | Named option flags                                                       |
-| `aliases`     | `readonly string[]`                 | No       | Alternative command names (kebab-case). Root command cannot have aliases |
-| `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                              |
-| `json`        | `boolean`                           | No       | Enables `--json` flag (default: `false`)                                 |
-| `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                           |
-| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. In `json: true` mode it may return structured data        |
+| Property      | Type                                | Required | Description                                                                   |
+| ------------- | ----------------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `description` | `string`                            | No       | One-line summary for `--help`                                                 |
+| `args`        | `CommandArgField[]`                 | No       | Positional arguments, in CLI order                                            |
+| `options`     | `CommandOptionField[]`              | No       | Named option flags                                                            |
+| `aliases`     | `readonly string[]`                 | No       | Alternative command names (kebab-case). Root command cannot have aliases      |
+| `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                                   |
+| `json`        | `true`                              | No       | Enables the built-in `--json` flag (omit to disable; `false` is not accepted) |
+| `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                                |
+| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. In `json: true` mode it may return structured data             |
 
 ### Custom help rendering
 
@@ -102,7 +102,7 @@ A field uses exactly one of: a primitive `type` (`"string" | "number" | "boolean
 
 Primitive types: `"string"` | `"number"` | `"boolean"`
 
-- `required: true` makes the field mandatory
+- `required: true` makes the field mandatory (omit to keep it optional; `false` is not accepted)
 - `default` provides a fallback value and makes the field always present in `ctx`
 - Primitive defaults are shown in `--help`, except for boolean options
 - Primitive boolean options default to `false` even without an explicit `default`

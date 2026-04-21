@@ -54,10 +54,10 @@ Rune が生のトークンをパースする型。
 
 ##### `required`
 
-- **型:** `boolean`
-- **デフォルト:** `false`
+- **型:** `true`
+- **省略可能**
 
-`true` の場合、引数の指定が必須になります。
+設定すると、引数の指定が必須になります。省略した場合は任意フィールドのままです。
 
 ##### `default`
 
@@ -96,10 +96,10 @@ Rune が生のトークンをパースする型。
 
 ##### `required`
 
-- **型:** `boolean`
-- **デフォルト:** `false`
+- **型:** `true`
+- **省略可能**
 
-`true` の場合、このフィールドはユーザーによる指定が必須になります。
+設定すると、このフィールドはユーザーによる指定が必須になります。省略した場合は任意フィールドのままです。
 
 ##### `default`
 
@@ -217,10 +217,10 @@ options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true
 
 ### `json`
 
-- **型:** `boolean`
-- **デフォルト:** `false`
+- **型:** `true`
+- **省略可能**
 
-`true` の場合、フレームワークは組み込みの `--json` フラグを受け付けます。JSON モードでは、`run()` の戻り値が構造化された JSON 出力となり、`output.log()` の呼び出しは抑制されます。
+設定すると、フレームワークは組み込みの `--json` フラグを受け付けます。JSON モードでは、`run()` の戻り値が構造化された JSON 出力となり、`output.log()` の呼び出しは抑制されます。省略した場合は JSON モード無効のままです。
 
 ### `help`
 
@@ -249,7 +249,7 @@ export default defineCommand({
 
 ### `run`
 
-- **型:** `(ctx: CommandContext) => void | Promise<void>`（`json` が `false` または省略された場合）または `(ctx: CommandContext) => TCommandData | Promise<TCommandData>`（`json` が `true` の場合）
+- **型:** `(ctx: CommandContext) => void | Promise<void>`（`json` が省略された場合）または `(ctx: CommandContext) => TCommandData | Promise<TCommandData>`（`json` が `true` の場合）
 - **必須**
 
 コマンドが実行されたときに呼び出される関数です。`json` が `true` の場合、戻り値はコマンドの API の一部となり、ユーザーが `--json` を渡した際に JSON 出力としてシリアライズされ、`runCommand().data` にも保持されます。
