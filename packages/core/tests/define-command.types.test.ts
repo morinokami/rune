@@ -75,6 +75,33 @@ test("defineCommand infers schema-backed flag options", () => {
   expectTypeOf<InferCommandOptions<typeof schemaFlagCommand>>().toEqualTypeOf<{ force: boolean }>();
 });
 
+test("defineCommand infers multiple option types", () => {
+  const multipleCommand = defineCommand({
+    options: [
+      { name: "tag", type: "string", multiple: true },
+      { name: "include", type: "string", multiple: true, default: [] },
+      { name: "count", type: "number", multiple: true, required: true },
+      { name: "mode", type: "enum", values: ["dev", "prod"], multiple: true },
+      { name: "value", schema: z.array(z.string()).default([]), multiple: true },
+    ],
+    async run(ctx) {
+      expectTypeOf(ctx.options.tag).toEqualTypeOf<string[] | undefined>();
+      expectTypeOf(ctx.options.include).toEqualTypeOf<string[]>();
+      expectTypeOf(ctx.options.count).toEqualTypeOf<number[]>();
+      expectTypeOf(ctx.options.mode).toEqualTypeOf<("dev" | "prod")[] | undefined>();
+      expectTypeOf(ctx.options.value).toEqualTypeOf<string[]>();
+    },
+  });
+
+  expectTypeOf<InferCommandOptions<typeof multipleCommand>>().toEqualTypeOf<{
+    tag?: string[];
+    include: string[];
+    count: number[];
+    mode?: ("dev" | "prod")[];
+    value: string[];
+  }>();
+});
+
 test("defineCommand preserves json payload types", () => {
   const jsonCommand = defineCommand({
     json: true,
@@ -159,6 +186,32 @@ test("defineCommand rejects invalid field shapes at compile time", () => {
       { name: "broken", type: "boolean", flag: true },
     ],
     async run() {},
+  });
+
+  void ((input: {
+    options: [{ name: "broken"; type: "boolean"; multiple: true }];
+    run: () => void;
+  }) => {
+    // @ts-expect-error primitive boolean options cannot be repeatable
+    defineCommand(input);
+  });
+
+  void ((input: {
+    options: [{ name: "broken"; type: "string"; multiple: true; default: "x" }];
+    run: () => void;
+  }) => {
+    // @ts-expect-error repeatable primitive options must use array defaults
+    defineCommand(input);
+  });
+
+  void ((input: {
+    options: [
+      { name: "broken"; schema: StandardSchemaV1<boolean, boolean>; flag: true; multiple: true },
+    ];
+    run: () => void;
+  }) => {
+    // @ts-expect-error schema flag options cannot be repeatable
+    defineCommand(input);
   });
 
   defineCommand({

@@ -58,6 +58,7 @@ type ParseArgsOptionType = "boolean" | "string";
 type ParseArgsOptionConfig = {
   readonly type: ParseArgsOptionType;
   readonly short?: string | undefined;
+  readonly multiple?: boolean | undefined;
 };
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,10 @@ function isNegatableOption(field: CommandOptionField): boolean {
     field.type === "boolean" &&
     field.default === true
   );
+}
+
+function isMultipleOption(field: CommandOptionField): boolean {
+  return "multiple" in field && field.multiple === true;
 }
 
 function negationName(name: string): string {
@@ -409,6 +414,48 @@ async function parseOptionField(
   };
 }
 
+async function parseMultipleOptionField(
+  field: CommandOptionField,
+  rawValue: unknown,
+): Promise<ResolvedFieldResult> {
+  if (!Array.isArray(rawValue)) {
+    return createInvalidOptionError(field, [
+      `Expected array, received ${JSON.stringify(rawValue)}`,
+    ]);
+  }
+
+  if (isSchemaField(field)) {
+    // Schema-backed repeatable options validate the collected raw values as one array.
+    return parseOptionField(field, rawValue);
+  }
+
+  const values: unknown[] = [];
+  const errors: string[] = [];
+
+  for (const [index, item] of rawValue.entries()) {
+    const result = await parseProvidedField(field, item);
+
+    if (!result.ok) {
+      errors.push(
+        ...result.error.message.split("\n").map((message) => `Value #${index + 1}: ${message}`),
+      );
+      continue;
+    }
+
+    values.push(result.value);
+  }
+
+  if (errors.length > 0) {
+    return createInvalidOptionError(field, errors);
+  }
+
+  return {
+    ok: true,
+    present: true,
+    value: values,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // node:util parseArgs adapter
 // ---------------------------------------------------------------------------
@@ -467,14 +514,13 @@ function buildParseArgsOptions<TOptionsFields extends readonly CommandOptionFiel
   const config: Record<string, ParseArgsOptionConfig> = {};
 
   for (const field of options) {
-    config[field.name] = field.short
-      ? {
-          type: getOptionParseType(field),
-          short: field.short,
-        }
-      : {
-          type: getOptionParseType(field),
-        };
+    const optionConfig: ParseArgsOptionConfig = {
+      type: getOptionParseType(field),
+      ...(field.short !== undefined ? { short: field.short } : {}),
+      ...(isMultipleOption(field) ? { multiple: true } : {}),
+    };
+
+    config[field.name] = optionConfig;
 
     if (isNegatableOption(field)) {
       config[negationName(field.name)] = { type: "boolean" };
@@ -502,6 +548,10 @@ function detectDuplicateOption(
       const field = options.find((option) => option.name === token.name);
 
       if (field) {
+        if (isMultipleOption(field)) {
+          continue;
+        }
+
         return createDuplicateOptionError(field);
       }
 
@@ -591,7 +641,9 @@ export async function parseCommandArgs<
 
     // Values returned by `parseArgs` have already been tokenized and matched to this option.
     if (rawValue !== undefined) {
-      const result = await parseOptionField(field, rawValue);
+      const result = isMultipleOption(field)
+        ? await parseMultipleOptionField(field, rawValue)
+        : await parseOptionField(field, rawValue);
 
       if (!result.ok) {
         return result;

@@ -186,6 +186,29 @@ String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`) 
 
 For choices that need runtime validation (regex checks, uniqueness, transformation, etc.), use a [Standard Schema](/guides/standard-schema/) field.
 
+## Repeatable options
+
+Options that accept multiple values can set `multiple: true`. Rune collects repeated flags in the order they appear on the command line:
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  options: [
+    { name: "tag", type: "string", multiple: true, default: [] },
+    { name: "level", type: "number", multiple: true },
+  ],
+  run({ options, output }) {
+    // options.tag is string[]; options.level is number[] | undefined
+    output.log(options.tag.join(", "));
+  },
+});
+```
+
+Both `--tag alpha --tag beta` and mixed long/short forms are accepted when the option is repeatable. Repeating the same option without `multiple: true` is an error.
+
+Repeatable options are supported for primitive string/number options, enum options, and schema-backed value options. Primitive boolean options and schema `flag: true` options cannot be repeatable. For schema-backed repeatable options, the schema receives the collected raw string values as an array, so use an array-shaped schema such as `z.array(z.string()).default([])`.
+
 ## Kebab-case field names
 
 When an argument or option name contains hyphens (e.g. `dry-run`), it can be accessed on `ctx.args` or `ctx.options` using either the original name or its camelCase form:

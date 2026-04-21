@@ -1,5 +1,10 @@
 import type { DefineCommandInput, DefinedCommand } from "./command-types";
-import type { CommandArgField, CommandOptionField, NormalizeFields } from "./field-types";
+import type {
+  CommandArgField,
+  CommandOptionField,
+  EnumFieldValue,
+  NormalizeFields,
+} from "./field-types";
 import type {
   ValidateArgOrder,
   ValidateDuplicateShortNames,
@@ -83,6 +88,26 @@ function validateNegationCollisions(options: readonly CommandOptionField[]): voi
   }
 }
 
+function hasMultipleFlag(field: object): boolean {
+  return "multiple" in field && field.multiple === true;
+}
+
+function validateMultipleOptions(options: readonly CommandOptionField[]): void {
+  for (const field of options) {
+    if (!hasMultipleFlag(field)) {
+      continue;
+    }
+
+    if (!isSchemaField(field) && !isEnumField(field) && field.type === "boolean") {
+      throw new Error(`Boolean option "${field.name}" cannot use multiple: true.`);
+    }
+
+    if (isSchemaField(field) && field.flag === true) {
+      throw new Error(`Schema flag option "${field.name}" cannot use multiple: true.`);
+    }
+  }
+}
+
 function validateEnumFields(
   fields: readonly (CommandArgField | CommandOptionField)[],
   kind: "argument" | "option",
@@ -128,10 +153,19 @@ function validateEnumFields(
       seen.add(key);
     }
 
-    if (field.default !== undefined && !seen.has(String(field.default))) {
-      throw new Error(
-        `Default value "${String(field.default)}" for enum ${kind} "${field.name}" is not listed in "values".`,
-      );
+    if (field.default !== undefined) {
+      const defaultValues =
+        kind === "option" && hasMultipleFlag(field)
+          ? (field.default as readonly EnumFieldValue[])
+          : [field.default];
+
+      for (const defaultValue of defaultValues) {
+        if (!seen.has(String(defaultValue))) {
+          throw new Error(
+            `Default value "${String(defaultValue)}" for enum ${kind} "${field.name}" is not listed in "values".`,
+          );
+        }
+      }
     }
   }
 }
@@ -341,6 +375,7 @@ export function defineCommand<
     validateOptionNames(input.options);
     validateReservedNames(input.options, jsonEnabled);
     validateOptionShortNameFormat(input.options);
+    validateMultipleOptions(input.options);
     validateEnumFields(input.options, "option");
     validateUniqueFieldAndAliasNames(input.options, "option");
     validateUniqueOptionShortNames(input.options);

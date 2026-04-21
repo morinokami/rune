@@ -22,7 +22,7 @@ async function runCommand(
 
 `TCommandData` is inferred from the passed command: it matches the `run()` return type for `json: true` commands and is `undefined` otherwise.
 
-The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, required/default handling, and duplicate detection all run exactly as in a real invocation.
+The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, required/default handling, duplicate detection, and `multiple: true` repeated-option collection all run exactly as in a real invocation.
 
 Top-level CLI behavior (command routing, help rendering) is **not** included. `runCommand()` tests only the resolved command itself.
 

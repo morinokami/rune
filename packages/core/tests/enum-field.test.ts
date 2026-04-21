@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, test } from "vite-plus/test";
 
 import type { InferCommandArgs, InferCommandOptions } from "../src/command-types";
+import type { CommandOptionField } from "../src/field-types";
 
 import { defineCommand } from "../src";
 import { parseCommandArgs } from "../src/parse-command-args";
@@ -25,6 +26,19 @@ describe("enum field type inference", () => {
 
     expectTypeOf<InferCommandOptions<typeof command>>().toEqualTypeOf<{
       mode: "dev" | "prod";
+    }>();
+  });
+
+  test("enum multiple option infers arrays of literal values", () => {
+    const command = defineCommand({
+      options: [
+        { name: "mode", type: "enum", values: ["dev", "prod"], multiple: true, default: [] },
+      ],
+      async run() {},
+    });
+
+    expectTypeOf<InferCommandOptions<typeof command>>().toEqualTypeOf<{
+      mode: ("dev" | "prod")[];
     }>();
   });
 
@@ -277,5 +291,24 @@ describe("enum definition-time validation", () => {
         async run() {},
       }),
     ).toThrow(/not listed in "values"/);
+  });
+
+  test("rejects multiple default values not in values", () => {
+    const fields = [
+      {
+        name: "mode",
+        type: "enum",
+        values: ["dev", "prod"],
+        multiple: true,
+        default: ["dev", "staging"],
+      },
+    ] as unknown as readonly CommandOptionField[];
+
+    expect(() =>
+      defineCommand({
+        options: fields,
+        async run() {},
+      }),
+    ).toThrow('Default value "staging" for enum option "mode" is not listed in "values".');
   });
 });

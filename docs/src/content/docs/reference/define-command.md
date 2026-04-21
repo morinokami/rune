@@ -170,6 +170,30 @@ The option name `"help"` is reserved by the framework and cannot be used. When `
 
 Single-character shorthand (e.g. `"f"` for `--force` -> `-f`). Must be unique across all options. The short name `"h"` is reserved for the built-in `--help` flag and cannot be used.
 
+#### `multiple`
+
+- **Type:** `true`
+- **Optional** (options only)
+
+When set, the option may be provided more than once. Primitive `"string"` and `"number"` options, as well as enum options, are parsed into arrays in declaration order:
+
+```ts
+options: [
+  { name: "tag", type: "string", multiple: true, default: [] },
+  { name: "level", type: "number", multiple: true },
+];
+```
+
+Here `ctx.options.tag` is `string[]`, while `ctx.options.level` is `number[] | undefined` unless the option is required or has an array default. Enum options follow the same rule, with each item restricted to `values`.
+
+For schema-backed options, Rune passes the collected raw string values to the schema as an array, so use an array-shaped schema:
+
+```ts
+options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true }];
+```
+
+Primitive boolean options and schema `flag: true` options cannot use `multiple: true`.
+
 #### `flag`
 
 - **Type:** `true`
