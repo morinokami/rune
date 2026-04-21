@@ -58,7 +58,7 @@ export interface CommandContext<TOptions, TArgs> {
 export interface DefineCommandInput<
   TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
-  TJson extends boolean = false,
+  TJson extends true | undefined = undefined,
   TRunResult = unknown,
 > {
   /** One-line summary shown in `--help` output. */
@@ -76,7 +76,8 @@ export interface DefineCommandInput<
   readonly examples?: readonly string[] | undefined;
   /**
    * When `true`, the framework accepts a built-in `--json` flag and the
-   * return value of `run()` becomes the structured stdout payload.
+   * return value of `run()` becomes the structured stdout payload. Omit to
+   * disable JSON mode.
    */
   readonly json?: TJson;
   /**

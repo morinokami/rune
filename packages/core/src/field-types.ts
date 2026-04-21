@@ -34,11 +34,11 @@ interface PrimitiveFieldBase<
   /** Primitive type that Rune parses the raw CLI token into (`"string"`, `"number"`, or `"boolean"`). */
   readonly type: TType;
   /**
-   * When `true`, the field must be provided by the user.
-   * Omitted or `false` makes the field optional. Absent fields are `undefined`
-   * in `ctx`, except primitive boolean options, which default to `false`.
+   * When `true`, the field must be provided by the user. Omit to make the
+   * field optional. Absent fields are `undefined` in `ctx`, except primitive
+   * boolean options, which default to `false`.
    */
-  readonly required?: boolean | undefined;
+  readonly required?: true | undefined;
   /** Value used when the user does not provide this field. Makes the field always present in `ctx`. */
   readonly default?: PrimitiveFieldValue<TType> | undefined;
   readonly schema?: never;
@@ -98,10 +98,10 @@ interface EnumFieldBase<
    */
   readonly values: TValues;
   /**
-   * When `true`, the field must be provided by the user.
-   * Omitted or `false` makes the field optional.
+   * When `true`, the field must be provided by the user. Omit to make the
+   * field optional.
    */
-  readonly required?: boolean | undefined;
+  readonly required?: true | undefined;
   /** Value used when the user does not provide this field. Must be one of `values`. */
   readonly default?: TValues[number] | undefined;
   readonly schema?: never;

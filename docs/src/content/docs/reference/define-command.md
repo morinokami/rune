@@ -54,10 +54,10 @@ The type Rune parses the raw token into.
 
 ##### `required`
 
-- **Type:** `boolean`
-- **Default:** `false`
+- **Type:** `true`
+- **Optional**
 
-When `true`, the argument must be provided.
+When set, the argument must be provided. Omit to keep the argument optional.
 
 ##### `default`
 
@@ -96,10 +96,10 @@ Allowed values. The raw CLI token is matched against each entry using strict str
 
 ##### `required`
 
-- **Type:** `boolean`
-- **Default:** `false`
+- **Type:** `true`
+- **Optional**
 
-When `true`, the field must be provided by the user.
+When set, the field must be provided by the user. Omit to keep the field optional.
 
 ##### `default`
 
@@ -217,10 +217,10 @@ Usage examples shown in the `Examples:` section of `--help` output. Each entry i
 
 ### `json`
 
-- **Type:** `boolean`
-- **Default:** `false`
+- **Type:** `true`
+- **Optional**
 
-When `true`, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed.
+When set, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed. Omit to keep JSON mode disabled.
 
 ### `help`
 
@@ -249,7 +249,7 @@ If `help()` throws, Rune falls back to the default help renderer and writes a wa
 
 ### `run`
 
-- **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is `false` or omitted) or `(ctx: CommandContext) => TCommandData | Promise<TCommandData>` (when `json` is `true`)
+- **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is omitted) or `(ctx: CommandContext) => TCommandData | Promise<TCommandData>` (when `json` is `true`)
 - **Required**
 
 The function executed when the command is invoked. When `json` is `true`, the return value becomes part of the command's API, is serialized as JSON output when the user passes `--json`, and is preserved in `runCommand().data`.

@@ -342,7 +342,7 @@ function copyNormalizedFields<TFields extends readonly TField[] | undefined, TFi
 export function defineCommand<
   const TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   const TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
-  const TJson extends boolean = false,
+  const TJson extends true | undefined = undefined,
   TRunResult = TJson extends true ? unknown : void | Promise<void>,
 >(
   input: DefineCommandInput<TArgsFields, TOptionsFields, TJson, TRunResult> &
@@ -355,7 +355,7 @@ export function defineCommand<
 ): DefinedCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>,
-  TJson,
+  TJson extends true ? true : false,
   TJson extends true ? Awaited<TRunResult> : undefined
 > {
   const jsonEnabled = input.json === true;
@@ -385,11 +385,11 @@ export function defineCommand<
   const command: DefinedCommand<
     NormalizeFields<TArgsFields, CommandArgField>,
     NormalizeFields<TOptionsFields, CommandOptionField>,
-    TJson,
+    TJson extends true ? true : false,
     TJson extends true ? Awaited<TRunResult> : undefined
   > = {
     description: input.description,
-    json: jsonEnabled as TJson,
+    json: jsonEnabled as TJson extends true ? true : false,
     aliases: [...(input.aliases ?? [])],
     examples: [...(input.examples ?? [])],
     args: copyNormalizedFields<TArgsFields, CommandArgField>(input.args),
@@ -398,7 +398,7 @@ export function defineCommand<
     run: input.run as DefinedCommand<
       NormalizeFields<TArgsFields, CommandArgField>,
       NormalizeFields<TOptionsFields, CommandOptionField>,
-      TJson,
+      TJson extends true ? true : false,
       TJson extends true ? Awaited<TRunResult> : undefined
     >["run"],
   };

@@ -115,6 +115,41 @@ test("defineCommand preserves json payload types", () => {
   }>();
 });
 
+test("defineCommand rejects required: false as a marker-style boolean", () => {
+  defineCommand({
+    args: [
+      {
+        name: "id",
+        type: "string",
+        // @ts-expect-error only `true` is accepted; omit to keep the field optional.
+        required: false,
+      },
+    ],
+    run() {},
+  });
+
+  defineCommand({
+    options: [
+      {
+        name: "mode",
+        type: "enum",
+        values: ["a", "b"] as const,
+        // @ts-expect-error only `true` is accepted; omit to keep the field optional.
+        required: false,
+      },
+    ],
+    run() {},
+  });
+});
+
+test("defineCommand rejects json: false as a marker-style boolean", () => {
+  defineCommand({
+    // @ts-expect-error only `true` is accepted; omit to keep JSON mode disabled.
+    json: false,
+    run() {},
+  });
+});
+
 test("defineCommand exposes camelCase aliases for kebab-case field names", () => {
   const cmd = defineCommand({
     args: [{ name: "my-arg", type: "string", required: true }],
