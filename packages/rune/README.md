@@ -120,6 +120,7 @@ export default defineGroup({
 | `default`     | Default value; shown in `--help` output                  |
 | `description` | Help text                                                |
 | `short`       | Single-letter alias (options only, e.g. `"f"` → `-f`)    |
+| `multiple`    | Allow an option to be repeated and parsed as an array    |
 
 ```ts
 defineCommand({
@@ -149,6 +150,24 @@ defineCommand({
 ```
 
 String values must match `/^[A-Za-z0-9_.-]+$/`. For free-form strings or runtime validation (regex, uniqueness, transformation), use a `type: "string"` field or a schema field.
+
+### Repeatable Options
+
+Set `multiple: true` on a string, number, enum, or schema value option to allow repeated flags. Values are parsed in declaration order and exposed as an array. If omitted, the option is optional unless you provide an array `default` such as `[]` or set `required: true`.
+
+```ts
+defineCommand({
+  options: [
+    { name: "tag", type: "string", multiple: true, default: [] },
+    { name: "level", type: "number", multiple: true },
+  ],
+  run({ options }) {
+    // options.tag: string[], options.level?: number[]
+  },
+});
+```
+
+Primitive boolean options and schema `flag: true` options cannot be repeatable.
 
 ### Standard Schema Fields
 

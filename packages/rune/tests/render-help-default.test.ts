@@ -272,6 +272,32 @@ describe("renderDefaultHelp", () => {
     expect(help).toContain("  --port <number>  Port to listen on (default: 3000)");
   });
 
+  test("renders array defaults for repeated options", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["search"],
+      subcommands: [],
+      arguments: [],
+      options: [
+        {
+          name: "tag",
+          type: "string",
+          default: ["alpha", "beta"],
+          description: "Filter tag",
+          required: false,
+          negatable: false,
+        },
+      ],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain('  --tag <string>  Filter tag (default: ["alpha", "beta"])');
+  });
+
   test("renders command help without [options] when only framework options exist", () => {
     const data: CommandHelpData = {
       kind: "command",

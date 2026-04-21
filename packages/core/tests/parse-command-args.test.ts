@@ -269,6 +269,172 @@ describe("schema-backed fields", () => {
   });
 });
 
+describe("multiple options", () => {
+  test("parseCommandArgs parses repeated primitive options in declaration order", async () => {
+    const command = defineCommand({
+      options: [
+        { name: "tag", type: "string", multiple: true },
+        { name: "count", type: "number", multiple: true },
+        { name: "include", type: "string", multiple: true, default: [] },
+      ],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, [
+      "--tag",
+      "hoge",
+      "--count",
+      "1",
+      "--tag=bar",
+      "--count",
+      "2",
+    ]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: {
+          tag: ["hoge", "bar"],
+          count: [1, 2],
+          include: [],
+        },
+        rawArgs: ["--tag", "hoge", "--count", "1", "--tag=bar", "--count", "2"],
+      },
+    });
+  });
+
+  test("parseCommandArgs supports repeated short options", async () => {
+    const command = defineCommand({
+      options: [{ name: "tag", type: "string", short: "t", multiple: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--tag", "hoge", "-t", "bar"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { tag: ["hoge", "bar"] },
+        rawArgs: ["--tag", "hoge", "-t", "bar"],
+      },
+    });
+  });
+
+  test("parseCommandArgs omits optional multiple options without defaults", async () => {
+    const command = defineCommand({
+      options: [{ name: "tag", type: "string", multiple: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, []);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: {},
+        rawArgs: [],
+      },
+    });
+  });
+
+  test("parseCommandArgs requires multiple options marked required", async () => {
+    const command = defineCommand({
+      options: [{ name: "tag", type: "string", multiple: true, required: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, []);
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        message: "Missing required option:\n\n  --tag <string>",
+      },
+    });
+  });
+
+  test("parseCommandArgs validates every repeated primitive option value", async () => {
+    const command = defineCommand({
+      options: [{ name: "count", type: "number", multiple: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, [
+      "--count",
+      "1",
+      "--count",
+      "oops",
+      "--count",
+      "bad",
+    ]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        message:
+          'Invalid value for option --count <number>:\n\n  Value #2: Expected number, received "oops"\n  Value #3: Expected number, received "bad"',
+      },
+    });
+  });
+
+  test("parseCommandArgs parses repeated enum options", async () => {
+    const command = defineCommand({
+      options: [{ name: "mode", type: "enum", values: ["dev", "prod"], multiple: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--mode", "dev", "--mode", "prod"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { mode: ["dev", "prod"] },
+        rawArgs: ["--mode", "dev", "--mode", "prod"],
+      },
+    });
+  });
+
+  test("parseCommandArgs passes repeated schema options as an array to the schema", async () => {
+    const command = defineCommand({
+      options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, ["--tag", "hoge", "--tag", "bar"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { tag: ["hoge", "bar"] },
+        rawArgs: ["--tag", "hoge", "--tag", "bar"],
+      },
+    });
+  });
+
+  test("parseCommandArgs applies schema defaults for omitted multiple schema options", async () => {
+    const command = defineCommand({
+      options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, []);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        args: {},
+        options: { tag: [] },
+        rawArgs: [],
+      },
+    });
+  });
+});
+
 describe("missing required fields", () => {
   test.each([
     {

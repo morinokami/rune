@@ -170,6 +170,30 @@ Rune が生のトークンをパースする型。
 
 コマンドの短縮形（例: `--force` -> `-f` の `"f"`）。すべてのオプション間で一意である必要があります。短縮名 `"h"` は組み込みの `--help` フラグに予約されているため使用できません。
 
+#### `multiple`
+
+- **型:** `true`
+- **省略可能**（オプションのみ）
+
+設定すると、そのオプションを複数回指定できるようになります。プリミティブの `"string"` / `"number"` オプションと enum オプションは、指定順の配列としてパースされます:
+
+```ts
+options: [
+  { name: "tag", type: "string", multiple: true, default: [] },
+  { name: "level", type: "number", multiple: true },
+];
+```
+
+この例では `ctx.options.tag` は `string[]`、`ctx.options.level` は `required` または配列のデフォルト値を設定しない限り `number[] | undefined` になります。enum オプションも同じ規則に従い、各要素は `values` のいずれかに制限されます。
+
+スキーマオプションでは、Rune は収集した生の文字列値を配列としてスキーマに渡します。そのため、配列を受け取るスキーマを使用してください:
+
+```ts
+options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true }];
+```
+
+プリミティブの boolean オプションと、スキーマの `flag: true` オプションでは `multiple: true` を使用できません。
+
 #### `flag`
 
 - **型:** `true`

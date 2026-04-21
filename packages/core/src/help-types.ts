@@ -52,7 +52,8 @@ export interface PrimitiveOptionHelpEntry {
   readonly short?: string;
   readonly type: "string" | "number" | "boolean";
   readonly description?: string;
-  readonly default?: string | number | boolean;
+  /** Array defaults only appear for repeatable string/number options; boolean repeatable options are unsupported. */
+  readonly default?: string | number | boolean | readonly (string | number)[];
   readonly required: boolean;
   readonly negatable: boolean;
 }
@@ -63,7 +64,8 @@ export interface EnumOptionHelpEntry {
   readonly type: "enum";
   readonly values: readonly (string | number)[];
   readonly description?: string;
-  readonly default?: string | number;
+  /** Array defaults appear only for repeatable enum options. */
+  readonly default?: string | number | readonly (string | number)[];
   readonly required: boolean;
   readonly negatable: false;
 }

@@ -2,6 +2,7 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 // Primitive field kinds supported by Rune without an external schema.
 export type PrimitiveFieldType = "string" | "number" | "boolean";
+type RepeatablePrimitiveFieldType = Exclude<PrimitiveFieldType, "boolean">;
 
 // Maps a primitive field kind to the runtime value it produces.
 export type PrimitiveFieldValue<TType extends PrimitiveFieldType> = TType extends "string"
@@ -124,8 +125,7 @@ export interface SchemaArgField<
   readonly flag?: never;
 }
 
-// An option flag backed by Rune's primitive field types.
-export interface PrimitiveOptionField<
+interface PrimitiveOptionBase<
   TName extends string = string,
   TType extends PrimitiveFieldType = PrimitiveFieldType,
 > extends PrimitiveFieldBase<TName, TType> {
@@ -134,30 +134,114 @@ export interface PrimitiveOptionField<
   readonly flag?: never;
 }
 
-// An option backed by a Standard Schema object.
-export interface SchemaOptionField<
+export interface ScalarPrimitiveOptionField<
+  TName extends string = string,
+  TType extends PrimitiveFieldType = PrimitiveFieldType,
+> extends PrimitiveOptionBase<TName, TType> {
+  readonly multiple?: never;
+}
+
+export interface MultiplePrimitiveOptionField<
+  TName extends string = string,
+  TType extends RepeatablePrimitiveFieldType = RepeatablePrimitiveFieldType,
+> extends Omit<PrimitiveOptionBase<TName, TType>, "default"> {
+  /**
+   * Allows this option to be provided more than once. Parsed values are exposed
+   * as an array in declaration order.
+   */
+  readonly multiple: true;
+  /** Array used when the user does not provide this option. */
+  readonly default?: readonly PrimitiveFieldValue<TType>[] | undefined;
+}
+
+// An option flag backed by Rune's primitive field types.
+export type PrimitiveOptionField<
+  TName extends string = string,
+  TType extends PrimitiveFieldType = PrimitiveFieldType,
+> =
+  | ScalarPrimitiveOptionField<TName, TType>
+  | (Extract<TType, RepeatablePrimitiveFieldType> extends never
+      ? never
+      : MultiplePrimitiveOptionField<TName, Extract<TType, RepeatablePrimitiveFieldType>>);
+
+interface SchemaOptionBase<
   TName extends string = string,
   TSchema extends StandardSchemaV1 = StandardSchemaV1,
 > extends SchemaFieldBase<TName, TSchema> {
   /** Single-character shorthand (e.g. `"v"` for `--verbose` → `-v`). */
   readonly short?: SingleLetter | undefined;
+}
+
+export interface SchemaValueOptionField<
+  TName extends string = string,
+  TSchema extends StandardSchemaV1 = StandardSchemaV1,
+> extends SchemaOptionBase<TName, TSchema> {
+  readonly flag?: never;
+  /**
+   * Allows this option to be provided more than once. The schema receives the
+   * collected raw string values as an array.
+   *
+   * Unlike primitive and enum fields, schema-backed fields use the schema for
+   * output/default typing, so there is no separate multiple-specific variant.
+   */
+  readonly multiple?: true | undefined;
+}
+
+export interface SchemaFlagOptionField<
+  TName extends string = string,
+  TSchema extends StandardSchemaV1 = StandardSchemaV1,
+> extends SchemaOptionBase<TName, TSchema> {
   /**
    * When `true`, the option is parsed as a boolean flag (no value expected).
    * The schema receives `true` when the flag is present, `undefined` when absent.
    */
-  readonly flag?: true | undefined;
+  readonly flag: true;
+  readonly multiple?: never;
 }
 
-// An option that accepts one of a fixed set of values.
-export interface EnumOptionField<
+// An option backed by a Standard Schema object.
+export type SchemaOptionField<
+  TName extends string = string,
+  TSchema extends StandardSchemaV1 = StandardSchemaV1,
+> = SchemaValueOptionField<TName, TSchema> | SchemaFlagOptionField<TName, TSchema>;
+
+interface EnumOptionBase<
   TName extends string = string,
   TValues extends readonly EnumFieldValue[] = readonly EnumFieldValue[],
-> extends EnumFieldBase<TName, TValues> {
+> extends Omit<EnumFieldBase<TName, TValues>, "default"> {
   /** Single-character shorthand (e.g. `"m"` for `--mode` → `-m`). */
   readonly short?: SingleLetter | undefined;
   // Enum options always take a value, so the flag form is disallowed.
   readonly flag?: never;
 }
+
+export interface ScalarEnumOptionField<
+  TName extends string = string,
+  TValues extends readonly EnumFieldValue[] = readonly EnumFieldValue[],
+> extends EnumOptionBase<TName, TValues> {
+  /** Value used when the user does not provide this field. Must be one of `values`. */
+  readonly default?: TValues[number] | undefined;
+  readonly multiple?: never;
+}
+
+export interface MultipleEnumOptionField<
+  TName extends string = string,
+  TValues extends readonly EnumFieldValue[] = readonly EnumFieldValue[],
+> extends EnumOptionBase<TName, TValues> {
+  /**
+   * Allows this option to be provided more than once. Parsed values are exposed
+   * as an array in declaration order.
+   */
+  readonly multiple: true;
+  /** Array used when the user does not provide this option. */
+  readonly default?: readonly TValues[number][] | undefined;
+}
+
+// An option that accepts one of a fixed set of values.
+export type EnumOptionField<
+  TName extends string = string,
+  TValues extends readonly EnumFieldValue[] = readonly EnumFieldValue[],
+> = ScalarEnumOptionField<TName, TValues> | MultipleEnumOptionField<TName, TValues>;
 
 // Any supported positional argument field.
 export type CommandArgField = PrimitiveArgField | SchemaArgField | EnumArgField;
