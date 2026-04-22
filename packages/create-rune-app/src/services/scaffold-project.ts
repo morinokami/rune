@@ -40,7 +40,7 @@ async function pathExists(filePath: string): Promise<boolean> {
 }
 
 // Top-level entries produced by the starter template.
-const TEMPLATE_ENTRIES = [".gitignore", "package.json", "tsconfig.json", "src", "tests"];
+const TEMPLATE_ENTRIES = [".gitignore", "package.json", "tsconfig.json", "src"];
 
 export async function findConflictingEntries(dirPath: string): Promise<readonly string[]> {
   const conflicts: string[] = [];
@@ -100,7 +100,7 @@ export async function scaffoldProject(
   // Post-process: replace the placeholder CLI name with the actual one.
   for (const relativePath of [
     path.join("src", "commands", "hello.ts"),
-    path.join("tests", "commands", "hello.test.ts"),
+    path.join("src", "commands", "hello.test.ts"),
   ]) {
     const filePath = path.join(projectRoot, relativePath);
     const contents = await fs.readFile(filePath, "utf-8");
