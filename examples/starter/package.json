@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@rune-cli/rune": "^0.0.36",
+    "@types/node": "^22.19.17",
     "typescript": "^6.0.3",
     "vitest": "^4.1.4"
   },
