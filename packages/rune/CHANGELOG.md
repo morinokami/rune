@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.36
+
+### Patch Changes
+
+- [#129](https://github.com/morinokami/rune/pull/129) [`854c684`](https://github.com/morinokami/rune/commit/854c684e35c0faed15ac94953c0f05f83df7cdba) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): support colocated command helpers and tests
+
 ## 0.0.35
 
 ### Patch Changes
