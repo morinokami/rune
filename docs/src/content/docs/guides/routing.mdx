@@ -18,11 +18,13 @@ Consider the following directory structure:
     - hello/
       - index.ts
     - project/
+      - _schema.ts
       - create.ts
+      - create.test.ts
       - list.ts
 </FileTree>
 
-In Rune, commands are defined by `index.ts` files or regular `.ts` files inside `src/commands`. Directories represent groups of related commands, and placing an `index.ts` in a directory makes that directory path itself an executable command. If you've worked with web frameworks like Astro, this pattern should feel familiar.
+In Rune, commands are defined by `index.ts` files or routable `.ts` files inside `src/commands`. Directories represent groups of related commands, and placing an `index.ts` in a directory makes that directory path itself an executable command. If you've worked with web frameworks like Astro, this pattern should feel familiar.
 
 The directory structure above automatically makes the following commands available (assuming your CLI binary is named `your-cli`):
 
@@ -33,20 +35,25 @@ your-cli project create
 your-cli project list
 ```
 
-Each file maps directly to a command path:
+Each routable file maps directly to a command path:
 
 ```
-src/commands/index.ts           -> your-cli
-src/commands/hello/index.ts     -> your-cli hello
-src/commands/project/create.ts  -> your-cli project create
-src/commands/project/list.ts    -> your-cli project list
+src/commands/index.ts              -> your-cli
+src/commands/hello/index.ts        -> your-cli hello
+src/commands/project/_schema.ts    -> ignored
+src/commands/project/create.ts     -> your-cli project create
+src/commands/project/create.test.ts -> ignored
+src/commands/project/list.ts       -> your-cli project list
 ```
 
 The rules for how command paths are determined are as follows:
 
 - `src/commands/index.ts` maps to the root command.
 - `src/commands/hello/index.ts` maps to the `hello` command.
-- Regular `.ts` files like `src/commands/project/create.ts` map directly to subcommands.
+- Routable `.ts` files like `src/commands/project/create.ts` map directly to subcommands.
+- Files and directories whose command name starts with `_` are ignored by routing. Use them for colocated command helpers such as `_schema.ts`, `_logic.ts`, or `_internal/`.
+- Files whose command name ends with `.test` or `.spec` are ignored by routing, so colocated tests like `src/commands/project/create.test.ts` do not become commands.
+- `_group.ts` is a reserved metadata file for command groups. It starts with `_` so it does not conflict with `group` as a public command name.
 - A file and a command directory with the same name cannot coexist at the same level — for example, having both `src/commands/hello.ts` and `src/commands/hello/` is not allowed.
 
 With file-based command routing, the structure of your CLI is visible at a glance from the directory layout. Rune resolves routing based on this command tree and only loads the matched command module.

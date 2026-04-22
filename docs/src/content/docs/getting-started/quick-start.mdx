@@ -133,7 +133,7 @@ Test Files  2 passed (2)
 
 ## Command groups
 
-As mentioned above, the starter includes not only the top-level `hello` command, but also a `text` command group. When you create a directory under `src/commands`, such as `src/commands/text/`, Rune treats that directory name as a command group and exposes the files inside it as subcommands.
+As mentioned above, the starter includes not only the top-level `hello` command, but also a `text` command group. When you create a directory under `src/commands`, such as `src/commands/text/`, Rune treats that directory name as a command group and exposes its routable files as subcommands.
 
 This starter already includes `src/commands/text/count.ts`, so the `text count` command is available automatically. `src/commands/text/_group.ts` defines metadata for the group, such as its description.
 
