@@ -25,7 +25,7 @@ catalog:
   sherif: 1.11.1
   starlight-dot-md: 0.2.1
   std-env: 4.1.0
-  typescript: 6.0.2
+  typescript: 6.0.3
   vite-plus: 0.1.18
   zod: 4.3.6
 
