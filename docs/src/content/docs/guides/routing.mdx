@@ -38,12 +38,12 @@ your-cli project list
 Each routable file maps directly to a command path:
 
 ```
-src/commands/index.ts              -> your-cli
-src/commands/hello/index.ts        -> your-cli hello
-src/commands/project/_schema.ts    -> ignored
-src/commands/project/create.ts     -> your-cli project create
-src/commands/project/create.test.ts -> ignored
-src/commands/project/list.ts       -> your-cli project list
+src/commands/index.ts                -> your-cli
+src/commands/hello/index.ts          -> your-cli hello
+src/commands/project/_schema.ts      -> ignored
+src/commands/project/create.ts       -> your-cli project create
+src/commands/project/create.test.ts  -> ignored
+src/commands/project/list.ts         -> your-cli project list
 ```
 
 The rules for how command paths are determined are as follows:
