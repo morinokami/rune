@@ -15,13 +15,10 @@ import { FileTree, Tabs, TabItem } from "@astrojs/starlight/components";
 - src
   - commands/
     - hello.ts
+    - hello.test.ts
     - text/
       - _group.ts
       - count.ts
-- tests
-  - commands/
-    - hello.test.ts
-    - text/
       - count.test.ts
 - package.json
 - tsconfig.json
@@ -76,14 +73,14 @@ export default defineCommand({
   </TabItem>
 </Tabs>
 
-スターターにはテストファイルも含まれています。`tests/commands/hello.test.ts` を確認してみましょう:
+スターターにはテストファイルも含まれています。`src/commands/hello.test.ts` を確認してみましょう:
 
 ```ts
-// tests/commands/hello.test.ts
+// src/commands/hello.test.ts
 import { runCommand } from "@rune-cli/rune/test";
 import { expect, test } from "vitest";
 
-import helloCommand from "../../src/commands/hello";
+import helloCommand from "./hello";
 
 test("hello command prints a greeting", async () => {
   const result = await runCommand(helloCommand);
@@ -122,8 +119,8 @@ test("hello command prints a greeting", async () => {
 ```
 RUN  v4.1.4 /path/to/project
 
-✓ tests/commands/hello.test.ts (1 test) 1ms
-✓ tests/commands/text/count.test.ts (2 tests) 2ms
+✓ src/commands/hello.test.ts (1 test) 1ms
+✓ src/commands/text/count.test.ts (2 tests) 2ms
 
 Test Files  2 passed (2)
      Tests  3 passed (3)
@@ -303,14 +300,14 @@ Options:
 
 ## transform コマンドのテスト
 
-hello コマンドのテストと同様に、`transform` コマンドのテストも書いてみましょう。`tests/commands/text/transform.test.ts` を作成します:
+hello コマンドのテストと同様に、`transform` コマンドのテストも書いてみましょう。`src/commands/text/transform.test.ts` を作成します:
 
 ```ts
-// tests/commands/text/transform.test.ts
+// src/commands/text/transform.test.ts
 import { runCommand } from "@rune-cli/rune/test";
 import { expect, test } from "vitest";
 
-import transformCommand from "../../../src/commands/text/transform";
+import transformCommand from "./transform";
 
 test("uppercases by default", async () => {
   const result = await runCommand(transformCommand, ["hello"]);
@@ -355,9 +352,9 @@ test("lowercases with --mode lower", async () => {
 ```
 RUN  v4.1.4 /path/to/project
 
-✓ tests/commands/hello.test.ts (1 test) 1ms
-✓ tests/commands/text/count.test.ts (2 tests) 2ms
-✓ tests/commands/text/transform.test.ts (2 tests) 2ms
+✓ src/commands/hello.test.ts (1 test) 1ms
+✓ src/commands/text/count.test.ts (2 tests) 2ms
+✓ src/commands/text/transform.test.ts (2 tests) 2ms
 
 Test Files  3 passed (3)
      Tests  5 passed (5)

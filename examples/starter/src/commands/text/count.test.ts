@@ -1,7 +1,7 @@
 import { runCommand } from "@rune-cli/rune/test";
 import { expect, test } from "vitest";
 
-import countCommand from "../../../src/commands/text/count";
+import countCommand from "./count";
 
 test("counts words by default", async () => {
   const result = await runCommand(countCommand, ["hello rune world"]);

@@ -77,14 +77,11 @@ my-cli/
 ├── src/
 │   └── commands/
 │       ├── hello.ts              # Sample command
+│       ├── hello.test.ts         # Sample colocated command test
 │       └── text/
 │           ├── _group.ts         # Sample command group metadata
-│           └── count.ts          # Sample nested command
-├── tests/
-│   └── commands/
-│       ├── hello.test.ts         # Sample test
-│       └── text/
-│           └── count.test.ts     # Sample nested command test
+│           ├── count.ts          # Sample nested command
+│           └── count.test.ts     # Sample colocated nested command test
 ├── package.json
 └── tsconfig.json
 ```
