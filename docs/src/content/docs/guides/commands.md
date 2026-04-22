@@ -5,7 +5,7 @@ description: Learn how to define commands in Rune.
 
 ## Defining commands
 
-As described in the [Routing](/guides/routing/) guide, commands in Rune are defined by `index.ts` or regular `.ts` files inside `src/commands`. Each command file uses the `defineCommand()` function, which takes an object specifying the command's description, arguments, options, `run` function, and more. The returned command object must be the file's default export so that Rune can recognize it as a command.
+As described in the [Routing](/guides/routing/) guide, commands in Rune are defined by `index.ts` or other routable `.ts` files inside `src/commands`. Each command file uses the `defineCommand()` function, which takes an object specifying the command's description, arguments, options, `run` function, and more. The returned command object must be the file's default export so that Rune can recognize it as a command.
 
 Here is an example of a greeting command. It defines a positional argument via `args` and a flag via `options`, then implements the command logic in the `run` function:
 
@@ -85,9 +85,37 @@ export default defineCommand({
 
 ### Other `.ts` files
 
-Any `.ts` file other than `index.ts` becomes a subcommand named after the file. For example, `src/commands/project/create.ts` maps to `your-cli project create`.
+Any `.ts` file other than `index.ts`, reserved metadata files like `_group.ts`, `_`-prefixed files, and test files becomes a subcommand named after the file. For example, `src/commands/project/create.ts` maps to `your-cli project create`.
 
 This is a convenient way to define subcommands without creating a nested directory, and works well for simple commands that don't need children of their own.
+
+### Colocation
+
+Files and directories whose command name starts with `_` are ignored by routing. Use this for command-specific implementation details that should live next to the command:
+
+```text
+src/commands/
+  deploy.ts
+  _deploy-logic.ts
+  deploy/
+    index.ts
+    _schema.ts
+    _internal/
+      client.ts
+```
+
+Colocated test files ending in `.test.ts` or `.spec.ts` are also ignored:
+
+```text
+src/commands/
+  deploy.ts
+  deploy.test.ts
+  project/
+    create.ts
+    create.spec.ts
+```
+
+In the examples above, only `deploy` and `project create` are commands.
 
 ## Groups
 
@@ -103,6 +131,8 @@ export default defineGroup({
 ```
 
 In this example, running `your-cli project` displays help output that includes the description along with the available subcommands.
+
+`_group.ts` is the reserved file for command group metadata. Because the reserved file name is `_group.ts`, `group.ts` remains available as a regular command file.
 
 `_group.ts` and `index.ts` cannot coexist in the same directory. Use `index.ts` when the directory path itself should be an executable command, and `_group.ts` when it should only serve as a group of subcommands.
 

@@ -89,7 +89,7 @@ my-cli/
 └── tsconfig.json
 ```
 
-The `src/commands/` directory is where file-based routing begins. Each `.ts` file or directory maps to a CLI command path. The starter intentionally includes both a flat `hello` command and a nested `text` command group. See [commands.md](./commands.md) for details.
+The `src/commands/` directory is where file-based routing begins. Routable `.ts` files and directories map to CLI command paths; `_`-prefixed private entries and colocated `.test.ts` / `.spec.ts` files are ignored. The starter intentionally includes both a flat `hello` command and a nested `text` command group. See [commands.md](./commands.md) for details.
 
 ## Running and building
 

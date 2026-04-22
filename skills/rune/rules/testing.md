@@ -8,6 +8,8 @@ import { runCommand } from "@rune-cli/rune/test";
 
 `runCommand()` works with any test runner (Vitest, Jest, Node.js built-in test runner).
 
+Tests can live in a separate `tests/` directory or next to the command under `src/commands`. Rune ignores colocated `.test.ts` and `.spec.ts` files during command routing.
+
 ## runCommand()
 
 Exercises a command through Rune's real parse-and-execute pipeline in-process — no child process is spawned.

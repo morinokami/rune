@@ -254,9 +254,11 @@ src/commands/
 ├── index.ts       -> root command (my-cli)
 ├── hello.ts       -> my-cli hello
 ├── project/
-│   ├── index.ts   -> my-cli project (executable, can have subcommands)
-│   ├── create.ts  -> my-cli project create
-│   └── list.ts    -> my-cli project list
+│   ├── index.ts        -> my-cli project (executable, can have subcommands)
+│   ├── _schema.ts      -> ignored private helper
+│   ├── create.ts       -> my-cli project create
+│   ├── create.test.ts  -> ignored colocated test
+│   └── list.ts         -> my-cli project list
 └── user/
     ├── _group.ts  -> my-cli user (help-only group)
     └── delete.ts  -> my-cli user delete
@@ -265,9 +267,11 @@ src/commands/
 Rules:
 
 - `index.ts` in a directory makes the directory path an executable command
-- `_group.ts` in a directory makes it a help-only group (not executable)
+- `_group.ts` in a directory makes it a help-only group (not executable). It is a reserved metadata file, not a private helper.
 - `index.ts` and `_group.ts` cannot coexist in the same directory
-- Regular `.ts` files become subcommands named after the file
+- Routable `.ts` files become subcommands named after the file
+- Files and directories whose command name starts with `_` are ignored by routing, except for reserved metadata names such as `_group.ts`
+- `.test.ts` and `.spec.ts` files are ignored by routing, so command tests can be colocated next to command files
 - A file and a directory with the same name cannot coexist at the same level
 - Only the matched leaf command module is loaded at runtime
 

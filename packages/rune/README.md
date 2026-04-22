@@ -78,6 +78,21 @@ src/commands/
 
 Simple leaf commands can be bare files (`hello.ts`), while commands that need subcommands use a directory with `index.ts`. Only the matched leaf command module is loaded at runtime.
 
+Files and directories whose command name starts with `_` are ignored by routing, so command-specific helpers can live next to the command that uses them. Colocated test files ending in `.test.ts` or `.spec.ts` are also ignored:
+
+```
+src/commands/
+  deploy.ts          -> my-cli deploy
+  deploy.test.ts     -> ignored
+  _deploy-logic.ts   -> ignored
+  project/
+    _group.ts        -> group metadata
+    _schema.ts       -> ignored
+    create.ts        -> my-cli project create
+```
+
+`_group.ts` is a reserved metadata file, not a private helper. The `_` prefix keeps Rune-owned metadata and private implementation files out of the public command namespace.
+
 Each command file exports a default `defineCommand()` call:
 
 ```ts
