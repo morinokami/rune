@@ -23,7 +23,7 @@ catalog:
   rolldown: 1.0.0-rc.15
   sharp: 0.34.5
   sherif: 1.11.1
-  starlight-dot-md: 0.2.0
+  starlight-dot-md: 0.2.1
   std-env: 4.1.0
   typescript: 6.0.2
   vite-plus: 0.1.18
