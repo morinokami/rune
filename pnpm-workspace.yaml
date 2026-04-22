@@ -14,7 +14,7 @@ catalog:
   "@standard-schema/spec": 1.1.0
   "@types/node": 24.12.2
   "@typescript/native-preview": 7.0.0-dev.20260329.1
-  astro: 6.1.5
+  astro: 6.1.8
   astro-og: 0.3.2
   knip: 6.4.1
   oxc-parser: 0.126.0
