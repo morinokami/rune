@@ -19,7 +19,7 @@ type InferSchemaInput<TSchema> = TSchema extends StandardSchemaV1
 
 type IsOptionalSchemaOutput<TValue> = undefined extends TValue ? true : false;
 
-export type FieldValue<TField> = TField extends { readonly schema: infer TSchema }
+type ScalarFieldValue<TField> = TField extends { readonly schema: infer TSchema }
   ? Exclude<InferSchemaOutput<TSchema>, undefined>
   : TField extends {
         readonly type: "enum";
@@ -29,6 +29,12 @@ export type FieldValue<TField> = TField extends { readonly schema: infer TSchema
     : TField extends { readonly type: infer TType extends PrimitiveFieldType }
       ? PrimitiveFieldValue<TType>
       : never;
+
+export type FieldValue<TField> = TField extends { readonly multiple: true }
+  ? TField extends { readonly schema: infer TSchema }
+    ? Exclude<InferSchemaOutput<TSchema>, undefined>
+    : ScalarFieldValue<TField>[]
+  : ScalarFieldValue<TField>;
 
 type HasDefaultValue<TField> = TField extends { readonly default: infer TDefault }
   ? [TDefault] extends [undefined]

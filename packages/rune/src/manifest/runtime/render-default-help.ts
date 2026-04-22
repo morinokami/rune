@@ -68,6 +68,20 @@ function joinDescription(description: string | undefined, suffix: string): strin
   return undefined;
 }
 
+function formatScalarDefaultValue(value: string | number | boolean): string {
+  return typeof value === "string" ? JSON.stringify(value) : String(value);
+}
+
+function formatDefaultValue(
+  value: string | number | boolean | readonly (string | number)[],
+): string {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return formatScalarDefaultValue(value);
+  }
+
+  return `[${value.map(formatScalarDefaultValue).join(", ")}]`;
+}
+
 function formatUsageArguments(entries: readonly ArgumentHelpEntry[]): string {
   return entries.map((entry) => (entry.required ? `<${entry.name}>` : `[${entry.name}]`)).join(" ");
 }
@@ -100,10 +114,7 @@ function formatUserOptionDefaultSuffix(
   if (!("default" in entry) || entry.default === undefined) return "";
   if (entry.type === "boolean") return "";
 
-  const formatted =
-    typeof entry.default === "string" ? JSON.stringify(entry.default) : String(entry.default);
-
-  return `(default: ${formatted})`;
+  return `(default: ${formatDefaultValue(entry.default)})`;
 }
 
 // ---------------------------------------------------------------------------

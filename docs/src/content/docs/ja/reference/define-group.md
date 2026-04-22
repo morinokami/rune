@@ -5,6 +5,8 @@ description: defineGroup 関数の API リファレンス。
 
 `defineGroup()` はコマンドグループのメタデータを定義します。この関数のデフォルトエクスポートを、コマンドディレクトリ内の `_group.ts` ファイルに配置してください。
 
+`_group.ts` はコマンドグループのメタデータを定義するための予約ファイルです。コマンドとしては扱われず、また同じディレクトリ内で `index.ts` と共存することはできません。
+
 ```ts
 import { defineGroup } from "@rune-cli/rune";
 

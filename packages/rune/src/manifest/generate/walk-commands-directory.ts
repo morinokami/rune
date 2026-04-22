@@ -10,6 +10,7 @@ const COMMAND_ENTRY_FILE = "index.ts";
 const GROUP_META_FILE = "_group.ts";
 const BARE_COMMAND_EXTENSION = ".ts";
 const DECLARATION_FILE_SUFFIXES = [".d.ts", ".d.mts", ".d.cts"];
+const TEST_COMMAND_NAME_SUFFIXES = [".test", ".spec"];
 
 export interface WalkDirectoryResult {
   readonly nodes: readonly CommandManifestNode[];
@@ -104,6 +105,14 @@ function validateSiblingAliases(
   }
 }
 
+function isPrivateRouteEntry(name: string): boolean {
+  return name.startsWith("_");
+}
+
+function isTestCommandName(commandName: string): boolean {
+  return TEST_COMMAND_NAME_SUFFIXES.some((suffix) => commandName.endsWith(suffix));
+}
+
 export async function walkCommandsDirectory(
   absoluteDirectoryPath: string,
   pathSegments: readonly string[],
@@ -116,7 +125,7 @@ export async function walkCommandsDirectory(
   const dirEntries = await readdir(absoluteDirectoryPath, { withFileTypes: true });
 
   const childDirectoryNames = dirEntries
-    .filter((entry) => entry.isDirectory())
+    .filter((entry) => entry.isDirectory() && !isPrivateRouteEntry(entry.name))
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
 
@@ -141,14 +150,25 @@ export async function walkCommandsDirectory(
   // ---------------------------------------------------------------------------
 
   const bareCommandFileNames = dirEntries
-    .filter(
-      (entry) =>
-        entry.isFile() &&
-        entry.name.endsWith(BARE_COMMAND_EXTENSION) &&
-        entry.name !== COMMAND_ENTRY_FILE &&
-        entry.name !== GROUP_META_FILE &&
-        !DECLARATION_FILE_SUFFIXES.some((suffix) => entry.name.endsWith(suffix)),
-    )
+    .filter((entry) => {
+      if (!entry.isFile() || !entry.name.endsWith(BARE_COMMAND_EXTENSION)) {
+        return false;
+      }
+
+      if (
+        entry.name === COMMAND_ENTRY_FILE ||
+        // _group.ts is a reserved metadata file, so exclude it before applying
+        // the generic _-prefixed private route rule below.
+        entry.name === GROUP_META_FILE ||
+        DECLARATION_FILE_SUFFIXES.some((suffix) => entry.name.endsWith(suffix))
+      ) {
+        return false;
+      }
+
+      const commandName = entry.name.slice(0, -BARE_COMMAND_EXTENSION.length);
+
+      return !isPrivateRouteEntry(commandName) && !isTestCommandName(commandName);
+    })
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
 

@@ -77,7 +77,7 @@ export type ValidateNegationCollision<TOpts> = [OptionFieldTuple<TOpts>] extends
       }
     : unknown;
 
-export type ValidateReservedNames<TOpts, TJson extends boolean = false> = [
+export type ValidateReservedNames<TOpts, TJson extends true | undefined = undefined> = [
   OptionFieldTuple<TOpts>,
 ] extends [never]
   ? unknown

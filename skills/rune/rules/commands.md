@@ -24,16 +24,16 @@ export default defineCommand({
 
 ### Properties
 
-| Property      | Type                                | Required | Description                                                              |
-| ------------- | ----------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `description` | `string`                            | No       | One-line summary for `--help`                                            |
-| `args`        | `CommandArgField[]`                 | No       | Positional arguments, in CLI order                                       |
-| `options`     | `CommandOptionField[]`              | No       | Named option flags                                                       |
-| `aliases`     | `readonly string[]`                 | No       | Alternative command names (kebab-case). Root command cannot have aliases |
-| `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                              |
-| `json`        | `boolean`                           | No       | Enables `--json` flag (default: `false`)                                 |
-| `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                           |
-| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. In `json: true` mode it may return structured data        |
+| Property      | Type                                | Required | Description                                                                   |
+| ------------- | ----------------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `description` | `string`                            | No       | One-line summary for `--help`                                                 |
+| `args`        | `CommandArgField[]`                 | No       | Positional arguments, in CLI order                                            |
+| `options`     | `CommandOptionField[]`              | No       | Named option flags                                                            |
+| `aliases`     | `readonly string[]`                 | No       | Alternative command names (kebab-case). Root command cannot have aliases      |
+| `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                                   |
+| `json`        | `true`                              | No       | Enables the built-in `--json` flag (omit to disable; `false` is not accepted) |
+| `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                                |
+| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. In `json: true` mode it may return structured data             |
 
 ### Custom help rendering
 
@@ -96,16 +96,18 @@ A field uses exactly one of: a primitive `type` (`"string" | "number" | "boolean
 
 // Options (same base properties, plus `short`)
 { name: "output", type: "string", short: "o" }
+{ name: "tag", type: "string", multiple: true, default: [] }
 { name: "force", type: "boolean", short: "f" }
 ```
 
 Primitive types: `"string"` | `"number"` | `"boolean"`
 
-- `required: true` makes the field mandatory
+- `required: true` makes the field mandatory (omit to keep it optional; `false` is not accepted)
 - `default` provides a fallback value and makes the field always present in `ctx`
 - Primitive defaults are shown in `--help`, except for boolean options
 - Primitive boolean options default to `false` even without an explicit `default`
 - `short` (options only): single ASCII letter for shorthand (e.g. `-f`). The short name `"h"` is reserved for `--help`
+- `multiple: true` (options only): allowed for primitive `"string"` and `"number"` options; parsed values are arrays in declaration order. Use an array `default` such as `[]` to make the option always present. Primitive `"boolean"` options cannot be repeatable.
 
 ### Enum fields
 
@@ -118,11 +120,13 @@ Restrict a field to a fixed set of string or number choices without introducing 
 // Options
 { name: "mode", type: "enum", values: ["dev", "prod"], default: "dev", short: "m" }
 { name: "level", type: "enum", values: ["low", 1, "high"] }
+{ name: "format", type: "enum", values: ["json", "text"], multiple: true, default: [] }
 ```
 
 - `values` is a `readonly (string | number)[]`. The union of allowed values is inferred automatically — no `as const` needed
 - Matching is strict string comparison: `values: [1, 2]` accepts `"1"` and `"2"`, never `"007"` or `"1.0"`
 - `default` must be one of `values`
+- `multiple: true` (options only): repeated enum values are exposed as an array; defaults must be arrays whose values are all listed in `values`
 - String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`); spaces or other special characters are rejected at definition time
 - Empty strings, `NaN`, `Infinity`, and duplicates (after string conversion) are rejected at definition time
 - `--help` displays the allowed values inline, e.g. `--mode <dev|prod>`
@@ -142,6 +146,7 @@ export default defineCommand({
   ],
   options: [
     { name: "port", schema: z.coerce.number().int().positive() },
+    { name: "tag", schema: z.array(z.string()).default([]), multiple: true },
     { name: "force", schema: z.boolean(), flag: true },
   ],
   async run(ctx) {
@@ -153,6 +158,7 @@ export default defineCommand({
 ```
 
 - `flag: true` (schema options only): parsed as a boolean flag with no value. The schema receives `true` when the flag is present, `undefined` when absent.
+- `multiple: true` (schema options only, not with `flag: true`): the schema receives the collected raw string values as an array, so use an array-shaped schema such as `z.array(z.string()).default([])`.
 - Required/optional/default semantics come from the schema itself.
 - Validation uses the Standard Schema contract (`schema["~standard"].validate(value)`). Do not call library-specific APIs such as Zod `.parse()`.
 - `typeLabel` / `defaultLabel` (schema fields only, display-only): shown in `--help` as `<typeLabel>` and `(default: defaultLabel)`. No effect on validation or type inference. Use when the schema's shape or default is not otherwise discoverable from the help output.
@@ -248,9 +254,11 @@ src/commands/
 ├── index.ts       -> root command (my-cli)
 ├── hello.ts       -> my-cli hello
 ├── project/
-│   ├── index.ts   -> my-cli project (executable, can have subcommands)
-│   ├── create.ts  -> my-cli project create
-│   └── list.ts    -> my-cli project list
+│   ├── index.ts        -> my-cli project (executable, can have subcommands)
+│   ├── _schema.ts      -> ignored private helper
+│   ├── create.ts       -> my-cli project create
+│   ├── create.test.ts  -> ignored colocated test
+│   └── list.ts         -> my-cli project list
 └── user/
     ├── _group.ts  -> my-cli user (help-only group)
     └── delete.ts  -> my-cli user delete
@@ -259,9 +267,11 @@ src/commands/
 Rules:
 
 - `index.ts` in a directory makes the directory path an executable command
-- `_group.ts` in a directory makes it a help-only group (not executable)
+- `_group.ts` in a directory makes it a help-only group (not executable). It is a reserved metadata file, not a private helper.
 - `index.ts` and `_group.ts` cannot coexist in the same directory
-- Regular `.ts` files become subcommands named after the file
+- Routable `.ts` files become subcommands named after the file
+- Files and directories whose command name starts with `_` are ignored by routing, except for reserved metadata names such as `_group.ts`
+- `.test.ts` and `.spec.ts` files are ignored by routing, so command tests can be colocated next to command files
 - A file and a directory with the same name cannot coexist at the same level
 - Only the matched leaf command module is loaded at runtime
 
@@ -331,7 +341,7 @@ Unhandled non-CommandError exceptions are wrapped with `kind: "rune/unexpected"`
 
 - **`output.log()` not `console.log()`**: `console.log()` bypasses the framework — it cannot be captured in tests and corrupts JSON output in `--json` mode.
 - **Option value syntax**: both `--name value` and `--name=value` work. `--` terminates option parsing.
-- **Duplicate options are errors**: `--name foo --name bar` or mixing long and short forms for the same option both fail.
+- **Duplicate options are errors unless `multiple: true` is set**: `--name foo --name bar` or mixing long and short forms for the same non-repeatable option fail. Repeatable options collect all values in order.
 - **Boolean options without `default: true` have no `--no-*` form**: `--no-force` is an error unless `force` has `default: true`.
 - **Schema validation contract**: use `schema["~standard"].validate(value)`, not library-specific `.parse()` or `.safeParse()`.
 - **Hyphenated arg names**: must follow the same rules as option names — start with a letter, single internal hyphens only.

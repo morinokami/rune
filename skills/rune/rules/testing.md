@@ -8,6 +8,8 @@ import { runCommand } from "@rune-cli/rune/test";
 
 `runCommand()` works with any test runner (Vitest, Jest, Node.js built-in test runner).
 
+Tests can live in a separate `tests/` directory or next to the command under `src/commands`. Rune ignores colocated `.test.ts` and `.spec.ts` files during command routing.
+
 ## runCommand()
 
 Exercises a command through Rune's real parse-and-execute pipeline in-process — no child process is spawned.
@@ -22,7 +24,7 @@ async function runCommand(
 
 `TCommandData` is inferred from the passed command: it matches the `run()` return type for `json: true` commands and is `undefined` otherwise.
 
-The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, required/default handling, and duplicate detection all run exactly as in a real invocation.
+The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, required/default handling, duplicate detection, and `multiple: true` repeated-option collection all run exactly as in a real invocation.
 
 Top-level CLI behavior (command routing, help rendering) is **not** included. `runCommand()` tests only the resolved command itself.
 

@@ -18,11 +18,13 @@ Rune は、Astro や Next.js などの開発者に馴染みのあるファイル
     - hello/
       - index.ts
     - project/
+      - _schema.ts
       - create.ts
+      - create.test.ts
       - list.ts
 </FileTree>
 
-Rune では、`src/commands` 以下の `index.ts` または通常の `.ts` ファイルがコマンドを定義します。ディレクトリはコマンドのまとまりを表し、`index.ts` を置いたディレクトリはそのパス自体のコマンドにもなります。こうした対応関係は、Astro などのウェブフレームワークを使っている開発者にとっては、自然に理解できるものでしょう。
+Rune では、`src/commands` 以下の `index.ts` またはルーティング対象の `.ts` ファイルがコマンドを定義します。ディレクトリはコマンドのまとまりを表し、`index.ts` を置いたディレクトリはそのパス自体のコマンドにもなります。こうした対応関係は、Astro などのウェブフレームワークを使っている開発者にとっては、自然に理解できるものでしょう。
 
 上記のディレクトリ構造により以下のコマンドが自動的に利用可能となります（ここでは、あなたの CLI のバイナリ名が `your-cli` であると仮定しています）:
 
@@ -36,17 +38,22 @@ your-cli project list
 以下のように、ディレクトリ構造とコマンド構造が対応していることがわかります:
 
 ```
-src/commands/index.ts           -> your-cli
-src/commands/hello/index.ts     -> your-cli hello
-src/commands/project/create.ts  -> your-cli project create
-src/commands/project/list.ts    -> your-cli project list
+src/commands/index.ts                -> your-cli
+src/commands/hello/index.ts          -> your-cli hello
+src/commands/project/_schema.ts      -> ignored
+src/commands/project/create.ts       -> your-cli project create
+src/commands/project/create.test.ts  -> ignored
+src/commands/project/list.ts         -> your-cli project list
 ```
 
 Rune におけるコマンドパスを決定するルールは次のとおりです:
 
 - `src/commands/index.ts` はルートコマンドに対応します。
 - `src/commands/hello/index.ts` は `hello` コマンドに対応します。
-- `src/commands/project/create.ts` のような通常の `.ts` ファイルも、そのままサブコマンドに対応します。
+- `src/commands/project/create.ts` のようなルーティング対象の `.ts` ファイルも、そのままサブコマンドに対応します。
+- コマンド名が `_` で始まるファイルやディレクトリはルーティング対象外です。`_schema.ts`、`_logic.ts`、`_internal/` のようなコマンド専用の補助ファイルをコロケーションするために使えます。
+- コマンド名が `.test` または `.spec` で終わるファイルもルーティング対象外です。そのため、`src/commands/project/create.test.ts` のようなコロケーションされたテストファイルはコマンドになりません。
+- `_group.ts` はコマンドグループ用の予約メタデータファイルです。`group` という公開コマンド名と衝突しないよう、`_` で始まる名前になっています。
 - `src/commands/hello.ts` と `src/commands/hello/` ディレクトリのように、同じ名前のファイルとコマンドディレクトリを同階層に定義することはできません。
 
 このように Rune では、多くのウェブ開発者にとって親しみやすいファイルベースのコマンドルーティングを利用することで、コマンド全体の構造を一目で把握することができます。Rune はこのコマンドツリーをもとにルーティングを解決し、一致したコマンドモジュールだけを読み込みます。

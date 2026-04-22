@@ -9,24 +9,24 @@ catalog:
   "@astrojs/starlight": 0.38.3
   "@bluwy/giget-core": 0.1.7
   "@changesets/changelog-github": 0.6.0
-  "@changesets/cli": 2.30.0
+  "@changesets/cli": 2.31.0
   "@clack/prompts": 1.2.0
   "@ls-lint/ls-lint": 2.3.1
   "@standard-schema/spec": 1.1.0
   "@types/node": 24.12.2
   "@typescript/native-preview": 7.0.0-dev.20260329.1
-  astro: 6.1.5
+  astro: 6.1.8
   astro-og: 0.3.2
   knip: 6.4.1
   oxc-parser: 0.126.0
   pkg-pr-new: 0.0.66
   publint: 0.3.18
-  rolldown: 1.0.0-rc.15
+  rolldown: 1.0.0-rc.16
   sharp: 0.34.5
   sherif: 1.11.1
-  starlight-dot-md: 0.2.0
+  starlight-dot-md: 0.2.1
   std-env: 4.1.0
-  typescript: 6.0.2
+  typescript: 6.0.3
   vite-plus: 0.1.18
   zod: 4.3.6
 

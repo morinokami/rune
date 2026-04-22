@@ -54,10 +54,10 @@ The type Rune parses the raw token into.
 
 ##### `required`
 
-- **Type:** `boolean`
-- **Default:** `false`
+- **Type:** `true`
+- **Optional**
 
-When `true`, the argument must be provided.
+When set, the argument must be provided. Omit to keep the argument optional.
 
 ##### `default`
 
@@ -96,10 +96,10 @@ Allowed values. The raw CLI token is matched against each entry using strict str
 
 ##### `required`
 
-- **Type:** `boolean`
-- **Default:** `false`
+- **Type:** `true`
+- **Optional**
 
-When `true`, the field must be provided by the user.
+When set, the field must be provided by the user. Omit to keep the field optional.
 
 ##### `default`
 
@@ -170,6 +170,30 @@ The option name `"help"` is reserved by the framework and cannot be used. When `
 
 Single-character shorthand (e.g. `"f"` for `--force` -> `-f`). Must be unique across all options. The short name `"h"` is reserved for the built-in `--help` flag and cannot be used.
 
+#### `multiple`
+
+- **Type:** `true`
+- **Optional** (options only)
+
+When set, the option may be provided more than once. Primitive `"string"` and `"number"` options, as well as enum options, are parsed into arrays in declaration order:
+
+```ts
+options: [
+  { name: "tag", type: "string", multiple: true, default: [] },
+  { name: "level", type: "number", multiple: true },
+];
+```
+
+Here `ctx.options.tag` is `string[]`, while `ctx.options.level` is `number[] | undefined` unless the option is required or has an array default. Enum options follow the same rule, with each item restricted to `values`.
+
+For schema-backed options, Rune passes the collected raw string values to the schema as an array, so use an array-shaped schema:
+
+```ts
+options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true }];
+```
+
+Primitive boolean options and schema `flag: true` options cannot use `multiple: true`.
+
 #### `flag`
 
 - **Type:** `true`
@@ -193,10 +217,10 @@ Usage examples shown in the `Examples:` section of `--help` output. Each entry i
 
 ### `json`
 
-- **Type:** `boolean`
-- **Default:** `false`
+- **Type:** `true`
+- **Optional**
 
-When `true`, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed.
+When set, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed. Omit to keep JSON mode disabled.
 
 ### `help`
 
@@ -225,7 +249,7 @@ If `help()` throws, Rune falls back to the default help renderer and writes a wa
 
 ### `run`
 
-- **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is `false` or omitted) or `(ctx: CommandContext) => TCommandData | Promise<TCommandData>` (when `json` is `true`)
+- **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is omitted) or `(ctx: CommandContext) => TCommandData | Promise<TCommandData>` (when `json` is `true`)
 - **Required**
 
 The function executed when the command is invoked. When `json` is `true`, the return value becomes part of the command's API, is serialized as JSON output when the user passes `--json`, and is preserved in `runCommand().data`.

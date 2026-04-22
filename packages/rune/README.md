@@ -38,13 +38,10 @@ my-cli/
   src/
     commands/
       hello.ts
+      hello.test.ts
       text/
         _group.ts
         count.ts
-  tests/
-    commands/
-      hello.test.ts
-      text/
         count.test.ts
   package.json
   tsconfig.json
@@ -77,6 +74,21 @@ src/commands/
 ```
 
 Simple leaf commands can be bare files (`hello.ts`), while commands that need subcommands use a directory with `index.ts`. Only the matched leaf command module is loaded at runtime.
+
+Files and directories whose command name starts with `_` are ignored by routing, so command-specific helpers can live next to the command that uses them. Colocated test files ending in `.test.ts` or `.spec.ts` are also ignored:
+
+```
+src/commands/
+  deploy.ts          -> my-cli deploy
+  deploy.test.ts     -> ignored
+  _deploy-logic.ts   -> ignored
+  project/
+    _group.ts        -> group metadata
+    _schema.ts       -> ignored
+    create.ts        -> my-cli project create
+```
+
+`_group.ts` is a reserved metadata file, not a private helper. The `_` prefix keeps Rune-owned metadata and private implementation files out of the public command namespace.
 
 Each command file exports a default `defineCommand()` call:
 
@@ -120,6 +132,7 @@ export default defineGroup({
 | `default`     | Default value; shown in `--help` output                  |
 | `description` | Help text                                                |
 | `short`       | Single-letter alias (options only, e.g. `"f"` → `-f`)    |
+| `multiple`    | Allow an option to be repeated and parsed as an array    |
 
 ```ts
 defineCommand({
@@ -149,6 +162,24 @@ defineCommand({
 ```
 
 String values must match `/^[A-Za-z0-9_.-]+$/`. For free-form strings or runtime validation (regex, uniqueness, transformation), use a `type: "string"` field or a schema field.
+
+### Repeatable Options
+
+Set `multiple: true` on a string, number, enum, or schema value option to allow repeated flags. Values are parsed in declaration order and exposed as an array. If omitted, the option is optional unless you provide an array `default` such as `[]` or set `required: true`.
+
+```ts
+defineCommand({
+  options: [
+    { name: "tag", type: "string", multiple: true, default: [] },
+    { name: "level", type: "number", multiple: true },
+  ],
+  run({ options }) {
+    // options.tag: string[], options.level?: number[]
+  },
+});
+```
+
+Primitive boolean options and schema `flag: true` options cannot be repeatable.
 
 ### Standard Schema Fields
 

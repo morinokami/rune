@@ -161,6 +161,15 @@ describe("normalization and pass-through", () => {
       },
     ]);
   });
+
+  test("defineCommand preserves multiple option definitions", () => {
+    const command = defineCommand({
+      options: [{ name: "tag", type: "string", multiple: true, default: [] }],
+      async run() {},
+    });
+
+    expect(command.options).toEqual([{ name: "tag", type: "string", multiple: true, default: [] }]);
+  });
 });
 
 describe("argument ordering", () => {
@@ -600,6 +609,31 @@ describe("runtime validation for widened inputs", () => {
         return defineCommand({ json: true, options: fields, run: () => ({}) });
       },
       message: /reserved by the framework/,
+    },
+    {
+      label: "boolean primitive multiple options",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [
+          { name: "force", type: "boolean", multiple: true } as unknown as CommandOptionField,
+        ];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /Boolean option "force" cannot use multiple: true/,
+    },
+    {
+      label: "schema flag multiple options",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [
+          {
+            name: "force",
+            schema: z.boolean(),
+            flag: true,
+            multiple: true,
+          } as unknown as CommandOptionField,
+        ];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /Schema flag option "force" cannot use multiple: true/,
     },
   ])("rejects $label at runtime", ({ define, message }) => {
     expect(() => define()).toThrow(message);

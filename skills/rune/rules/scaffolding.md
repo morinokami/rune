@@ -77,19 +77,16 @@ my-cli/
 ├── src/
 │   └── commands/
 │       ├── hello.ts              # Sample command
+│       ├── hello.test.ts         # Sample colocated command test
 │       └── text/
 │           ├── _group.ts         # Sample command group metadata
-│           └── count.ts          # Sample nested command
-├── tests/
-│   └── commands/
-│       ├── hello.test.ts         # Sample test
-│       └── text/
-│           └── count.test.ts     # Sample nested command test
+│           ├── count.ts          # Sample nested command
+│           └── count.test.ts     # Sample colocated nested command test
 ├── package.json
 └── tsconfig.json
 ```
 
-The `src/commands/` directory is where file-based routing begins. Each `.ts` file or directory maps to a CLI command path. The starter intentionally includes both a flat `hello` command and a nested `text` command group. See [commands.md](./commands.md) for details.
+The `src/commands/` directory is where file-based routing begins. Routable `.ts` files and directories map to CLI command paths; `_`-prefixed private entries and colocated `.test.ts` / `.spec.ts` files are ignored. The starter intentionally includes both a flat `hello` command and a nested `text` command group. See [commands.md](./commands.md) for details.
 
 ## Running and building
 

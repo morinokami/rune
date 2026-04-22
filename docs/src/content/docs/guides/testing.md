@@ -9,6 +9,8 @@ Rune provides the `runCommand()` function for testing commands in-process. `runC
 The examples in this guide use [Vitest](https://vitest.dev/) as the test framework.
 :::
 
+You can keep tests in a separate `tests/` directory or colocate them next to command files. Files ending in `.test.ts` or `.spec.ts` under `src/commands` are ignored by Rune's command routing.
+
 ## How runCommand works
 
 `runCommand()` takes a `string[]` of CLI tokens as input, in the same format a user would type in a terminal. Internally, it runs a single command through Rune's command-level parse-and-execute pipeline, so argv parsing, type coercion, validation, and default handling all work the same way as a real invocation. Note that top-level CLI behavior such as command routing and help rendering is not included. `runCommand()` exercises only the resolved command itself.
