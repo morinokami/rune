@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.13
+
+### Patch Changes
+
+- [#136](https://github.com/morinokami/rune/pull/136) [`81efd6c`](https://github.com/morinokami/rune/commit/81efd6c1f86dc1508e7999a9eadd5872b47a1f66) Thanks [@morinokami](https://github.com/morinokami)! - chore(examples): colocate starter command tests
+
 ## 0.0.12
 
 ### Patch Changes
