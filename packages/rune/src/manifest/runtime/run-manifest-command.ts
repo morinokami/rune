@@ -19,6 +19,8 @@ export interface RunManifestCommandOptions {
   // Path to the rune.config.ts (or built config.mjs) module. Loaded lazily
   // only when help rendering is needed.
   readonly configPath?: string | undefined;
+  // Forwarded to `runCommandPipeline`. See `RunCommandPipelineInput.simulateAgent`.
+  readonly simulateAgent?: boolean | undefined;
 }
 
 function ensureTrailingNewline(text: string): string {
@@ -185,6 +187,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
       command,
       argv: route.remainingArgs,
       cwd: options.cwd,
+      simulateAgent: options.simulateAgent,
     });
 
     let exitCode = result.exitCode;

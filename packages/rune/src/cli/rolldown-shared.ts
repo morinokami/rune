@@ -8,7 +8,7 @@ import path from "node:path";
 // ---------------------------------------------------------------------------
 
 export const BUILD_TARGET = "node22";
-const BUNDLED_PACKAGE_NAMES = new Set(["@rune-cli/core", "@rune-cli/rune"]);
+const BUNDLED_PACKAGE_NAMES = new Set(["@rune-cli/core", "@rune-cli/rune", "std-env"]);
 const NODE_MODULES_SEGMENT_RE = /(^|[\\/])node_modules([\\/]|$)/;
 
 export interface ExternalDependenciesContext {

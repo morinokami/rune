@@ -38,7 +38,7 @@ Command arguments and options can be validated with any [Standard Schema](https:
 
 Setting `json: true` in `defineCommand()` enables a built-in `--json` flag. When the flag is passed, the command's return value is written to stdout as structured JSON.
 
-In this mode, human-readable stdout from `output.log()` is automatically suppressed, while `output.error()` continues to write to stderr so diagnostic messages are not lost. Without `--json`, the command behaves as a normal text CLI, so a single implementation can serve both humans and machines.
+In this mode, human-readable stdout from `output.log()` is automatically suppressed, while `output.error()` continues to write to stderr so diagnostic messages are not lost. Without `--json`, the command behaves as a normal text CLI, so a single implementation can serve both humans and machines. When the CLI is invoked by an AI agent, JSON mode is auto-enabled even without `--json`, so agents receive structured output by default.
 
 ### Automatic help generation
 

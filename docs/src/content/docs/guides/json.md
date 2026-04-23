@@ -65,6 +65,10 @@ export default defineCommand({
 
 Only output written through the framework's `output` API is suppressed in JSON mode. Output written directly via `console.log()` or `process.stdout.write()` is not suppressed and will corrupt the JSON payload. Always use `output.log()` and `output.error()` for command output.
 
+## Automatic activation under AI agents
+
+For commands declared with `json: true`, Rune automatically enables JSON mode when it detects that the CLI is being invoked by an AI agent (e.g. Claude Code, Cursor, Codex), even without an explicit `--json` flag. This lets a single command serve humans with rich text output and agents with structured JSON, without requiring agents to discover and pass `--json` themselves.
+
 ## Why `output.log()` matters
 
 Rune's output helpers are not just a style preference:

@@ -10,7 +10,7 @@ Key features:
 - File-based command routing — directory structure maps directly to the CLI command tree
 - Type-safe command definitions with full inference from `defineCommand()`
 - [Standard Schema](https://standardschema.dev/) support for args and options (Zod, Valibot, ArkType, ...)
-- Built-in `--json` mode that turns the same command into a machine-readable API
+- Built-in `--json` mode that turns the same command into a machine-readable API, auto-enabled under AI agents
 - In-process test utility with no child-process overhead
 - Automatic `--help` generation, with per-command and project-wide customization hooks
 - Structured errors via `CommandError`, rendered for humans or emitted as JSON
@@ -232,6 +232,8 @@ export default defineCommand({
 my-cli         # human-readable text CLI
 my-cli --json  # {"items":[1,2,3]}
 ```
+
+Under AI agents (Claude Code, Cursor, Codex, etc.), `json: true` commands auto-enable JSON mode even without `--json`, so a single command serves both humans and agents seamlessly. Detection only triggers on known agent environment variables — CI jobs and shell pipes continue to produce human-readable output unless `--json` is passed explicitly.
 
 ## Structured Errors
 
