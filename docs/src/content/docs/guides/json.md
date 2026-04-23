@@ -29,22 +29,11 @@ Without `json`, `run()` is typed as returning `void`. When `json: true` is set, 
 
 ## Output behavior
 
-When a user runs the command with the `--json` flag, the return value of `run()` is printed to stdout as formatted JSON:
+When a user runs the command with the `--json` flag, the return value of `run()` is printed to stdout as a single-line JSON document (no indentation):
 
 ```bash
 $ your-cli projects list --json
-{
-  "projects": [
-    {
-      "id": 1,
-      "name": "alpha"
-    },
-    {
-      "id": 2,
-      "name": "beta"
-    }
-  ]
-}
+{"projects":[{"id":1,"name":"alpha"},{"id":2,"name":"beta"}]}
 ```
 
 When the `--json` flag is passed, `output.log()` calls are automatically suppressed. `output.error()` continues to write to stderr. In JSON mode, stdout always contains exactly one JSON document regardless of success or failure, so it can be consumed directly by tools like `jq` or other programs.
@@ -99,13 +88,7 @@ When a command fails in JSON mode, error information is output to stdout as a JS
 
 ```bash
 $ your-cli projects list --json
-{
-  "error": {
-    "kind": "config/not-found",
-    "message": "Config file was not found",
-    "hint": "Create rune.config.ts"
-  }
-}
+{"error":{"kind":"config/not-found","message":"Config file was not found","hint":"Create rune.config.ts"}}
 ```
 
 The error payload includes the following fields:

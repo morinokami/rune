@@ -29,22 +29,11 @@ export default defineCommand({
 
 ## 出力の振る舞い
 
-ユーザーが `--json` フラグを付けてコマンドを実行すると、`run()` の戻り値が整形された JSON として stdout に出力されます:
+ユーザーが `--json` フラグを付けてコマンドを実行すると、`run()` の戻り値がインデントなしの 1 行の JSON ドキュメントとして stdout に出力されます:
 
 ```bash
 $ your-cli projects list --json
-{
-  "projects": [
-    {
-      "id": 1,
-      "name": "alpha"
-    },
-    {
-      "id": 2,
-      "name": "beta"
-    }
-  ]
-}
+{"projects":[{"id":1,"name":"alpha"},{"id":2,"name":"beta"}]}
 ```
 
 `--json` フラグが渡された場合、`output.log()` による出力は自動的に抑制されます。一方、`output.error()` は引き続き stderr に出力されます。JSON モードでは成功・失敗を問わず stdout には常に 1 つの JSON ドキュメントだけが出力されるため、`jq` などのツールやプログラムから stdout をそのまま利用できます。
@@ -99,13 +88,7 @@ JSON モードでコマンドが失敗した場合、エラー情報が `error` 
 
 ```bash
 $ your-cli projects list --json
-{
-  "error": {
-    "kind": "config/not-found",
-    "message": "Config file was not found",
-    "hint": "Create rune.config.ts"
-  }
-}
+{"error":{"kind":"config/not-found","message":"Config file was not found","hint":"Create rune.config.ts"}}
 ```
 
 エラーペイロードには以下のフィールドが含まれます:
