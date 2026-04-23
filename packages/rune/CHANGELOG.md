@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.37
+
+### Patch Changes
+
+- [#138](https://github.com/morinokami/rune/pull/138) [`c631753`](https://github.com/morinokami/rune/commit/c63175335fc881213741cbcefcc462a84ba1b7d7) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): emit compact JSON in --json mode
+
 ## 0.0.36
 
 ### Patch Changes
