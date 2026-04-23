@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.38
+
+### Patch Changes
+
+- [#140](https://github.com/morinokami/rune/pull/140) [`10b5147`](https://github.com/morinokami/rune/commit/10b5147f259525f72b79cfd24089a2d5e3ff7f34) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add JSON help introspection
+
 ## 0.0.37
 
 ### Patch Changes
