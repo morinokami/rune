@@ -1,3 +1,5 @@
+import type { CommandHelpData } from "@rune-cli/core";
+
 import type { CommandManifest, CommandManifestPath } from "../manifest-types";
 import type { ResolveCommandRouteResult } from "./resolve-command-route";
 
@@ -21,6 +23,19 @@ export interface RenderResolvedHelpOptions {
   readonly configPath?: string | undefined;
 }
 
+export interface ResolveHelpDataOptions {
+  readonly manifest: CommandManifest;
+  readonly route: ResolveCommandRouteResult;
+  readonly cliName: string;
+  readonly version?: string | undefined;
+  readonly loadCommand?: LoadCommandFn | undefined;
+}
+
+export interface ResolvedHelpData {
+  readonly data: HelpData;
+  readonly commandHelp?: ((data: CommandHelpData) => string) | undefined;
+}
+
 function renderHelpSafe<T extends HelpData>(render: (data: T) => string, data: T): string {
   try {
     return render(data);
@@ -32,10 +47,7 @@ function renderHelpSafe<T extends HelpData>(render: (data: T) => string, data: T
   }
 }
 
-// Resolves a routed help request into the appropriate help text.
-export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Promise<string> {
-  const config = options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined;
-
+export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<ResolvedHelpData> {
   if (options.route.kind === "unknown") {
     const data = buildUnknownCommandHelpData(
       options.route,
@@ -43,8 +55,7 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
       options.manifest,
       options.version,
     );
-    const render = config?.help ?? renderDefaultHelp;
-    return renderHelpSafe(render, data);
+    return { data };
   }
 
   if (options.route.kind === "group") {
@@ -54,8 +65,7 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
       cliName: options.cliName,
       version: options.version,
     });
-    const render = config?.help ?? renderDefaultHelp;
-    return renderHelpSafe(render, data);
+    return { data };
   }
 
   const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
@@ -79,6 +89,26 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
     subcommands,
   });
 
-  const render = command.help ?? config?.help ?? renderDefaultHelp;
-  return renderHelpSafe(render, data);
+  return { data, commandHelp: command.help };
+}
+
+// Resolves a routed help request into the appropriate help text.
+export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Promise<string> {
+  const config = options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined;
+  const resolved = await resolveHelpData(options);
+
+  switch (resolved.data.kind) {
+    case "unknown": {
+      const render = config?.help ?? renderDefaultHelp;
+      return renderHelpSafe(render, resolved.data);
+    }
+    case "group": {
+      const render = config?.help ?? renderDefaultHelp;
+      return renderHelpSafe(render, resolved.data);
+    }
+    case "command": {
+      const render = resolved.commandHelp ?? config?.help ?? renderDefaultHelp;
+      return renderHelpSafe(render, resolved.data);
+    }
+  }
 }

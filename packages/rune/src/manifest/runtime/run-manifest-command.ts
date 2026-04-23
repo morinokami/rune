@@ -2,9 +2,9 @@ import { runCommandPipeline, type CommandFailure } from "@rune-cli/core";
 
 import type { CommandManifest } from "../manifest-types";
 
-import { isVersionFlag } from "../../cli/flags";
+import { isHelpFlag, isVersionFlag } from "../../cli/flags";
 import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
-import { renderResolvedHelp } from "./render-resolved-help";
+import { renderResolvedHelp, resolveHelpData } from "./render-resolved-help";
 import { resolveCommandRoute } from "./resolve-command-route";
 
 export interface RunManifestCommandOptions {
@@ -81,6 +81,43 @@ function renderJsonError(error?: CommandFailure): { readonly error: Record<strin
   };
 }
 
+function hasTokenBeforeTerminator(
+  args: readonly string[],
+  predicate: (token: string) => boolean,
+): boolean {
+  for (const token of args) {
+    if (token === "--") {
+      return false;
+    }
+
+    if (predicate(token)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isJsonFlag(token: string): boolean {
+  return token === "--json";
+}
+
+function isHelpJsonRequested(
+  route: ReturnType<typeof resolveCommandRoute>,
+  rawArgs: readonly string[],
+): boolean {
+  if (route.kind === "unknown") {
+    return (
+      hasTokenBeforeTerminator(rawArgs, isHelpFlag) && hasTokenBeforeTerminator(rawArgs, isJsonFlag)
+    );
+  }
+
+  return (
+    hasTokenBeforeTerminator(route.remainingArgs, isHelpFlag) &&
+    hasTokenBeforeTerminator(route.remainingArgs, isJsonFlag)
+  );
+}
+
 function writeJsonToStdout(
   value: unknown,
   fallback: unknown = {
@@ -106,8 +143,25 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
     }
 
     const route = resolveCommandRoute(options.manifest, options.rawArgs);
+    const helpJsonRequested = isHelpJsonRequested(route, options.rawArgs);
 
     if (route.kind === "unknown" || route.kind === "group" || route.helpRequested) {
+      if (helpJsonRequested) {
+        const resolved = await resolveHelpData({
+          manifest: options.manifest,
+          route,
+          cliName: options.cliName,
+          version: options.version,
+          loadCommand: options.loadCommand,
+        });
+
+        if (!writeJsonToStdout(resolved.data)) {
+          return 1;
+        }
+
+        return route.kind === "unknown" ? 1 : 0;
+      }
+
       const output = await renderResolvedHelp({
         manifest: options.manifest,
         route,
