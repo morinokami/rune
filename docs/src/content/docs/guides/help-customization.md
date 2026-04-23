@@ -115,3 +115,14 @@ You can also skip the default output entirely and build a completely custom form
 ## Fallback on errors
 
 If a function provided via `defineCommand({ help })` or `defineConfig({ help })` throws an exception, Rune falls back to the default help renderer and prints a warning to stderr. The same fallback also applies when `rune.config.ts` fails to load or does not export a valid `defineConfig()` result. This ensures that `--help` always works, even when a custom renderer or config has a bug.
+
+## JSON help
+
+Pass `--json` together with `--help` to print a structured JSON description instead of text:
+
+```bash
+$ my-cli deploy --help --json
+{"schemaVersion":1,"kind":"command","cli":{"name":"my-cli"},"command":{"path":["deploy"],"name":"deploy","aliases":[],"examples":[]},"args":[],"options":[{"name":"help","short":"h","source":"framework","type":"boolean","description":"Show help","required":false,"multiple":false,"negatable":false}],"commands":[]}
+```
+
+JSON help works for commands, groups, and unknown-command suggestions. It does not require the command to set `json: true`, because it describes the CLI's command structure, arguments, and options rather than the command's runtime output. Custom help renderers from `defineCommand({ help })` and `rune.config.ts` are text-only and are not applied to `--help --json`.

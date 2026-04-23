@@ -58,7 +58,17 @@ function isOptionLikeToken(token: string): boolean {
 }
 
 function getHelpRequested(args: readonly string[]): boolean {
-  return args.some(isHelpFlag);
+  for (const arg of args) {
+    if (arg === "--") {
+      return false;
+    }
+
+    if (isHelpFlag(arg)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function getSuggestionThreshold(candidate: string): number {

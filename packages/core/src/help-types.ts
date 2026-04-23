@@ -55,6 +55,7 @@ export interface PrimitiveOptionHelpEntry {
   /** Array defaults only appear for repeatable string/number options; boolean repeatable options are unsupported. */
   readonly default?: string | number | boolean | readonly (string | number)[];
   readonly required: boolean;
+  readonly multiple?: boolean;
   readonly negatable: boolean;
 }
 
@@ -67,6 +68,7 @@ export interface EnumOptionHelpEntry {
   /** Array defaults appear only for repeatable enum options. */
   readonly default?: string | number | readonly (string | number)[];
   readonly required: boolean;
+  readonly multiple?: boolean;
   readonly negatable: false;
 }
 
@@ -78,6 +80,7 @@ export interface SchemaOptionHelpEntry {
   readonly defaultLabel?: string;
   readonly description?: string;
   readonly required: boolean;
+  readonly multiple?: boolean;
   readonly negatable: false;
 }
 

@@ -82,6 +82,10 @@ async function resolveFieldRequired(field: CommandArgField | CommandOptionField)
   return field.required === true && field.default === undefined;
 }
 
+function isMultipleOption(field: CommandOptionField): boolean {
+  return "multiple" in field && field.multiple === true;
+}
+
 // ---------------------------------------------------------------------------
 // Builder options
 // ---------------------------------------------------------------------------
@@ -188,6 +192,7 @@ export async function buildCommandHelpData(
         type: undefined,
         description: field.description,
         required,
+        multiple: isMultipleOption(field),
         negatable: false as const,
         ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
         ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
@@ -200,6 +205,7 @@ export async function buildCommandHelpData(
         values: [...field.values],
         description: field.description,
         required,
+        multiple: isMultipleOption(field),
         negatable: false as const,
         ...(field.default !== undefined ? { default: field.default } : {}),
       };
@@ -211,6 +217,7 @@ export async function buildCommandHelpData(
         type: field.type,
         description: field.description,
         required,
+        multiple: isMultipleOption(field),
         negatable: field.type === "boolean" && field.default === true,
         ...(field.default !== undefined ? { default: field.default } : {}),
       };

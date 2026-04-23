@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
+import { HELP_JSON_SCHEMA_VERSION } from "../src/manifest/runtime/help-json";
 import { runManifestCommand } from "../src/manifest/runtime/run-manifest-command";
 import {
   captureCommandResult,
@@ -225,6 +226,371 @@ export default defineCommand({
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
       "create",
     ]);
+  });
+});
+
+describe("help json mode", () => {
+  test("runManifestCommand emits command help data as JSON when --help --json is passed", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+globalThis.__runeLoadedModules ??= [];
+globalThis.__runeLoadedModules.push("create");
+
+export default defineCommand({
+  description: "Create a project",
+  args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
+  options: [
+    { name: "color", type: "boolean", default: true, description: "Colorize output" },
+    { name: "force", type: "boolean", short: "f", description: "Overwrite existing state" },
+    { name: "tag", type: "string", multiple: true, description: "Filter tag" },
+    { name: "target", type: "enum", values: ["dev", "prod"], default: "dev" },
+  ],
+  help() {
+    return "custom help should not be used for JSON help";
+  },
+  async run() {},
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create", "--help", "--json"],
+      cliName: "mycli",
+      version: "1.2.3",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stderr).toBe("");
+    expect(JSON.parse(captured.stdout)).toEqual({
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
+      kind: "command",
+      cli: { name: "mycli", version: "1.2.3" },
+      command: {
+        path: ["project", "create"],
+        name: "create",
+        description: "Create a project",
+        aliases: [],
+        examples: [],
+      },
+      args: [
+        {
+          name: "id",
+          type: "string",
+          description: "Project identifier",
+          required: true,
+        },
+      ],
+      options: [
+        {
+          name: "color",
+          type: "boolean",
+          source: "user",
+          description: "Colorize output",
+          default: true,
+          required: false,
+          multiple: false,
+          negatable: true,
+        },
+        {
+          name: "force",
+          short: "f",
+          type: "boolean",
+          source: "user",
+          description: "Overwrite existing state",
+          required: false,
+          multiple: false,
+          negatable: false,
+        },
+        {
+          name: "tag",
+          type: "string",
+          source: "user",
+          description: "Filter tag",
+          required: false,
+          multiple: true,
+          negatable: false,
+        },
+        {
+          name: "target",
+          type: "enum",
+          source: "user",
+          values: ["dev", "prod"],
+          default: "dev",
+          required: false,
+          multiple: false,
+          negatable: false,
+        },
+        {
+          name: "help",
+          short: "h",
+          source: "framework",
+          type: "boolean",
+          description: "Show help",
+          required: false,
+          multiple: false,
+          negatable: false,
+        },
+      ],
+      commands: [],
+    });
+    expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
+      "create",
+    ]);
+  });
+
+  test("runManifestCommand includes runtime JSON output support as a framework option in JSON help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Create a project",
+  json: true,
+  async run() {
+    return { ok: true };
+  },
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create", "--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toMatchObject({
+      kind: "command",
+      options: [
+        {
+          name: "json",
+          source: "framework",
+          type: "boolean",
+          description: "Output structured results as JSON",
+          required: false,
+          multiple: false,
+          negatable: false,
+        },
+        {
+          name: "help",
+          source: "framework",
+          type: "boolean",
+          description: "Show help",
+          required: false,
+          multiple: false,
+          negatable: false,
+        },
+      ],
+    });
+  });
+
+  test("runManifestCommand accepts --json before --help for JSON help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Create a project",
+  async run() {},
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create", "--json", "--help"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toMatchObject({
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
+      kind: "command",
+      command: {
+        path: ["project", "create"],
+        name: "create",
+      },
+    });
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runManifestCommand emits group help data as JSON without loading child commands", async () => {
+    const { manifest } = await createRuntimeFixture(
+      trackedStubModule("create"),
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toEqual({
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
+      kind: "group",
+      cli: { name: "mycli" },
+      command: {
+        path: ["project"],
+        name: "project",
+        aliases: [],
+        examples: [],
+      },
+      commands: [
+        {
+          name: "create",
+          path: ["project", "create"],
+          aliases: [],
+          description: "Create a project",
+        },
+        {
+          name: "list",
+          path: ["project", "list"],
+          aliases: [],
+          description: "List projects",
+        },
+      ],
+      options: [
+        {
+          name: "help",
+          short: "h",
+          source: "framework",
+          type: "boolean",
+          description: "Show help",
+          required: false,
+          multiple: false,
+          negatable: false,
+        },
+      ],
+    });
+    expect(captured.stderr).toBe("");
+    expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
+  });
+
+  test("runManifestCommand omits command name for root JSON help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      trackedStubModule("create"),
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toMatchObject({
+      kind: "group",
+      command: {
+        path: [],
+        aliases: [],
+        examples: [],
+      },
+    });
+    expect(JSON.parse(captured.stdout).command).not.toHaveProperty("name");
+  });
+
+  test("runManifestCommand emits unknown command help data as JSON with a non-zero exit", async () => {
+    const { manifest } = await createRuntimeFixture(
+      trackedStubModule("create"),
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "cretae", "--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(JSON.parse(captured.stdout)).toEqual({
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
+      kind: "unknown",
+      cli: { name: "mycli" },
+      attemptedPath: ["project", "cretae"],
+      matchedPath: ["project"],
+      unknownSegment: "cretae",
+      availableCommands: [
+        {
+          name: "create",
+          path: ["project", "create"],
+          aliases: [],
+          description: "Create a project",
+        },
+        {
+          name: "list",
+          path: ["project", "list"],
+          aliases: [],
+          description: "List projects",
+        },
+      ],
+      suggestions: [
+        {
+          name: "create",
+          path: ["project", "create"],
+          aliases: [],
+          description: "Create a project",
+        },
+      ],
+    });
+    expect(captured.stderr).toBe("");
+    expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
+  });
+
+  test("runManifestCommand does not treat --json after -- as JSON help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Create a project",
+  async run() {},
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create", "--help", "--", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toContain("Usage: mycli project create");
+    expect(() => JSON.parse(captured.stdout)).toThrow();
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runManifestCommand does not treat --help after -- as help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Create a project",
+  args: [{ name: "value", type: "string", required: true }],
+  async run(ctx) {
+    ctx.output.log(ctx.args.value);
+  },
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create", "--", "--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(captured.stdout).toBe("");
+    expect(captured.stderr).toBe('Unexpected argument "--json"\n');
   });
 });
 
