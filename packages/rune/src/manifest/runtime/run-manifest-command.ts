@@ -88,10 +88,10 @@ function writeJsonToStdout(
   },
 ): boolean {
   try {
-    process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(value)}\n`);
     return true;
   } catch {
-    process.stdout.write(`${JSON.stringify(fallback, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(fallback)}\n`);
     process.stderr.write("Failed to serialize command output\n");
     return false;
   }

@@ -228,7 +228,7 @@ export default defineCommand({
 });
 ```
 
-- **With `--json`**: `output.log()` suppressed, return value printed as formatted JSON to stdout
+- **With `--json`**: `output.log()` suppressed, return value printed as a single-line JSON document to stdout (no indentation)
 - **Without `--json`**: `output.log()` works normally, return value is not printed
 - `output.error()` always writes to stderr regardless of mode
 - `--json` is only recognized before the `--` terminator
