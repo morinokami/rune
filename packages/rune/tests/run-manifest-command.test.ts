@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from "vite-plus/test";
 
 import type { CommandManifest } from "../src/manifest/manifest-types";
 
+import { HELP_JSON_SCHEMA_VERSION } from "../src/manifest/runtime/help-json";
 import { runManifestCommand } from "../src/manifest/runtime/run-manifest-command";
 import {
   captureCommandResult,
@@ -240,6 +241,7 @@ export default defineCommand({
   description: "Create a project",
   args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
   options: [
+    { name: "color", type: "boolean", default: true, description: "Colorize output" },
     { name: "force", type: "boolean", short: "f", description: "Overwrite existing state" },
     { name: "tag", type: "string", multiple: true, description: "Filter tag" },
     { name: "target", type: "enum", values: ["dev", "prod"], default: "dev" },
@@ -263,7 +265,7 @@ export default defineCommand({
     expect(captured.exitCode).toBe(0);
     expect(captured.stderr).toBe("");
     expect(JSON.parse(captured.stdout)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
       kind: "command",
       cli: { name: "mycli", version: "1.2.3" },
       command: {
@@ -283,6 +285,16 @@ export default defineCommand({
       ],
       options: [
         {
+          name: "color",
+          type: "boolean",
+          source: "user",
+          description: "Colorize output",
+          default: true,
+          required: false,
+          multiple: false,
+          negatable: true,
+        },
+        {
           name: "force",
           short: "f",
           type: "boolean",
@@ -290,6 +302,7 @@ export default defineCommand({
           description: "Overwrite existing state",
           required: false,
           multiple: false,
+          negatable: false,
         },
         {
           name: "tag",
@@ -298,6 +311,7 @@ export default defineCommand({
           description: "Filter tag",
           required: false,
           multiple: true,
+          negatable: false,
         },
         {
           name: "target",
@@ -307,6 +321,7 @@ export default defineCommand({
           default: "dev",
           required: false,
           multiple: false,
+          negatable: false,
         },
         {
           name: "help",
@@ -316,6 +331,7 @@ export default defineCommand({
           description: "Show help",
           required: false,
           multiple: false,
+          negatable: false,
         },
       ],
       commands: [],
@@ -357,6 +373,7 @@ export default defineCommand({
           description: "Output structured results as JSON",
           required: false,
           multiple: false,
+          negatable: false,
         },
         {
           name: "help",
@@ -365,6 +382,7 @@ export default defineCommand({
           description: "Show help",
           required: false,
           multiple: false,
+          negatable: false,
         },
       ],
     });
@@ -390,7 +408,7 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(0);
     expect(JSON.parse(captured.stdout)).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
       kind: "command",
       command: {
         path: ["project", "create"],
@@ -414,7 +432,7 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(0);
     expect(JSON.parse(captured.stdout)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
       kind: "group",
       cli: { name: "mycli" },
       command: {
@@ -446,11 +464,36 @@ export default defineCommand({
           description: "Show help",
           required: false,
           multiple: false,
+          negatable: false,
         },
       ],
     });
     expect(captured.stderr).toBe("");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
+  });
+
+  test("runManifestCommand omits command name for root JSON help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      trackedStubModule("create"),
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toMatchObject({
+      kind: "group",
+      command: {
+        path: [],
+        aliases: [],
+        examples: [],
+      },
+    });
+    expect(JSON.parse(captured.stdout).command).not.toHaveProperty("name");
   });
 
   test("runManifestCommand emits unknown command help data as JSON with a non-zero exit", async () => {
@@ -467,7 +510,7 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(1);
     expect(JSON.parse(captured.stdout)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
       kind: "unknown",
       cli: { name: "mycli" },
       attemptedPath: ["project", "cretae"],
@@ -522,6 +565,32 @@ export default defineCommand({
     expect(captured.stdout).toContain("Usage: mycli project create");
     expect(() => JSON.parse(captured.stdout)).toThrow();
     expect(captured.stderr).toBe("");
+  });
+
+  test("runManifestCommand does not treat --help after -- as help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Create a project",
+  args: [{ name: "value", type: "string", required: true }],
+  async run(ctx) {
+    ctx.output.log(ctx.args.value);
+  },
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create", "--", "--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(captured.stdout).toBe("");
+    expect(captured.stderr).toBe('Unexpected argument "--json"\n');
   });
 });
 

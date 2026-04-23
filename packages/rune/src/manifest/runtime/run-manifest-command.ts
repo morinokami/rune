@@ -113,10 +113,7 @@ function isHelpJsonRequested(
     );
   }
 
-  return (
-    hasTokenBeforeTerminator(route.remainingArgs, isHelpFlag) &&
-    hasTokenBeforeTerminator(route.remainingArgs, isJsonFlag)
-  );
+  return route.helpRequested && hasTokenBeforeTerminator(route.remainingArgs, isJsonFlag);
 }
 
 function writeJsonToStdout(

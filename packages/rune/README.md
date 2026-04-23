@@ -266,6 +266,12 @@ export default defineConfig({
 });
 ```
 
+Pass `--json` with `--help` to inspect the same help data as structured JSON. This works even for commands that do not enable runtime JSON output with `json: true`:
+
+```sh
+my-cli deploy --help --json
+```
+
 ## Testing
 
 Import `runCommand()` from `@rune-cli/rune/test` to exercise commands in-process — argv parsing, type coercion, schema validation, and defaults all run exactly as they do at real invocation.

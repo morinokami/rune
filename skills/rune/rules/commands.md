@@ -68,6 +68,16 @@ Priority order:
 2. `defineConfig({ help })`
 3. `renderDefaultHelp()`
 
+### JSON help
+
+Use `--help --json` to inspect the same help data as structured JSON:
+
+```sh
+my-cli deploy --help --json
+```
+
+This works for commands, groups, and unknown-command suggestions. It does not require the command to set `json: true`; runtime JSON output and JSON help are separate features. Custom help renderers are text-only and are not applied to `--help --json`.
+
 ### CommandContext (`ctx`)
 
 | Property  | Type                | Description                                            |

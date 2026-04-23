@@ -7,7 +7,7 @@ import type {
 import type { HelpData } from "./build-help-data";
 import type { ResolvedHelpData } from "./render-resolved-help";
 
-const HELP_JSON_SCHEMA_VERSION = 1;
+export const HELP_JSON_SCHEMA_VERSION = 1;
 
 type HelpJsonSchemaVersion = typeof HELP_JSON_SCHEMA_VERSION;
 
@@ -25,7 +25,7 @@ export interface HelpJsonCommandSummary {
 
 export interface HelpJsonCommandMetadata {
   readonly path: readonly string[];
-  readonly name: string;
+  readonly name?: string | undefined;
   readonly description?: string | undefined;
   readonly aliases: readonly string[];
   readonly examples: readonly string[];
@@ -41,14 +41,18 @@ export interface HelpJsonOptionBase {
   readonly description?: string | undefined;
   readonly required: boolean;
   readonly multiple: boolean;
+  readonly negatable: boolean;
 }
 
-export interface HelpJsonScalarOption extends HelpJsonOptionBase {
-  readonly type: "string" | "number" | "boolean" | "schema";
+export interface HelpJsonPrimitiveOption extends HelpJsonOptionBase {
+  readonly type: "string" | "number" | "boolean";
   readonly default?: string | number | boolean | readonly (string | number)[] | undefined;
+}
+
+export interface HelpJsonSchemaOption extends HelpJsonOptionBase {
+  readonly type: "schema";
   readonly defaultLabel?: string | undefined;
   readonly typeLabel?: string | undefined;
-  readonly negatable?: boolean | undefined;
 }
 
 export interface HelpJsonEnumOption extends HelpJsonOptionBase {
@@ -57,7 +61,7 @@ export interface HelpJsonEnumOption extends HelpJsonOptionBase {
   readonly default?: string | number | readonly (string | number)[] | undefined;
 }
 
-export type HelpJsonOption = HelpJsonScalarOption | HelpJsonEnumOption;
+export type HelpJsonOption = HelpJsonPrimitiveOption | HelpJsonSchemaOption | HelpJsonEnumOption;
 
 export interface HelpJsonArgumentBase {
   readonly name: string;
@@ -120,20 +124,17 @@ function createCli(data: HelpData): HelpJsonCli {
   };
 }
 
-function getCommandName(pathSegments: readonly string[], cliName: string): string {
-  return pathSegments.at(-1) ?? cliName;
-}
-
 function createCommandMetadata(data: {
-  readonly cliName: string;
   readonly pathSegments: readonly string[];
   readonly description?: string | undefined;
   readonly examples?: readonly string[] | undefined;
   readonly aliases: readonly string[];
 }): HelpJsonCommandMetadata {
+  const name = data.pathSegments.at(-1);
+
   return {
     path: [...data.pathSegments],
-    name: getCommandName(data.pathSegments, data.cliName),
+    ...(name !== undefined ? { name } : {}),
     ...(data.description !== undefined ? { description: data.description } : {}),
     aliases: [...data.aliases],
     examples: [...(data.examples ?? [])],
@@ -196,6 +197,7 @@ function mapUserOption(entry: UserOptionHelpEntry): HelpJsonOption {
     ...(entry.description !== undefined ? { description: entry.description } : {}),
     required: entry.required,
     multiple: entry.multiple === true,
+    negatable: entry.negatable,
   };
 
   if (entry.type === undefined) {
@@ -220,7 +222,6 @@ function mapUserOption(entry: UserOptionHelpEntry): HelpJsonOption {
     ...base,
     type: entry.type,
     ...(entry.default !== undefined ? { default: entry.default } : {}),
-    ...(entry.negatable ? { negatable: entry.negatable } : {}),
   };
 }
 
@@ -233,6 +234,7 @@ function mapFrameworkOption(entry: FrameworkOptionHelpEntry): HelpJsonOption {
     description: entry.description,
     required: false,
     multiple: false,
+    negatable: false,
   };
 }
 
@@ -249,6 +251,8 @@ function createSuggestionSummaries(data: Extract<HelpData, { kind: "unknown" }>)
   return data.suggestions.map((name) =>
     createCommandSummary(
       data.matchedPath,
+      // Normal routing suggestions come from available subcommands. Keep the
+      // fallback so this serializer remains defensive for hand-built help data.
       availableByName.get(name) ?? {
         name,
         aliases: [],

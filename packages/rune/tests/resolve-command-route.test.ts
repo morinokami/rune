@@ -96,6 +96,18 @@ describe("command and group resolution", () => {
     });
   });
 
+  test("resolveCommandRoute ignores help flags after the argument terminator", () => {
+    const result = resolveCommandRoute(manifest, ["project", "create", "--", "--help"]);
+
+    expect(result).toEqual({
+      kind: "command",
+      node: manifest.nodes[3],
+      matchedPath: ["project", "create"],
+      remainingArgs: ["--", "--help"],
+      helpRequested: false,
+    });
+  });
+
   test("resolveCommandRoute resolves group nodes without importing subcommands", () => {
     const result = resolveCommandRoute(manifest, ["user"]);
 
