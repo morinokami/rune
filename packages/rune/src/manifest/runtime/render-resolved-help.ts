@@ -33,6 +33,7 @@ export interface ResolveHelpDataOptions {
 
 export interface ResolvedHelpData {
   readonly data: HelpData;
+  readonly aliases: readonly string[];
   readonly commandHelp?: ((data: CommandHelpData) => string) | undefined;
 }
 
@@ -55,7 +56,7 @@ export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<
       options.manifest,
       options.version,
     );
-    return { data };
+    return { data, aliases: [] };
   }
 
   if (options.route.kind === "group") {
@@ -65,7 +66,7 @@ export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<
       cliName: options.cliName,
       version: options.version,
     });
-    return { data };
+    return { data, aliases: [...options.route.node.aliases] };
   }
 
   const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
@@ -89,7 +90,7 @@ export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<
     subcommands,
   });
 
-  return { data, commandHelp: command.help };
+  return { data, aliases: [...node.aliases], commandHelp: command.help };
 }
 
 // Resolves a routed help request into the appropriate help text.

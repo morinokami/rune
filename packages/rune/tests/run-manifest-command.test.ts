@@ -241,6 +241,7 @@ export default defineCommand({
   args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
   options: [
     { name: "force", type: "boolean", short: "f", description: "Overwrite existing state" },
+    { name: "tag", type: "string", multiple: true, description: "Filter tag" },
     { name: "target", type: "enum", values: ["dev", "prod"], default: "dev" },
   ],
   help() {
@@ -262,13 +263,17 @@ export default defineCommand({
     expect(captured.exitCode).toBe(0);
     expect(captured.stderr).toBe("");
     expect(JSON.parse(captured.stdout)).toEqual({
+      schemaVersion: 1,
       kind: "command",
-      cliName: "mycli",
-      cliVersion: "1.2.3",
-      pathSegments: ["project", "create"],
-      description: "Create a project",
-      subcommands: [],
-      arguments: [
+      cli: { name: "mycli", version: "1.2.3" },
+      command: {
+        path: ["project", "create"],
+        name: "create",
+        description: "Create a project",
+        aliases: [],
+        examples: [],
+      },
+      args: [
         {
           name: "id",
           type: "string",
@@ -281,25 +286,88 @@ export default defineCommand({
           name: "force",
           short: "f",
           type: "boolean",
+          source: "user",
           description: "Overwrite existing state",
           required: false,
-          negatable: false,
+          multiple: false,
+        },
+        {
+          name: "tag",
+          type: "string",
+          source: "user",
+          description: "Filter tag",
+          required: false,
+          multiple: true,
         },
         {
           name: "target",
           type: "enum",
+          source: "user",
           values: ["dev", "prod"],
           default: "dev",
           required: false,
-          negatable: false,
+          multiple: false,
+        },
+        {
+          name: "help",
+          short: "h",
+          source: "framework",
+          type: "boolean",
+          description: "Show help",
+          required: false,
+          multiple: false,
         },
       ],
-      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
-      examples: [],
+      commands: [],
     });
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
       "create",
     ]);
+  });
+
+  test("runManifestCommand includes runtime JSON output support as a framework option in JSON help", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Create a project",
+  json: true,
+  async run() {
+    return { ok: true };
+  },
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create", "--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toMatchObject({
+      kind: "command",
+      options: [
+        {
+          name: "json",
+          source: "framework",
+          type: "boolean",
+          description: "Output structured results as JSON",
+          required: false,
+          multiple: false,
+        },
+        {
+          name: "help",
+          source: "framework",
+          type: "boolean",
+          description: "Show help",
+          required: false,
+          multiple: false,
+        },
+      ],
+    });
   });
 
   test("runManifestCommand accepts --json before --help for JSON help", async () => {
@@ -322,8 +390,12 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(0);
     expect(JSON.parse(captured.stdout)).toMatchObject({
+      schemaVersion: 1,
       kind: "command",
-      pathSegments: ["project", "create"],
+      command: {
+        path: ["project", "create"],
+        name: "create",
+      },
     });
     expect(captured.stderr).toBe("");
   });
@@ -342,15 +414,40 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(0);
     expect(JSON.parse(captured.stdout)).toEqual({
+      schemaVersion: 1,
       kind: "group",
-      cliName: "mycli",
-      pathSegments: ["project"],
-      subcommands: [
-        { name: "create", aliases: [], description: "Create a project" },
-        { name: "list", aliases: [], description: "List projects" },
+      cli: { name: "mycli" },
+      command: {
+        path: ["project"],
+        name: "project",
+        aliases: [],
+        examples: [],
+      },
+      commands: [
+        {
+          name: "create",
+          path: ["project", "create"],
+          aliases: [],
+          description: "Create a project",
+        },
+        {
+          name: "list",
+          path: ["project", "list"],
+          aliases: [],
+          description: "List projects",
+        },
       ],
-      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
-      examples: [],
+      options: [
+        {
+          name: "help",
+          short: "h",
+          source: "framework",
+          type: "boolean",
+          description: "Show help",
+          required: false,
+          multiple: false,
+        },
+      ],
     });
     expect(captured.stderr).toBe("");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();
@@ -370,16 +467,34 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(1);
     expect(JSON.parse(captured.stdout)).toEqual({
+      schemaVersion: 1,
       kind: "unknown",
-      cliName: "mycli",
+      cli: { name: "mycli" },
       attemptedPath: ["project", "cretae"],
       matchedPath: ["project"],
       unknownSegment: "cretae",
-      availableSubcommands: [
-        { name: "create", aliases: [], description: "Create a project" },
-        { name: "list", aliases: [], description: "List projects" },
+      availableCommands: [
+        {
+          name: "create",
+          path: ["project", "create"],
+          aliases: [],
+          description: "Create a project",
+        },
+        {
+          name: "list",
+          path: ["project", "list"],
+          aliases: [],
+          description: "List projects",
+        },
       ],
-      suggestions: ["create"],
+      suggestions: [
+        {
+          name: "create",
+          path: ["project", "create"],
+          aliases: [],
+          description: "Create a project",
+        },
+      ],
     });
     expect(captured.stderr).toBe("");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toBeUndefined();

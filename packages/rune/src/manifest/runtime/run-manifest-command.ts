@@ -3,6 +3,7 @@ import { runCommandPipeline, type CommandFailure } from "@rune-cli/core";
 import type { CommandManifest } from "../manifest-types";
 
 import { isHelpFlag, isVersionFlag } from "../../cli/flags";
+import { toHelpJson } from "./help-json";
 import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
 import { renderResolvedHelp, resolveHelpData } from "./render-resolved-help";
 import { resolveCommandRoute } from "./resolve-command-route";
@@ -155,7 +156,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
           loadCommand: options.loadCommand,
         });
 
-        if (!writeJsonToStdout(resolved.data)) {
+        if (!writeJsonToStdout(toHelpJson(resolved))) {
           return 1;
         }
 
