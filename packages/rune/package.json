@@ -25,10 +25,6 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
-    "./cli": {
-      "types": "./dist/cli.d.mts",
-      "import": "./dist/cli.mjs"
-    },
     "./test": {
       "types": "./dist/test.d.mts",
       "import": "./dist/test.mjs"
