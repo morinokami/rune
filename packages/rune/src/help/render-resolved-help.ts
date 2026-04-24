@@ -1,15 +1,15 @@
-import type { CommandHelpData } from "../../core/help-types";
-import type { CommandManifest, CommandManifestPath } from "../manifest-types";
-import type { ResolveCommandRouteResult } from "./resolve-command-route";
+import type { CommandHelpData } from "../core/help-types";
+import type { CommandManifest, CommandManifestPath } from "../manifest/manifest-types";
+import type { ResolveCommandRouteResult } from "../routing/resolve-command-route";
 
+import { defaultLoadCommand, type LoadCommandFn } from "../runtime/load-command";
+import { loadRuneConfigSafe } from "../runtime/load-rune-config";
 import {
   buildCommandHelpData,
   buildGroupHelpData,
   buildUnknownCommandHelpData,
   type HelpData,
 } from "./build-help-data";
-import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
-import { loadRuneConfigSafe } from "./load-rune-config";
 import { renderDefaultHelp } from "./render-default-help";
 import { resolveSubcommandHelpEntries } from "./resolve-subcommand-help-entries";
 

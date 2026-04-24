@@ -1,12 +1,9 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import type { CommandHelpData } from "../../../src/core/help-types";
-import type {
-  GroupHelpData,
-  UnknownCommandHelpData,
-} from "../../../src/manifest/runtime/build-help-data";
+import type { CommandHelpData } from "../../src/core/help-types";
+import type { GroupHelpData, UnknownCommandHelpData } from "../../src/help/build-help-data";
 
-import { renderDefaultHelp } from "../../../src/manifest/runtime/render-default-help";
+import { renderDefaultHelp } from "../../src/help/render-default-help";
 
 describe("renderDefaultHelp", () => {
   test("renders group help from HelpData", () => {

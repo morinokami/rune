@@ -614,5 +614,5 @@ export default defineCommand({
   });
 
   // Plain-object default exports are reported by the manifest runtime layer;
-  // see manifest/runtime/run-manifest-command.test.ts > "module load errors".
+  // see runtime/run-manifest-command.test.ts > "module load errors".
 });

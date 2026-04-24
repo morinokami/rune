@@ -4,10 +4,10 @@ import type {
   CommandManifestGroupNode,
   CommandManifestNode,
   CommandManifestPath,
-} from "../manifest-types";
+} from "../manifest/manifest-types";
 
-import { isHelpFlag } from "../../cli/flags";
-import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
+import { isHelpFlag } from "../cli/flags";
+import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest/manifest-map";
 import { damerauLevenshteinDistance } from "./damerau-levenshtein";
 
 // Shared routing data returned after resolving command route segments.

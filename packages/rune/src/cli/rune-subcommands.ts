@@ -1,7 +1,7 @@
 import type { DefinedCommand } from "../core/command-types";
 import type { CommandArgField, CommandOptionField } from "../core/field-types";
 import type { CommandManifest } from "../manifest/manifest-types";
-import type { LoadCommandFn } from "../manifest/runtime/load-command";
+import type { LoadCommandFn } from "../runtime/load-command";
 import type { EarlyExit } from "./rune-options";
 
 import { defineCommand } from "../core/define-command";

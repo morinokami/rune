@@ -26,7 +26,7 @@ TypeScript-first, agent-friendly CLI framework. Directory structure maps directl
 
 - In workspace packages, import test APIs from `vite-plus/test`, never from `vite` or `vitest`.
 - `examples/starter` is a user-facing scaffold example for `create-rune-app`, so it may intentionally use consumer-app conventions such as direct `vitest` imports.
-- `src/core/` must not depend on `src/cli/`, `src/manifest/generate/`, or `src/project/`. The `core/` layer is what gets bundled into the user's built CLI; filesystem scanning and build tooling belong to dev-time layers.
+- `src/core/` must not depend on `src/cli/`, `src/manifest/generate/`, `src/project/`, `src/help/`, `src/routing/`, or `src/runtime/`. The `core/` layer is the lowest-level runtime layer; filesystem scanning, build tooling, routing/help orchestration, and manifest-based execution belong outside core.
 - Do not throw for expected parse or validation failures. Use explicit result types with `ok: true` / `ok: false`.
 - For schema-backed fields, use the Standard Schema contract via `schema["~standard"].validate(value)`. Do not call library-specific APIs such as Zod `.parse()`.
 - Keep source and test filenames in `kebab-case`.
@@ -44,6 +44,6 @@ TypeScript-first, agent-friendly CLI framework. Directory structure maps directl
 
 ## Rune CLI (`packages/rune/src/cli/`)
 
-- Rune's own CLI uses the framework's routing (`resolveCommandRoute`) and help rendering (`renderResolvedHelp`) via a static manifest built from the descriptors in `rune-subcommands.ts`. Adding a Rune subcommand typically requires updating `rune-subcommands.ts` (descriptor, help metadata, manifest/load wiring) and `rune-cli.ts` (top-level dispatch behavior if needed).
+- Rune's own CLI uses the framework's routing (`src/routing/resolve-command-route.ts`) and help rendering (`src/help/render-resolved-help.ts`) via a static manifest built from the descriptors in `rune-subcommands.ts`. Adding a Rune subcommand typically requires updating `rune-subcommands.ts` (descriptor, help metadata, manifest/load wiring) and `rune-cli.ts` (top-level dispatch behavior if needed).
 - Adding a Rune-managed option (like `--project`) requires updating `rune-options.ts`, and keeping `parse-rune-subcommand-args.ts` aligned so parsing and help-prefix detection continue to recognize the same Rune-managed options.
 - `rune run` argument parsing (`parseRunArgs`) and `rune build` argument parsing (`parseBuildArgs`) are hand-written in `parse-rune-subcommand-args.ts`, not routed through the framework's `runCommandPipeline`, because `rune run` passes remaining args through to the user's CLI.

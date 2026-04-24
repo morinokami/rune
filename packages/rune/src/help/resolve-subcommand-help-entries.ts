@@ -1,7 +1,11 @@
-import type { SubcommandHelpEntry } from "../../core/help-types";
-import type { CommandManifest, CommandManifestNode, CommandManifestPath } from "../manifest-types";
+import type { SubcommandHelpEntry } from "../core/help-types";
+import type {
+  CommandManifest,
+  CommandManifestNode,
+  CommandManifestPath,
+} from "../manifest/manifest-types";
 
-import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";
+import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest/manifest-map";
 
 export function resolveSubcommandHelpEntries(
   manifest: CommandManifest,

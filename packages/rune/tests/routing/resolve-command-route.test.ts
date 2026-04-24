@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, expect, test } from "vite-plus/test";
 
-import { resolveCommandRoute } from "../../../src/manifest/runtime/resolve-command-route";
-import { commandNode, groupNode, manifest as buildManifest } from "../../helpers";
+import { resolveCommandRoute } from "../../src/routing/resolve-command-route";
+import { commandNode, groupNode, manifest as buildManifest } from "../helpers";
 
 const manifest = buildManifest([
   groupNode({ pathSegments: [], childNames: ["hello", "project", "user"] }),

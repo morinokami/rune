@@ -1,6 +1,6 @@
 import { pathToFileURL } from "node:url";
 
-import { isRuneConfig, type RuneConfig } from "../../core/define-config";
+import { isRuneConfig, type RuneConfig } from "../core/define-config";
 
 /**
  * Loads a Rune config module from the given path. Returns `undefined` on

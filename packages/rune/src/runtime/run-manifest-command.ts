@@ -1,12 +1,12 @@
-import type { CommandFailure } from "../../core/command-error";
-import type { CommandManifest } from "../manifest-types";
+import type { CommandFailure } from "../core/command-error";
+import type { CommandManifest } from "../manifest/manifest-types";
 
-import { isHelpFlag, isVersionFlag } from "../../cli/flags";
-import { runCommandPipeline } from "../../core/run-command-pipeline";
-import { toHelpJson } from "./help-json";
+import { isHelpFlag, isVersionFlag } from "../cli/flags";
+import { runCommandPipeline } from "../core/run-command-pipeline";
+import { toHelpJson } from "../help/help-json";
+import { renderResolvedHelp, resolveHelpData } from "../help/render-resolved-help";
+import { resolveCommandRoute } from "../routing/resolve-command-route";
 import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
-import { renderResolvedHelp, resolveHelpData } from "./render-resolved-help";
-import { resolveCommandRoute } from "./resolve-command-route";
 
 export interface RunManifestCommandOptions {
   readonly manifest: CommandManifest;

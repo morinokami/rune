@@ -1,10 +1,10 @@
 import { pathToFileURL } from "node:url";
 
-import type { DefinedCommand } from "../../core/command-types";
-import type { CommandArgField, CommandOptionField } from "../../core/field-types";
-import type { CommandManifestCommandNode } from "../manifest-types";
+import type { DefinedCommand } from "../core/command-types";
+import type { CommandArgField, CommandOptionField } from "../core/field-types";
+import type { CommandManifestCommandNode } from "../manifest/manifest-types";
 
-import { isDefinedCommand } from "../../core/define-command";
+import { isDefinedCommand } from "../core/define-command";
 
 // Loads a command module and verifies that its default export was created with defineCommand().
 async function loadCommandFromModule(
