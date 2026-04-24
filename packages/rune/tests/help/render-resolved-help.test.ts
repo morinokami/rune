@@ -40,6 +40,10 @@ const manifest = buildManifest([
   }),
 ]);
 
+const unexpectedLoadCommand = async () => {
+  throw new Error("This route should not load a command");
+};
+
 describe("resolved help routing", () => {
   test("renderResolvedHelp does not load child commands for group help", async () => {
     const route = resolveCommandRoute(manifest, ["user"]);
@@ -130,6 +134,7 @@ describe("resolved help routing", () => {
       manifest,
       route,
       cliName: "mycli",
+      loadCommand: unexpectedLoadCommand,
     });
 
     expect(help).toContain("Unknown command: mycli project cretae");
@@ -156,6 +161,7 @@ describe("unknown command message", () => {
       manifest: aliasManifest,
       route,
       cliName: "mycli",
+      loadCommand: unexpectedLoadCommand,
     });
 
     expect(message).toContain("Unknown command: mycli depl");
@@ -254,6 +260,9 @@ describe("help priority chain", () => {
       manifest,
       route,
       cliName: "mycli",
+      helpRenderer() {
+        return "config-level\n";
+      },
       async loadCommand() {
         return command;
       },
@@ -268,9 +277,13 @@ describe("help priority chain", () => {
       manifest,
       route,
       cliName: "mycli",
+      loadCommand: unexpectedLoadCommand,
+      helpRenderer(data) {
+        return `config-level ${data.kind}\n`;
+      },
     });
 
-    expect(output).toContain("Usage: mycli <command>");
+    expect(output).toBe("config-level group\n");
   });
 
   test("renderHelpSafe falls back on renderer error for command help", async () => {

@@ -1,7 +1,10 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import type { CommandHelpData } from "../../src/core/help-types";
-import type { GroupHelpData, UnknownCommandHelpData } from "../../src/help/build-help-data";
+import type {
+  CommandHelpData,
+  GroupHelpData,
+  UnknownCommandHelpData,
+} from "../../src/core/help-types";
 
 import { renderDefaultHelp } from "../../src/help/render-default-help";
 

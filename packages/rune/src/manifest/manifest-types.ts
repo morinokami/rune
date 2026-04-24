@@ -1,3 +1,6 @@
+import type { DefinedCommand } from "../core/command-types";
+import type { CommandArgField, CommandOptionField } from "../core/field-types";
+
 // Represents the routed command path as filesystem-derived CLI segments.
 // `[]` identifies the manifest root node that represents `src/commands` itself.
 export type CommandManifestPath = readonly string[];
@@ -47,3 +50,7 @@ export interface CommandManifest {
   // It may be either a command (`src/commands/index.ts`) or a pure group node.
   readonly nodes: readonly CommandManifestNode[];
 }
+
+export type LoadCommandFn = (
+  node: CommandManifestCommandNode,
+) => Promise<DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>>;

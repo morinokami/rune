@@ -44,6 +44,6 @@ TypeScript-first, agent-friendly CLI framework. Directory structure maps directl
 
 ## Rune CLI (`packages/rune/src/cli/`)
 
-- Rune's own CLI uses the framework's routing (`src/routing/resolve-command-route.ts`) and help rendering (`src/help/render-resolved-help.ts`) via a static manifest built from the descriptors in `rune-subcommands.ts`. Adding a Rune subcommand typically requires updating `rune-subcommands.ts` (descriptor, help metadata, manifest/load wiring) and `rune-cli.ts` (top-level dispatch behavior if needed).
+- Rune's own CLI uses the framework's routing (`src/routing/resolve-command-route.ts`) and resolved help rendering (`src/help/render-resolved-help.ts`) via a static manifest built from the descriptors in `rune-subcommands.ts`. Adding a Rune subcommand typically requires updating `rune-subcommands.ts` (descriptor, help metadata, manifest/load wiring) and `rune-cli.ts` (top-level dispatch behavior if needed).
 - Adding a Rune-managed option (like `--project`) requires updating `rune-options.ts`, and keeping `parse-rune-subcommand-args.ts` aligned so parsing and help-prefix detection continue to recognize the same Rune-managed options.
 - `rune run` argument parsing (`parseRunArgs`) and `rune build` argument parsing (`parseBuildArgs`) are hand-written in `parse-rune-subcommand-args.ts`, not routed through the framework's `runCommandPipeline`, because `rune run` passes remaining args through to the user's CLI.

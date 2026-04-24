@@ -14,6 +14,7 @@ import {
   resolveProjectDirectories,
   resolveProjectPath,
 } from "../project/project-files";
+import { isVersionFlag } from "../routing/framework-flags";
 import { resolveCommandRoute } from "../routing/resolve-command-route";
 import { runManifestCommand } from "../runtime/run-manifest-command";
 import {
@@ -22,7 +23,6 @@ import {
   copyRunAssets,
   prepareRunDirectory,
 } from "./bundle-for-run";
-import { isVersionFlag } from "./flags";
 import { formatBuildFailure, isBuildFailure } from "./rolldown-shared";
 import { writeStderrLine, writeStdout } from "./write-result";
 

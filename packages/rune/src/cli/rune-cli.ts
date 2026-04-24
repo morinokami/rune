@@ -4,8 +4,8 @@ import runePackageJson from "../../package.json" with { type: "json" };
 import { buildUnknownCommandHelpData } from "../help/build-help-data";
 import { renderDefaultHelp } from "../help/render-default-help";
 import { renderResolvedHelp } from "../help/render-resolved-help";
+import { isVersionFlag } from "../routing/framework-flags";
 import { resolveCommandRoute } from "../routing/resolve-command-route";
-import { isVersionFlag } from "./flags";
 import { createRuneCliManifest, getRuneSubcommand, loadRuneCommand } from "./rune-subcommands";
 import { writeStderrLine, writeStdout } from "./write-result";
 

@@ -2,7 +2,7 @@ import { pathToFileURL } from "node:url";
 
 import type { DefinedCommand } from "../core/command-types";
 import type { CommandArgField, CommandOptionField } from "../core/field-types";
-import type { CommandManifestCommandNode } from "../manifest/manifest-types";
+import type { LoadCommandFn } from "../manifest/manifest-types";
 
 import { isDefinedCommand } from "../core/define-command";
 
@@ -66,10 +66,6 @@ function describeCommandModuleExport(value: unknown): string {
 
   return "an unsupported value";
 }
-
-export type LoadCommandFn = (
-  node: CommandManifestCommandNode,
-) => Promise<DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>>;
 
 // Default loader that imports the command module from its source file path.
 export const defaultLoadCommand: LoadCommandFn = (node) =>

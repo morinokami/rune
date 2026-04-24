@@ -1,14 +1,16 @@
-import type { CommandHelpData } from "../core/help-types";
-import type { CommandManifest, CommandManifestPath } from "../manifest/manifest-types";
+import type { HelpData } from "../core/help-types";
+import type {
+  CommandManifest,
+  CommandManifestPath,
+  LoadCommandFn,
+} from "../manifest/manifest-types";
 import type { ResolveCommandRouteResult } from "../routing/resolve-command-route";
+import type { ResolvedHelpData } from "./resolved-help-data";
 
-import { defaultLoadCommand, type LoadCommandFn } from "../runtime/load-command";
-import { loadRuneConfigSafe } from "../runtime/load-rune-config";
 import {
   buildCommandHelpData,
   buildGroupHelpData,
   buildUnknownCommandHelpData,
-  type HelpData,
 } from "./build-help-data";
 import { renderDefaultHelp } from "./render-default-help";
 import { resolveSubcommandHelpEntries } from "./resolve-subcommand-help-entries";
@@ -18,8 +20,8 @@ export interface RenderResolvedHelpOptions {
   readonly route: ResolveCommandRouteResult;
   readonly cliName: string;
   readonly version?: string | undefined;
-  readonly loadCommand?: LoadCommandFn | undefined;
-  readonly configPath?: string | undefined;
+  readonly loadCommand: LoadCommandFn;
+  readonly helpRenderer?: ((data: HelpData) => string) | undefined;
 }
 
 export interface ResolveHelpDataOptions {
@@ -27,18 +29,7 @@ export interface ResolveHelpDataOptions {
   readonly route: ResolveCommandRouteResult;
   readonly cliName: string;
   readonly version?: string | undefined;
-  readonly loadCommand?: LoadCommandFn | undefined;
-}
-
-export interface ResolvedHelpData {
-  readonly data: HelpData;
-  readonly aliases: readonly string[];
-  /**
-   * Text-only command help renderer from defineCommand({ help }).
-   * JSON help intentionally ignores custom renderers and serializes `data`
-   * through Rune's stable help JSON contract instead.
-   */
-  readonly commandHelp?: ((data: CommandHelpData) => string) | undefined;
+  readonly loadCommand: LoadCommandFn;
 }
 
 function renderHelpSafe<T extends HelpData>(render: (data: T) => string, data: T): string {
@@ -73,9 +64,8 @@ export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<
     return { data, aliases: [...options.route.node.aliases] };
   }
 
-  const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
   const node = options.route.node;
-  const command = await loadCommandFn(node);
+  const command = await options.loadCommand(node);
 
   const subcommands =
     node.childNames.length > 0
@@ -99,20 +89,19 @@ export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<
 
 // Resolves a routed help request into the appropriate help text.
 export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Promise<string> {
-  const config = options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined;
   const resolved = await resolveHelpData(options);
 
   switch (resolved.data.kind) {
     case "unknown": {
-      const render = config?.help ?? renderDefaultHelp;
+      const render = options.helpRenderer ?? renderDefaultHelp;
       return renderHelpSafe(render, resolved.data);
     }
     case "group": {
-      const render = config?.help ?? renderDefaultHelp;
+      const render = options.helpRenderer ?? renderDefaultHelp;
       return renderHelpSafe(render, resolved.data);
     }
     case "command": {
-      const render = resolved.commandHelp ?? config?.help ?? renderDefaultHelp;
+      const render = resolved.commandHelp ?? options.helpRenderer ?? renderDefaultHelp;
       return renderHelpSafe(render, resolved.data);
     }
   }

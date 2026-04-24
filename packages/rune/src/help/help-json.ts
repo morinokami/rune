@@ -1,10 +1,10 @@
 import type {
   ArgumentHelpEntry,
   FrameworkOptionHelpEntry,
+  HelpData,
   UserOptionHelpEntry,
 } from "../core/help-types";
-import type { HelpData } from "./build-help-data";
-import type { ResolvedHelpData } from "./render-resolved-help";
+import type { ResolvedHelpData } from "./resolved-help-data";
 
 export const HELP_JSON_SCHEMA_VERSION = 1;
 

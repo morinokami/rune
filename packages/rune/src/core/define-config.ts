@@ -1,4 +1,4 @@
-import type { HelpData } from "../help/build-help-data";
+import type { HelpData } from "./help-types";
 
 // ---------------------------------------------------------------------------
 // Constants

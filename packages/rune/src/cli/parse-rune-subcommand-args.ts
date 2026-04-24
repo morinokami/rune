@@ -1,4 +1,4 @@
-import { isHelpFlag } from "./flags";
+import { isHelpFlag } from "../routing/framework-flags";
 import {
   getRuneManagedOptionNextIndex,
   tryConsumeRuneManagedOption,

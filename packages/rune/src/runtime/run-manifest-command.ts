@@ -1,12 +1,14 @@
 import type { CommandFailure } from "../core/command-error";
 import type { CommandManifest } from "../manifest/manifest-types";
+import type { LoadCommandFn } from "../manifest/manifest-types";
 
-import { isHelpFlag, isVersionFlag } from "../cli/flags";
 import { runCommandPipeline } from "../core/run-command-pipeline";
 import { toHelpJson } from "../help/help-json";
 import { renderResolvedHelp, resolveHelpData } from "../help/render-resolved-help";
+import { isHelpFlag, isVersionFlag } from "../routing/framework-flags";
 import { resolveCommandRoute } from "../routing/resolve-command-route";
-import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
+import { defaultLoadCommand } from "./load-command";
+import { loadRuneConfigSafe } from "./load-rune-config";
 
 export interface RunManifestCommandOptions {
   readonly manifest: CommandManifest;
@@ -149,6 +151,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
 
     const route = resolveCommandRoute(options.manifest, options.rawArgs);
     const helpJsonRequested = isHelpJsonRequested(route, options.rawArgs);
+    const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
 
     if (route.kind === "unknown" || route.kind === "group" || route.helpRequested) {
       if (helpJsonRequested) {
@@ -157,7 +160,7 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
           route,
           cliName: options.cliName,
           version: options.version,
-          loadCommand: options.loadCommand,
+          loadCommand: loadCommandFn,
         });
 
         if (!writeJsonToStdout(toHelpJson(resolved))) {
@@ -167,13 +170,14 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
         return route.kind === "unknown" ? 1 : 0;
       }
 
+      const config = options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined;
       const output = await renderResolvedHelp({
         manifest: options.manifest,
         route,
         cliName: options.cliName,
         version: options.version,
-        loadCommand: options.loadCommand,
-        configPath: options.configPath,
+        loadCommand: loadCommandFn,
+        helpRenderer: config?.help,
       });
 
       if (route.kind === "unknown") {
@@ -185,7 +189,6 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
       return 0;
     }
 
-    const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
     const command = await loadCommandFn(route.node);
 
     const result = await runCommandPipeline({

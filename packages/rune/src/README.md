@@ -23,7 +23,7 @@
   - Resolves command path segments and unknown-command suggestions without importing command modules.
 - `help/`
   - Help data construction and rendering.
-  - Contains default text help, structured help JSON, custom help resolution, and subcommand help entry derivation.
+  - Contains default text help, structured help JSON, resolved help orchestration, and subcommand help entry derivation.
 - `runtime/`
   - Manifest-based command execution.
   - Loads the matched command module, loads config when help rendering needs it, and runs commands through the core pipeline.
