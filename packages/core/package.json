@@ -16,6 +16,9 @@
     "test": "vp test",
     "check": "vp check"
   },
+  "dependencies": {
+    "std-env": "catalog:"
+  },
   "devDependencies": {
     "@standard-schema/spec": "catalog:",
     "@types/node": "catalog:",

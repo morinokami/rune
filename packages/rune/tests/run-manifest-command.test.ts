@@ -780,12 +780,33 @@ describe("json mode", () => {
       manifest,
       rawArgs: ["list", "--", "--json"],
       cliName: "mycli",
+      simulateAgent: false,
     });
 
     expect(captured.exitCode).toBe(0);
     expect(captured.stdout).toContain("visible");
     // Should not contain JSON output
     expect(captured.stdout).not.toContain('"ok"');
+  });
+
+  test("runManifestCommand auto-enables JSON mode when simulateAgent is true", async () => {
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run(ctx) {
+    ctx.output.log("hidden");
+    return { auto: true };
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list"],
+      cliName: "mycli",
+      simulateAgent: true,
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toEqual({ auto: true });
+    expect(captured.stdout).not.toContain("hidden");
+    expect(captured.stderr).toBe("");
   });
 
   test("runManifestCommand emits JSON error payload when command throws in JSON mode", async () => {

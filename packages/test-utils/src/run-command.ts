@@ -31,6 +31,14 @@ function ensureTrailingNewline(text: string): string {
 export interface RunCommandContext {
   /** Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`. */
   readonly cwd?: string;
+  /**
+   * When `true`, simulates an AI agent environment so `json: true` commands
+   * auto-enable JSON mode even without an explicit `--json` flag. Defaults
+   * to `false` so tests behave the same regardless of whether the test
+   * runner itself is invoked from an AI agent (which would otherwise be
+   * detected as `isAgent`).
+   */
+  readonly simulateAgent?: boolean;
 }
 
 export interface CommandExecutionResult<TCommandData = unknown> {
@@ -122,6 +130,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
     command,
     argv,
     cwd: context.cwd,
+    simulateAgent: context.simulateAgent ?? false,
     sink: {
       stdout: (message) => stdoutChunks.push(message),
       stderr: (message) => stderrChunks.push(message),

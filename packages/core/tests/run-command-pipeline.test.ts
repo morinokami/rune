@@ -220,6 +220,7 @@ describe("output and json mode", () => {
     const result = await runCommandPipeline({
       command,
       argv: ["--", "--json"],
+      simulateAgent: false,
     });
 
     expect(observedArg).toBe("--json");
@@ -229,6 +230,67 @@ describe("output and json mode", () => {
       data: { value: "--json" },
       jsonMode: false,
     });
+  });
+
+  test("auto-enables JSON mode when simulateAgent is true for json: true commands", async () => {
+    const { sink, stdout } = createCapturingSink();
+
+    const command = defineCommand({
+      json: true,
+      run() {
+        return { auto: true };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink,
+      simulateAgent: true,
+    });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: 0,
+      data: { auto: true },
+      jsonMode: true,
+    });
+    expect(stdout).toEqual([]);
+  });
+
+  test("does not auto-enable JSON mode when simulateAgent is false", async () => {
+    const command = defineCommand({
+      json: true,
+      run() {
+        return { auto: false };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      simulateAgent: false,
+    });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: 0,
+      jsonMode: false,
+    });
+  });
+
+  test("does not auto-enable JSON mode for commands without json: true", async () => {
+    const command = defineCommand({
+      run() {},
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      simulateAgent: true,
+    });
+
+    expect(result.jsonMode).toBe(false);
   });
 
   test("treats --json as a user option when command json mode is disabled", async () => {

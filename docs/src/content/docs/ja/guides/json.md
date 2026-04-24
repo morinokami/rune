@@ -65,6 +65,10 @@ export default defineCommand({
 
 JSON モードの抑制対象はフレームワークの `output` API のみです。`console.log()` や `process.stdout.write()` で直接書き込まれた出力は抑制されず、JSON ペイロードに混入する原因になります。コマンドの出力には `output.log()` と `output.error()` を使用してください。
 
+## AI エージェント実行時の自動有効化
+
+`json: true` が設定されたコマンドでは、CLI が AI エージェント（Claude Code、Cursor、Codex など）から呼び出されていることを検知すると、`--json` フラグが明示されていなくても Rune が自動的に JSON モードを有効化します。これにより、人間には読みやすいテキスト出力を、エージェントには構造化された JSON 出力を、単一のコマンドで提供できます。エージェント側が `--json` の存在を知って付与する必要はありません。
+
 ## `output.log()` が重要な理由
 
 Rune の出力ヘルパーは単なる書き方の好みではありません:

@@ -1,3 +1,5 @@
+import { isAgent } from "std-env";
+
 import type { OutputSink } from "./command-output";
 import type { DefinedCommand, InferCommandData } from "./command-types";
 import type { CommandArgField, CommandOptionField } from "./field-types";
@@ -24,6 +26,17 @@ export interface RunCommandPipelineInput {
   readonly argv: readonly string[];
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
+  /**
+   * Overrides agent-environment detection for `json: true` commands. When the
+   * environment looks like an AI agent, JSON mode is auto-enabled even
+   * without an explicit `--json` flag.
+   *
+   * - `true`: behave as if running under an agent (auto-enable JSON mode).
+   * - `false`: behave as if not running under an agent (only `--json` enables
+   *   JSON mode).
+   * - omitted: detect from the environment via std-env (`isAgent`).
+   */
+  readonly simulateAgent?: boolean | undefined;
 }
 
 export interface RunCommandPipelineResult<TCommandData = unknown> {
@@ -197,15 +210,17 @@ function normalizeOptions(
 export async function runCommandPipeline<TCommand extends RunnableCommand>(
   input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
 ): Promise<RunCommandPipelineResult<InferCommandData<TCommand>>> {
-  const { command, argv, cwd, sink = defaultSink } = input;
+  const { command, argv, cwd, sink = defaultSink, simulateAgent } = input;
   const commandDefinition = command as unknown as DefinedCommand<
     readonly CommandArgField[],
     readonly CommandOptionField[]
   >;
 
-  const { jsonMode, parseArgv } = commandDefinition.json
+  const { jsonMode: explicitJsonMode, parseArgv } = commandDefinition.json
     ? extractJsonFlag(argv)
     : { jsonMode: false, parseArgv: argv };
+  const agentDetected = simulateAgent ?? isAgent;
+  const jsonMode = commandDefinition.json && (explicitJsonMode || agentDetected);
 
   const output = createOutput(sink, { silentStdout: jsonMode });
 
