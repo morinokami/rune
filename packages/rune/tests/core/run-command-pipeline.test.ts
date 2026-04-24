@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { CommandError, defineCommand } from "../../src/core";
+import { CommandError } from "../../src/core/command-error";
+import { defineCommand } from "../../src/core/define-command";
 import { runCommandPipeline } from "../../src/core/run-command-pipeline";
 
 describe("context and execution", () => {

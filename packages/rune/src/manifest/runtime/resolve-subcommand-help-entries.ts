@@ -1,4 +1,4 @@
-import type { SubcommandHelpEntry } from "../../core";
+import type { SubcommandHelpEntry } from "../../core/help-types";
 import type { CommandManifest, CommandManifestNode, CommandManifestPath } from "../manifest-types";
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";

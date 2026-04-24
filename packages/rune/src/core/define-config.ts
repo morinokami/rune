@@ -1,4 +1,4 @@
-import type { HelpData } from "./manifest/runtime/build-help-data";
+import type { HelpData } from "../manifest/runtime/build-help-data";
 
 // ---------------------------------------------------------------------------
 // Constants

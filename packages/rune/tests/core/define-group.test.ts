@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { defineGroup } from "../../src/core";
+import { defineGroup } from "../../src/core/define-group";
 
 describe("normalization and pass-through", () => {
   test("defineGroup normalizes omitted aliases and examples to empty arrays", () => {

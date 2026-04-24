@@ -6,10 +6,10 @@ import { describe, expect, test } from "vite-plus/test";
 import { captureRuneCliResult, setupTempFixtures } from "./helpers";
 
 const coreEntryPath = JSON.stringify(
-  fileURLToPath(new URL("../../src/core/index.ts", import.meta.url)),
+  fileURLToPath(new URL("../../src/core/define-command.ts", import.meta.url)),
 );
 const defineConfigPath = JSON.stringify(
-  fileURLToPath(new URL("../../src/define-config.ts", import.meta.url)),
+  fileURLToPath(new URL("../../src/core/define-config.ts", import.meta.url)),
 );
 
 const testFixtures = setupTempFixtures();

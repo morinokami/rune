@@ -1,11 +1,8 @@
-import {
-  runCommandPipeline,
-  type CommandArgField,
-  type CommandFailure,
-  type CommandOptionField,
-  type DefinedCommand,
-  type InferCommandData,
-} from "../core";
+import type { CommandFailure } from "../core/command-error";
+import type { DefinedCommand, InferCommandData } from "../core/command-types";
+import type { CommandArgField, CommandOptionField } from "../core/field-types";
+
+import { runCommandPipeline } from "../core/run-command-pipeline";
 
 type RunnableCommand = Pick<
   DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,

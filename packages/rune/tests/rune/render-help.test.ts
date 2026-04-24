@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from "vite-plus/test";
 
-import type { CommandHelpData } from "../../src/core";
+import type { CommandHelpData } from "../../src/core/help-types";
 
 import { defineCommand } from "../../src";
 import { renderDefaultHelp } from "../../src/manifest/runtime/render-default-help";

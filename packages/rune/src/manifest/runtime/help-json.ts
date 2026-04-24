@@ -1,4 +1,8 @@
-import type { ArgumentHelpEntry, FrameworkOptionHelpEntry, UserOptionHelpEntry } from "../../core";
+import type {
+  ArgumentHelpEntry,
+  FrameworkOptionHelpEntry,
+  UserOptionHelpEntry,
+} from "../../core/help-types";
 import type { HelpData } from "./build-help-data";
 import type { ResolvedHelpData } from "./render-resolved-help";
 

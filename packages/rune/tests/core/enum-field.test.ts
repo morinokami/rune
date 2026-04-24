@@ -3,7 +3,7 @@ import { describe, expect, expectTypeOf, test } from "vite-plus/test";
 import type { InferCommandArgs, InferCommandOptions } from "../../src/core/command-types";
 import type { CommandOptionField } from "../../src/core/field-types";
 
-import { defineCommand } from "../../src/core";
+import { defineCommand } from "../../src/core/define-command";
 import { parseCommandArgs } from "../../src/core/parse-command-args";
 
 describe("enum field type inference", () => {

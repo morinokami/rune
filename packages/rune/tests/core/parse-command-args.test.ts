@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import type { DefinedCommand } from "../../src/core/command-types";
 
-import { defineCommand } from "../../src/core";
+import { defineCommand } from "../../src/core/define-command";
 import { parseCommandArgs } from "../../src/core/parse-command-args";
 
 describe("primitive parsing and defaults", () => {

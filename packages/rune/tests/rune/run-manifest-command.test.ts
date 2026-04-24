@@ -15,7 +15,10 @@ import {
 } from "./helpers";
 
 const coreEntryPath = JSON.stringify(
-  fileURLToPath(new URL("../../src/core/index.ts", import.meta.url)),
+  fileURLToPath(new URL("../../src/core/define-command.ts", import.meta.url)),
+);
+const commandErrorPath = JSON.stringify(
+  fileURLToPath(new URL("../../src/core/command-error.ts", import.meta.url)),
 );
 const testFixtures = setupTempFixtures();
 
@@ -710,7 +713,8 @@ async function createJsonFixture(commandBody: string): Promise<{
   const sourceFilePath = path.join(rootDirectory, "commands", "list", "index.mjs");
 
   await writeFixtureFiles(rootDirectory, {
-    "commands/list/index.mjs": `import { CommandError, defineCommand } from ${coreEntryPath};
+    "commands/list/index.mjs": `import { defineCommand } from ${coreEntryPath};
+import { CommandError } from ${commandErrorPath};
 
 export default defineCommand({
 ${commandBody}

@@ -5,12 +5,12 @@ import { z } from "zod";
 
 import type { LowercaseLetter, SingleLetter, UppercaseLetter } from "../../src/core/field-types";
 
-import { defineCommand } from "../../src/core";
 import {
   type InferCommandArgs,
   type InferCommandData,
   type InferCommandOptions,
 } from "../../src/core/command-types";
+import { defineCommand } from "../../src/core/define-command";
 
 test("SingleLetter remains the union of lowercase and uppercase letters", () => {
   expectTypeOf<SingleLetter>().toEqualTypeOf<LowercaseLetter | UppercaseLetter>();

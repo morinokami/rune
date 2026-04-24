@@ -1,8 +1,9 @@
 import path from "node:path";
 import { describe, expect, test } from "vite-plus/test";
 
-import { CommandError, defineCommand } from "../../src/core";
-import { runCommand } from "../../src/test-utils";
+import { CommandError } from "../../src/core/command-error";
+import { defineCommand } from "../../src/core/define-command";
+import { runCommand } from "../../src/test-utils/run-command";
 
 describe("execution", () => {
   test("runCommand returns a successful command result", async () => {

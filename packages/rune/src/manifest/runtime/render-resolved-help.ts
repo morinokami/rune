@@ -1,4 +1,4 @@
-import type { CommandHelpData } from "../../core";
+import type { CommandHelpData } from "../../core/help-types";
 import type { CommandManifest, CommandManifestPath } from "../manifest-types";
 import type { ResolveCommandRouteResult } from "./resolve-command-route";
 

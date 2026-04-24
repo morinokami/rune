@@ -1,7 +1,8 @@
+import type { CommandFailure } from "../../core/command-error";
 import type { CommandManifest } from "../manifest-types";
 
 import { isHelpFlag, isVersionFlag } from "../../cli/flags";
-import { runCommandPipeline, type CommandFailure } from "../../core";
+import { runCommandPipeline } from "../../core/run-command-pipeline";
 import { toHelpJson } from "./help-json";
 import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
 import { renderResolvedHelp, resolveHelpData } from "./render-resolved-help";

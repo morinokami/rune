@@ -1,3 +1,5 @@
+import type { DefinedCommand } from "../../core/command-types";
+import type { CommandArgField, CommandOptionField } from "../../core/field-types";
 import type {
   ArgumentHelpEntry,
   CommandHelpData,
@@ -8,7 +10,7 @@ import type {
   PrimitiveOptionHelpEntry,
   SubcommandHelpEntry,
   UserOptionHelpEntry,
-} from "../../core";
+} from "../../core/help-types";
 import type {
   CommandManifest,
   CommandManifestGroupNode,
@@ -16,13 +18,8 @@ import type {
 } from "../manifest-types";
 import type { UnknownCommandRoute } from "./resolve-command-route";
 
-import {
-  isEnumField,
-  isSchemaField,
-  type CommandArgField,
-  type CommandOptionField,
-  type DefinedCommand,
-} from "../../core";
+import { isEnumField } from "../../core/enum-field";
+import { isSchemaField } from "../../core/schema-field";
 import { resolveSubcommandHelpEntries } from "./resolve-subcommand-help-entries";
 
 // ---------------------------------------------------------------------------

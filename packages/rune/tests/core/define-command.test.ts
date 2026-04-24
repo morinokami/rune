@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import type { CommandArgField, CommandOptionField, SingleLetter } from "../../src/core/field-types";
 
-import { defineCommand, isDefinedCommand } from "../../src/core";
+import { defineCommand, isDefinedCommand } from "../../src/core/define-command";
 
 describe("normalization and pass-through", () => {
   test("defineCommand normalizes omitted args and options to empty arrays", () => {

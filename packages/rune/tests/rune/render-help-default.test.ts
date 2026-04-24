@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from "vite-plus/test";
 
-import type { CommandHelpData } from "../../src/core";
+import type { CommandHelpData } from "../../src/core/help-types";
 import type { CommandManifestGroupNode } from "../../src/manifest/manifest-types";
 import type {
   GroupHelpData,
@@ -8,7 +8,7 @@ import type {
 } from "../../src/manifest/runtime/build-help-data";
 
 import { defineCommand } from "../../src";
-import { defineConfig } from "../../src/define-config";
+import { defineConfig } from "../../src/core/define-config";
 import {
   buildCommandHelpData,
   buildGroupHelpData,

@@ -1,7 +1,7 @@
 import { expectTypeOf, test } from "vite-plus/test";
 
-import { defineCommand } from "../../src/core";
-import { runCommand } from "../../src/test-utils";
+import { defineCommand } from "../../src/core/define-command";
+import { runCommand } from "../../src/test-utils/run-command";
 
 test("runCommand accepts commands with args and options", async () => {
   const command = defineCommand({
