@@ -8,16 +8,7 @@ import type {
   PrimitiveOptionHelpEntry,
   SubcommandHelpEntry,
   UserOptionHelpEntry,
-} from "@rune-cli/core";
-
-import {
-  isEnumField,
-  isSchemaField,
-  type CommandArgField,
-  type CommandOptionField,
-  type DefinedCommand,
-} from "@rune-cli/core";
-
+} from "../../core";
 import type {
   CommandManifest,
   CommandManifestGroupNode,
@@ -25,6 +16,13 @@ import type {
 } from "../manifest-types";
 import type { UnknownCommandRoute } from "./resolve-command-route";
 
+import {
+  isEnumField,
+  isSchemaField,
+  type CommandArgField,
+  type CommandOptionField,
+  type DefinedCommand,
+} from "../../core";
 import { resolveSubcommandHelpEntries } from "./resolve-subcommand-help-entries";
 
 // ---------------------------------------------------------------------------

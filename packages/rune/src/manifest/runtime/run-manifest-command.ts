@@ -1,8 +1,7 @@
-import { runCommandPipeline, type CommandFailure } from "@rune-cli/core";
-
 import type { CommandManifest } from "../manifest-types";
 
 import { isHelpFlag, isVersionFlag } from "../../cli/flags";
+import { runCommandPipeline, type CommandFailure } from "../../core";
 import { toHelpJson } from "./help-json";
 import { defaultLoadCommand, type LoadCommandFn } from "./load-command";
 import { renderResolvedHelp, resolveHelpData } from "./render-resolved-help";
@@ -62,7 +61,9 @@ function getSerializableDetails(error: CommandFailure): unknown {
   }
 }
 
-function renderJsonError(error?: CommandFailure): { readonly error: Record<string, unknown> } {
+function renderJsonError(error?: CommandFailure): {
+  readonly error: Record<string, unknown>;
+} {
   if (!error) {
     return {
       error: {
@@ -121,7 +122,10 @@ function isHelpJsonRequested(
 function writeJsonToStdout(
   value: unknown,
   fallback: unknown = {
-    error: { kind: "rune/unexpected", message: "Failed to serialize command output" },
+    error: {
+      kind: "rune/unexpected",
+      message: "Failed to serialize command output",
+    },
   },
 ): boolean {
   try {

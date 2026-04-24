@@ -1,5 +1,4 @@
-import type { CommandHelpData } from "@rune-cli/core";
-
+import type { CommandHelpData } from "../../core";
 import type { CommandManifest, CommandManifestPath } from "../manifest-types";
 import type { ResolveCommandRouteResult } from "./resolve-command-route";
 

@@ -1,4 +1,4 @@
-export { CommandError, defineCommand, defineGroup } from "@rune-cli/core";
+export { CommandError, defineCommand, defineGroup } from "./core";
 export type {
   CommandArgField,
   CommandContext,
@@ -6,7 +6,7 @@ export type {
   CommandOptionField,
   DefinedCommand,
   DefinedGroup,
-} from "@rune-cli/core";
+} from "./core";
 
 export { defineConfig } from "./define-config";
 export { renderDefaultHelp } from "./manifest/runtime/render-default-help";

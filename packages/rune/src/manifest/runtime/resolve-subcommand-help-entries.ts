@@ -1,5 +1,4 @@
-import type { SubcommandHelpEntry } from "@rune-cli/core";
-
+import type { SubcommandHelpEntry } from "../../core";
 import type { CommandManifest, CommandManifestNode, CommandManifestPath } from "../manifest-types";
 
 import { commandManifestPathToKey, createCommandManifestNodeMap } from "../manifest-map";

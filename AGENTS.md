@@ -26,7 +26,7 @@ TypeScript-first, agent-friendly CLI framework. Directory structure maps directl
 
 - In workspace packages, import test APIs from `vite-plus/test`, never from `vite` or `vitest`.
 - `examples/starter` is a user-facing scaffold example for `create-rune-app`, so it may intentionally use consumer-app conventions such as direct `vitest` imports.
-- `core` must not depend on filesystem scanning or on `rune`.
+- `src/core/` must not depend on `src/cli/`, `src/manifest/generate/`, or `src/project/`. The `core/` layer is what gets bundled into the user's built CLI; filesystem scanning and build tooling belong to dev-time layers.
 - Do not throw for expected parse or validation failures. Use explicit result types with `ok: true` / `ok: false`.
 - For schema-backed fields, use the Standard Schema contract via `schema["~standard"].validate(value)`. Do not call library-specific APIs such as Zod `.parse()`.
 - Keep source and test filenames in `kebab-case`.

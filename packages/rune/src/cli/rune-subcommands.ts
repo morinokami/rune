@@ -1,11 +1,9 @@
-import type { CommandArgField, CommandOptionField, DefinedCommand } from "@rune-cli/core";
-
-import { defineCommand } from "@rune-cli/core";
-
+import type { CommandArgField, CommandOptionField, DefinedCommand } from "../core";
 import type { CommandManifest } from "../manifest/manifest-types";
 import type { LoadCommandFn } from "../manifest/runtime/load-command";
 import type { EarlyExit } from "./rune-options";
 
+import { defineCommand } from "../core";
 import { runBuildCommand } from "./build-command";
 import { isRuneHelpRequested, parseBuildArgs, parseRunArgs } from "./parse-rune-subcommand-args";
 import { runRunCommand } from "./run-command";

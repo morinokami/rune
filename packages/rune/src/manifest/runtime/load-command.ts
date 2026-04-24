@@ -1,12 +1,13 @@
+import { pathToFileURL } from "node:url";
+
+import type { CommandManifestCommandNode } from "../manifest-types";
+
 import {
   isDefinedCommand,
   type CommandArgField,
   type CommandOptionField,
   type DefinedCommand,
-} from "@rune-cli/core";
-import { pathToFileURL } from "node:url";
-
-import type { CommandManifestCommandNode } from "../manifest-types";
+} from "../../core";
 
 // Loads a command module and verifies that its default export was created with defineCommand().
 async function loadCommandFromModule(

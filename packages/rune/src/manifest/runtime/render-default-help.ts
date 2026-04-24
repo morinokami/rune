@@ -6,8 +6,7 @@ import type {
   PrimitiveOptionHelpEntry,
   SchemaOptionHelpEntry,
   SubcommandHelpEntry,
-} from "@rune-cli/core";
-
+} from "../../core";
 import type { GroupHelpData, HelpData, UnknownCommandHelpData } from "./build-help-data";
 
 function formatEnumValuesTypeHint(values: readonly (string | number)[]): string {
