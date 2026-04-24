@@ -1,18 +1,19 @@
 import type { CommandArgField, CommandOptionField, NamedField } from "./field-types";
 import type {
   AlwaysReservedOptionName,
-  ErrorMessage,
   HasDuplicateOrCollidingName,
   HasDuplicateShort,
-  HasInvalidArgFieldName,
-  HasInvalidOptionFieldName,
   HasNegationCollision,
   HasReservedOptionName,
   HasReservedShortName,
-  IsTuple,
-  IsValidArgOrder,
   JsonReservedOptionName,
-} from "./internal-types";
+} from "./internal-types/field-collision";
+import type { IsValidArgOrder } from "./internal-types/field-inference";
+import type {
+  HasInvalidArgFieldName,
+  HasInvalidOptionFieldName,
+} from "./internal-types/field-name-validation";
+import type { ErrorMessage, IsTuple } from "./internal-types/utils";
 
 // ---------------------------------------------------------------------------
 // Composed validators — each returns `unknown` on success or

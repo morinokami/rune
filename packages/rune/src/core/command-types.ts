@@ -6,7 +6,8 @@ import type {
   NormalizeFields,
 } from "./field-types";
 import type { CommandHelpData } from "./help-types";
-import type { FieldName, FieldValue, IsRequiredField, Simplify } from "./internal-types";
+import type { FieldName, FieldValue, IsRequiredField } from "./internal-types/field-inference";
+import type { Simplify } from "./internal-types/utils";
 
 type RequiredNamedFields<
   TFields extends readonly NamedField[],
