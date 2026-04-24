@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vite-plus/test";
 
-import { captureRuneCliResult, setupTempFixtures } from "./helpers";
+import { captureRuneCliResult, setupTempFixtures } from "../helpers";
 
 const coreEntryPath = JSON.stringify(
   fileURLToPath(new URL("../../src/core/define-command.ts", import.meta.url)),

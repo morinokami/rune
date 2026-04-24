@@ -4,7 +4,7 @@ import {
   commandManifestPathToKey,
   createCommandManifestNodeMap,
 } from "../../src/manifest/manifest-map";
-import { commandNode, groupNode, manifest as buildManifest } from "./helpers";
+import { commandNode, groupNode, manifest as buildManifest } from "../helpers";
 
 describe("commandManifestPathToKey", () => {
   test("returns an empty string for the root path", () => {

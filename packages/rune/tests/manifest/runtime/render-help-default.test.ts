@@ -1,23 +1,23 @@
 import { assert, describe, expect, test } from "vite-plus/test";
 
-import type { CommandHelpData } from "../../src/core/help-types";
-import type { CommandManifestGroupNode } from "../../src/manifest/manifest-types";
+import type { CommandHelpData } from "../../../src/core/help-types";
+import type { CommandManifestGroupNode } from "../../../src/manifest/manifest-types";
 import type {
   GroupHelpData,
   UnknownCommandHelpData,
-} from "../../src/manifest/runtime/build-help-data";
+} from "../../../src/manifest/runtime/build-help-data";
 
-import { defineCommand } from "../../src";
-import { defineConfig } from "../../src/core/define-config";
+import { defineCommand } from "../../../src";
+import { defineConfig } from "../../../src/core/define-config";
 import {
   buildCommandHelpData,
   buildGroupHelpData,
   buildUnknownCommandHelpData,
-} from "../../src/manifest/runtime/build-help-data";
-import { renderDefaultHelp } from "../../src/manifest/runtime/render-default-help";
-import { renderResolvedHelp } from "../../src/manifest/runtime/render-resolved-help";
-import { resolveCommandRoute } from "../../src/manifest/runtime/resolve-command-route";
-import { commandNode, groupNode, manifest as buildManifest } from "./helpers";
+} from "../../../src/manifest/runtime/build-help-data";
+import { renderDefaultHelp } from "../../../src/manifest/runtime/render-default-help";
+import { renderResolvedHelp } from "../../../src/manifest/runtime/render-resolved-help";
+import { resolveCommandRoute } from "../../../src/manifest/runtime/resolve-command-route";
+import { commandNode, groupNode, manifest as buildManifest } from "../../helpers";
 
 const manifest = buildManifest([
   groupNode({ pathSegments: [], childNames: ["hello", "project", "user"] }),

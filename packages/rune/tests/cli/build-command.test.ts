@@ -9,7 +9,7 @@ import {
   createTempFixtureManager,
   pathExists,
   setupTempFixtures,
-} from "./helpers";
+} from "../helpers";
 
 const buildProjectFixtures = setupTempFixtures();
 const packagedWorkspaces = createTempFixtureManager();

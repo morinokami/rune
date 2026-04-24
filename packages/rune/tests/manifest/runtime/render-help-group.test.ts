@@ -1,10 +1,13 @@
 import { assert, describe, expect, test } from "vite-plus/test";
 
-import type { CommandManifest, CommandManifestGroupNode } from "../../src/manifest/manifest-types";
+import type {
+  CommandManifest,
+  CommandManifestGroupNode,
+} from "../../../src/manifest/manifest-types";
 
-import { buildGroupHelpData } from "../../src/manifest/runtime/build-help-data";
-import { renderDefaultHelp } from "../../src/manifest/runtime/render-default-help";
-import { commandNode, groupNode, manifest as buildManifest } from "./helpers";
+import { buildGroupHelpData } from "../../../src/manifest/runtime/build-help-data";
+import { renderDefaultHelp } from "../../../src/manifest/runtime/render-default-help";
+import { commandNode, groupNode, manifest as buildManifest } from "../../helpers";
 
 const manifest = buildManifest([
   groupNode({ pathSegments: [], childNames: ["hello", "project", "user"] }),

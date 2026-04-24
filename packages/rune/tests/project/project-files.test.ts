@@ -7,7 +7,7 @@ import {
   resolveProjectDirectories,
   resolveProjectPath,
 } from "../../src/project/project-files";
-import { type FixtureFiles, setupTempFixtures } from "./helpers";
+import { type FixtureFiles, setupTempFixtures } from "../helpers";
 
 const testFixtures = setupTempFixtures();
 

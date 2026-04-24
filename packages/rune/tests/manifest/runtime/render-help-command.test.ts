@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { defineCommand } from "../../src";
-import { buildCommandHelpData } from "../../src/manifest/runtime/build-help-data";
-import { renderDefaultHelp } from "../../src/manifest/runtime/render-default-help";
+import { defineCommand } from "../../../src";
+import { buildCommandHelpData } from "../../../src/manifest/runtime/build-help-data";
+import { renderDefaultHelp } from "../../../src/manifest/runtime/render-default-help";
 
 async function renderCommandHelpText(options: {
   readonly command: Parameters<typeof buildCommandHelpData>[0]["command"];

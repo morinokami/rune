@@ -8,9 +8,9 @@ import type {
   CommandManifest,
   CommandManifestCommandNode,
   CommandManifestGroupNode,
-} from "../../src/manifest/manifest-types";
+} from "../src/manifest/manifest-types";
 
-import { runRuneCli } from "../../src/cli/rune-cli";
+import { runRuneCli } from "../src/cli/rune-cli";
 
 // ---------------------------------------------------------------------------
 // Fixture helpers

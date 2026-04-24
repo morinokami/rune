@@ -2,7 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import runePackageJson from "../../package.json" with { type: "json" };
 import { runRuneCli } from "../../src/cli/rune-cli";
-import { captureCommandResult } from "./helpers";
+import { captureCommandResult } from "../helpers";
 
 describe("version output", () => {
   test("rune --version prints the version", async () => {

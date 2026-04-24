@@ -1,8 +1,8 @@
 import path from "node:path";
 import { describe, expect, test } from "vite-plus/test";
 
-import { generateCommandManifest } from "../../src/manifest/generate/generate-manifest";
-import { commandNode, groupNode, setupCommandsFixtures } from "./helpers";
+import { generateCommandManifest } from "../../../src/manifest/generate/generate-manifest";
+import { commandNode, groupNode, setupCommandsFixtures } from "../../helpers";
 
 const { createCommandsFixture } = setupCommandsFixtures();
 

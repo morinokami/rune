@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { generateCommandManifest } from "../../src/manifest/generate/generate-manifest";
-import { setupCommandsFixtures } from "./helpers";
+import { generateCommandManifest } from "../../../src/manifest/generate/generate-manifest";
+import { setupCommandsFixtures } from "../../helpers";
 
 const { createCommandsFixture } = setupCommandsFixtures();
 

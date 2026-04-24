@@ -2,23 +2,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vite-plus/test";
 
-import type { CommandManifest } from "../../src/manifest/manifest-types";
+import type { CommandManifest } from "../../../src/manifest/manifest-types";
 
-import { HELP_JSON_SCHEMA_VERSION } from "../../src/manifest/runtime/help-json";
-import { runManifestCommand } from "../../src/manifest/runtime/run-manifest-command";
+import { HELP_JSON_SCHEMA_VERSION } from "../../../src/manifest/runtime/help-json";
+import { runManifestCommand } from "../../../src/manifest/runtime/run-manifest-command";
 import {
   captureCommandResult,
   commandNode,
   groupNode,
   setupTempFixtures,
   writeFixtureFiles,
-} from "./helpers";
+} from "../../helpers";
 
 const coreEntryPath = JSON.stringify(
-  fileURLToPath(new URL("../../src/core/define-command.ts", import.meta.url)),
+  fileURLToPath(new URL("../../../src/core/define-command.ts", import.meta.url)),
 );
 const commandErrorPath = JSON.stringify(
-  fileURLToPath(new URL("../../src/core/command-error.ts", import.meta.url)),
+  fileURLToPath(new URL("../../../src/core/command-error.ts", import.meta.url)),
 );
 const testFixtures = setupTempFixtures();
 

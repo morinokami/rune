@@ -1,12 +1,12 @@
 import { assert, describe, expect, test } from "vite-plus/test";
 
-import type { CommandHelpData } from "../../src/core/help-types";
+import type { CommandHelpData } from "../../../src/core/help-types";
 
-import { defineCommand } from "../../src";
-import { renderDefaultHelp } from "../../src/manifest/runtime/render-default-help";
-import { renderResolvedHelp } from "../../src/manifest/runtime/render-resolved-help";
-import { resolveCommandRoute } from "../../src/manifest/runtime/resolve-command-route";
-import { commandNode, groupNode, manifest as buildManifest } from "./helpers";
+import { defineCommand } from "../../../src";
+import { renderDefaultHelp } from "../../../src/manifest/runtime/render-default-help";
+import { renderResolvedHelp } from "../../../src/manifest/runtime/render-resolved-help";
+import { resolveCommandRoute } from "../../../src/manifest/runtime/resolve-command-route";
+import { commandNode, groupNode, manifest as buildManifest } from "../../helpers";
 
 const manifest = buildManifest([
   groupNode({ pathSegments: [], childNames: ["hello", "project", "user"] }),

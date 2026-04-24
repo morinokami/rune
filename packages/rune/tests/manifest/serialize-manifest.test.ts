@@ -4,7 +4,7 @@ import {
   generateCommandManifest,
   serializeCommandManifest,
 } from "../../src/manifest/generate/generate-manifest";
-import { setupCommandsFixtures } from "./helpers";
+import { setupCommandsFixtures } from "../helpers";
 
 const { createCommandsFixture } = setupCommandsFixtures();
 
