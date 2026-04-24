@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.39
+
+### Patch Changes
+
+- [#142](https://github.com/morinokami/rune/pull/142) [`8c1e1ee`](https://github.com/morinokami/rune/commit/8c1e1ee66488756df40e57b93dca1b3a1c456446) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): auto-enable JSON mode under AI agents
+
 ## 0.0.38
 
 ### Patch Changes
