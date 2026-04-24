@@ -163,41 +163,6 @@ describe("group help", () => {
   });
 });
 
-describe("parse failures", () => {
-  test("runManifestCommand returns parse failures as non-zero stderr results", async () => {
-    const { manifest } = await createRuntimeFixture(
-      `import { defineCommand } from ${coreEntryPath};
-
-globalThis.__runeLoadedModules ??= [];
-globalThis.__runeLoadedModules.push("create");
-
-export default defineCommand({
-  description: "Create a project",
-  args: [],
-  options: [{ name: "name", type: "string", required: true }],
-  async run() {
-    console.log("should not run");
-  },
-});
-`,
-      trackedStubModule("list"),
-    );
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["project", "create"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(1);
-    expect(captured.stdout).toBe("");
-    expect(captured.stderr).toBe("Missing required option:\n\n  --name <string>\n");
-    expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
-      "create",
-    ]);
-  });
-});
-
 describe("leaf help", () => {
   test("runManifestCommand returns leaf help through the routed command path", async () => {
     const { manifest } = await createRuntimeFixture(
@@ -570,7 +535,7 @@ export default defineCommand({
     expect(captured.stderr).toBe("");
   });
 
-  test("runManifestCommand does not treat --help after -- as help", async () => {
+  test("runManifestCommand treats --help and --json after -- as positional args (triggering unexpected-argument error)", async () => {
     const { manifest } = await createRuntimeFixture(
       `import { defineCommand } from ${coreEntryPath};
 
@@ -594,6 +559,183 @@ export default defineCommand({
     expect(captured.exitCode).toBe(1);
     expect(captured.stdout).toBe("");
     expect(captured.stderr).toBe('Unexpected argument "--json"\n');
+  });
+});
+
+describe("json mode", () => {
+  // JSON-mode activation rules (--json extraction, -- terminator, simulateAgent,
+  // json:true gating) are covered by run-command-pipeline tests. These tests
+  // focus on manifest-layer concerns: JSON error envelope, serialization
+  // fallbacks, and null coercion.
+
+  test("runManifestCommand emits JSON error payload when command throws in JSON mode", async () => {
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    throw new Error("something broke");
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(JSON.parse(captured.stdout)).toEqual({
+      error: {
+        kind: "rune/unexpected",
+        message: "something broke",
+      },
+    });
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runManifestCommand emits JSON error payload on parse error in JSON mode", async () => {
+    const { manifest } = await createJsonFixture(`  json: true,
+  options: [{ name: "count", type: "number", required: true }],
+  async run() {
+    return { ok: true };
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(JSON.parse(captured.stdout)).toEqual({
+      error: {
+        kind: "rune/invalid-arguments",
+        message: "Missing required option:\n\n  --count <number>",
+      },
+    });
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runManifestCommand omits non-serializable CommandError details in JSON mode", async () => {
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    throw new CommandError({
+      kind: "config/not-found",
+      message: "Config file was not found",
+      details: BigInt(42),
+    });
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(JSON.parse(captured.stdout)).toEqual({
+      error: {
+        kind: "config/not-found",
+        message: "Config file was not found",
+      },
+    });
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runManifestCommand handles non-serializable return values in JSON mode", async () => {
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    return { value: BigInt(42) };
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    const parsed = JSON.parse(captured.stdout);
+    expect(parsed).toEqual({
+      error: {
+        kind: "rune/unexpected",
+        message: "Failed to serialize command output",
+      },
+    });
+    expect(captured.stderr).toContain("Failed to serialize command output");
+  });
+
+  test("runManifestCommand serializes null when json command returns undefined", async () => {
+    const { manifest } = await createJsonFixture(`  json: true,
+  async run() {
+    // returns undefined implicitly
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toBeNull();
+  });
+});
+
+describe("parse failures", () => {
+  test("runManifestCommand returns parse failures as non-zero stderr results", async () => {
+    const { manifest } = await createRuntimeFixture(
+      `import { defineCommand } from ${coreEntryPath};
+
+globalThis.__runeLoadedModules ??= [];
+globalThis.__runeLoadedModules.push("create");
+
+export default defineCommand({
+  description: "Create a project",
+  args: [],
+  options: [{ name: "name", type: "string", required: true }],
+  async run() {
+    console.log("should not run");
+  },
+});
+`,
+      trackedStubModule("list"),
+    );
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["project", "create"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(captured.stdout).toBe("");
+    expect(captured.stderr).toBe("Missing required option:\n\n  --name <string>\n");
+    expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
+      "create",
+    ]);
+  });
+});
+
+describe("error rendering (human)", () => {
+  test("runManifestCommand renders CommandError in human mode", async () => {
+    const { manifest } = await createJsonFixture(`  async run() {
+    throw new CommandError({
+      kind: "project/invalid-name",
+      message: "Project name must be lowercase kebab-case",
+      hint: "Try --name my-app",
+      exitCode: 9,
+    });
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(9);
+    expect(captured.stdout).toBe("");
+    expect(captured.stderr).toBe(
+      "Project name must be lowercase kebab-case\nHint: Try --name my-app\n",
+    );
   });
 });
 
@@ -735,216 +877,3 @@ ${commandBody}
 
   return { manifest };
 }
-
-describe("json mode", () => {
-  test("runManifestCommand serializes return value as JSON when --json is passed", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  async run(ctx) {
-    ctx.output.log("human text");
-    return { items: [1, 2, 3] };
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--json"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(0);
-    expect(JSON.parse(captured.stdout)).toEqual({ items: [1, 2, 3] });
-    // output.log should be suppressed in JSON mode
-    expect(captured.stdout).not.toContain("human text");
-    expect(captured.stderr).toBe("");
-  });
-
-  test("runManifestCommand does not activate JSON mode for commands without json: true", async () => {
-    const { manifest } = await createJsonFixture(`  async run(ctx) {
-    ctx.output.log("hello");
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--json"],
-      cliName: "mycli",
-    });
-
-    // --json is not recognized, so it should cause a parse error
-    expect(captured.exitCode).toBe(1);
-  });
-
-  test("runManifestCommand does not activate JSON mode when --json appears after --", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  args: [{ name: "extra", type: "string" }],
-  async run(ctx) {
-    ctx.output.log("visible");
-    return { ok: true };
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--", "--json"],
-      cliName: "mycli",
-      simulateAgent: false,
-    });
-
-    expect(captured.exitCode).toBe(0);
-    expect(captured.stdout).toContain("visible");
-    // Should not contain JSON output
-    expect(captured.stdout).not.toContain('"ok"');
-  });
-
-  test("runManifestCommand auto-enables JSON mode when simulateAgent is true", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  async run(ctx) {
-    ctx.output.log("hidden");
-    return { auto: true };
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list"],
-      cliName: "mycli",
-      simulateAgent: true,
-    });
-
-    expect(captured.exitCode).toBe(0);
-    expect(JSON.parse(captured.stdout)).toEqual({ auto: true });
-    expect(captured.stdout).not.toContain("hidden");
-    expect(captured.stderr).toBe("");
-  });
-
-  test("runManifestCommand emits JSON error payload when command throws in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  async run() {
-    throw new Error("something broke");
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--json"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(1);
-    expect(JSON.parse(captured.stdout)).toEqual({
-      error: {
-        kind: "rune/unexpected",
-        message: "something broke",
-      },
-    });
-    expect(captured.stderr).toBe("");
-  });
-
-  test("runManifestCommand emits JSON error payload on parse error in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  options: [{ name: "count", type: "number", required: true }],
-  async run() {
-    return { ok: true };
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--json"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(1);
-    expect(JSON.parse(captured.stdout)).toEqual({
-      error: {
-        kind: "rune/invalid-arguments",
-        message: "Missing required option:\n\n  --count <number>",
-      },
-    });
-    expect(captured.stderr).toBe("");
-  });
-
-  test("runManifestCommand omits non-serializable CommandError details in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  async run() {
-    throw new CommandError({
-      kind: "config/not-found",
-      message: "Config file was not found",
-      details: BigInt(42),
-    });
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--json"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(1);
-    expect(JSON.parse(captured.stdout)).toEqual({
-      error: {
-        kind: "config/not-found",
-        message: "Config file was not found",
-      },
-    });
-    expect(captured.stderr).toBe("");
-  });
-
-  test("runManifestCommand handles non-serializable return values in JSON mode", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  async run() {
-    return { value: BigInt(42) };
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--json"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(1);
-    const parsed = JSON.parse(captured.stdout);
-    expect(parsed).toEqual({
-      error: {
-        kind: "rune/unexpected",
-        message: "Failed to serialize command output",
-      },
-    });
-    expect(captured.stderr).toContain("Failed to serialize command output");
-  });
-
-  test("runManifestCommand serializes null when json command returns undefined", async () => {
-    const { manifest } = await createJsonFixture(`  json: true,
-  async run() {
-    // returns undefined implicitly
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list", "--json"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(0);
-    expect(JSON.parse(captured.stdout)).toBeNull();
-  });
-});
-
-describe("error rendering (human)", () => {
-  test("runManifestCommand renders CommandError in human mode", async () => {
-    const { manifest } = await createJsonFixture(`  async run() {
-    throw new CommandError({
-      kind: "project/invalid-name",
-      message: "Project name must be lowercase kebab-case",
-      hint: "Try --name my-app",
-      exitCode: 9,
-    });
-  },`);
-
-    const captured = await captureRunManifestCommandResult({
-      manifest,
-      rawArgs: ["list"],
-      cliName: "mycli",
-    });
-
-    expect(captured.exitCode).toBe(9);
-    expect(captured.stdout).toBe("");
-    expect(captured.stderr).toBe(
-      "Project name must be lowercase kebab-case\nHint: Try --name my-app\n",
-    );
-  });
-});

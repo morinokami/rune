@@ -352,7 +352,7 @@ export default defineCommand({
   });
 });
 
-describe("alternate command layouts and runtime errors", () => {
+describe("command layouts", () => {
   test("runRuneCli executes a bare file command through `rune run`", async () => {
     const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
       files: {
@@ -376,7 +376,9 @@ export default defineCommand({
     expect(captured.stdout).toBe("hello rune\n");
     expect(captured.stderr).toBe("");
   });
+});
 
+describe("early exits and validation", () => {
   test("runRuneCli reports missing src/commands directories", async () => {
     const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
       files: {
@@ -404,7 +406,9 @@ export default defineCommand({
     expect(captured.stdout).toBe("mycli v1.2.3\n");
     expect(captured.stderr).toBe("");
   });
+});
 
+describe("module resolution", () => {
   test("runRuneCli resolves extensionless relative imports in user commands", async () => {
     const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
       files: {
@@ -536,7 +540,9 @@ export default defineCommand({
     expect(captured.stdout).toBe("hello rune\n");
     expect(captured.stderr).toBe("");
   });
+});
 
+describe("config.help fallback", () => {
   test("runRuneCli bundles rune.config.ts only when help is rendered", async () => {
     // Config with an extensionless relative import would fail under native
     // type-stripping. The Rolldown-bundled help path should resolve it, while
@@ -607,27 +613,6 @@ export default defineCommand({
     expect(captured.stderr).toContain("Warning: Failed to load rune.config.ts.");
   });
 
-  test("runRuneCli reports plain object default exports with a clear error", async () => {
-    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
-      files: {
-        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
-        "src/commands/plain/index.ts": [
-          "export default {",
-          '  description: "plain",',
-          "  async run() {",
-          '    console.log("hi");',
-          "  },",
-          "};",
-        ].join("\n"),
-      },
-    });
-
-    const captured = await captureRuneCliResult(["run", "plain"], projectRoot);
-
-    expect(captured.exitCode).toBe(1);
-    expect(captured.stdout).toBe("");
-    expect(captured.stderr).toBe(
-      "Command module must export a value created with defineCommand(). Got a plain object.\n",
-    );
-  });
+  // Plain-object default exports are reported by the manifest runtime layer;
+  // see manifest/runtime/run-manifest-command.test.ts > "module load errors".
 });

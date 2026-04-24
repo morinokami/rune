@@ -3,6 +3,7 @@ import { assert, describe, expect, test } from "vite-plus/test";
 import type { CommandHelpData } from "../../../src/core/help-types";
 
 import { defineCommand } from "../../../src";
+import { buildCommandHelpData } from "../../../src/manifest/runtime/build-help-data";
 import { renderDefaultHelp } from "../../../src/manifest/runtime/render-default-help";
 import { renderResolvedHelp } from "../../../src/manifest/runtime/render-resolved-help";
 import { resolveCommandRoute } from "../../../src/manifest/runtime/resolve-command-route";
@@ -292,5 +293,53 @@ describe("help priority chain", () => {
     });
 
     expect(output).toContain("Usage: mycli hello");
+  });
+
+  test("default path composes buildCommandHelpData with renderDefaultHelp", async () => {
+    const route = resolveCommandRoute(manifest, ["project", "create", "--help"]);
+    const command = defineCommand({
+      description: "Create a project",
+      args: [
+        {
+          name: "id",
+          type: "string",
+          required: true,
+          description: "Project identifier",
+        },
+      ],
+      options: [
+        {
+          name: "name",
+          type: "string",
+          default: "my-project",
+          description: "Project name",
+        },
+        {
+          name: "force",
+          type: "boolean",
+          short: "f",
+          description: "Force overwrite",
+        },
+      ],
+      async run() {},
+    });
+
+    const fromData = renderDefaultHelp(
+      await buildCommandHelpData({
+        command,
+        pathSegments: ["project", "create"],
+        cliName: "mycli",
+      }),
+    );
+    const fromResolved = await renderResolvedHelp({
+      manifest,
+      route,
+      cliName: "mycli",
+      async loadCommand() {
+        return command;
+      },
+    });
+
+    expect(fromData).toBe(fromResolved);
   });
 });

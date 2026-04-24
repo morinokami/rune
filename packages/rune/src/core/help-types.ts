@@ -95,8 +95,6 @@ export type UserOptionHelpEntry =
   | EnumOptionHelpEntry
   | SchemaOptionHelpEntry;
 
-export type OptionHelpEntry = UserOptionHelpEntry | FrameworkOptionHelpEntry;
-
 // ---------------------------------------------------------------------------
 // Public types – CommandHelpData
 // ---------------------------------------------------------------------------
