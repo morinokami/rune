@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import type { RuneConfig } from "../core/define-config";
 import type { CommandManifest, CommandManifestCommandNode } from "../manifest/manifest-types";
 
 import {
@@ -8,6 +9,7 @@ import {
   serializeCommandManifest,
 } from "../manifest/generate/generate-manifest";
 import {
+  applyProjectCliInfoOverrides,
   assertCommandsDirectoryExists,
   readProjectCliInfo,
   resolveConfigPath,
@@ -16,6 +18,7 @@ import {
 } from "../project/project-files";
 import { isVersionFlag } from "../routing/framework-flags";
 import { resolveCommandRoute } from "../routing/resolve-command-route";
+import { loadRuneConfigSafe } from "../runtime/load-rune-config";
 import { runManifestCommand } from "../runtime/run-manifest-command";
 import {
   bundleCommandForRun,
@@ -37,6 +40,11 @@ export interface RunRunCommandOptions {
   readonly rawArgs: readonly string[];
   readonly cwd?: string | undefined;
   readonly projectPath?: string | undefined;
+}
+
+interface RunConfigLoadResult {
+  readonly configPath?: string | undefined;
+  readonly config?: RuneConfig | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,6 +75,33 @@ function replaceLeafSourceFilePath(
   };
 }
 
+async function loadBundledRunConfigSafe(
+  projectRoot: string,
+  runDirectory: string,
+  configPath: string | undefined,
+): Promise<RunConfigLoadResult> {
+  if (configPath === undefined) {
+    return { configPath: undefined, config: undefined };
+  }
+
+  try {
+    const bundledConfigPath = await bundleConfigForRun(projectRoot, runDirectory, configPath);
+    return {
+      configPath: bundledConfigPath,
+      config: await loadRuneConfigSafe(bundledConfigPath),
+    };
+  } catch (error) {
+    // Preserve the existing contract: a broken `rune.config.ts` must not block
+    // help rendering or metadata fallback.
+    if (isBuildFailure(error)) {
+      await writeStderrLine("Warning: Failed to load rune.config.ts.");
+      return { configPath: undefined, config: undefined };
+    }
+
+    throw error;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -83,11 +118,37 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
   try {
     projectRoot = resolveProjectPath(options);
     const { sourceDirectory, commandsDirectory } = resolveProjectDirectories(projectRoot);
-    const cliInfo = await readProjectCliInfo(projectRoot);
+    const packageCliInfo = await readProjectCliInfo(projectRoot);
+    const configPath = await resolveConfigPath(projectRoot);
+    let runDirectory: string | undefined;
+    let runConfigResult: RunConfigLoadResult | undefined;
 
-    if (cliInfo.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
-      await writeStdout(`${cliInfo.name} v${cliInfo.version}\n`);
-      return 0;
+    async function getRunDirectory(): Promise<string> {
+      runDirectory ??= await prepareRunDirectory(projectRoot);
+      return runDirectory;
+    }
+
+    async function getRunConfigResult(): Promise<RunConfigLoadResult> {
+      runConfigResult ??= await loadBundledRunConfigSafe(
+        projectRoot,
+        await getRunDirectory(),
+        configPath,
+      );
+      return runConfigResult;
+    }
+
+    if (options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
+      let cliInfo = packageCliInfo;
+
+      if (configPath !== undefined) {
+        const loadedConfig = await getRunConfigResult();
+        cliInfo = applyProjectCliInfoOverrides(packageCliInfo, loadedConfig.config);
+      }
+
+      if (cliInfo.version) {
+        await writeStdout(`${cliInfo.name} v${cliInfo.version}\n`);
+        return 0;
+      }
     }
 
     await assertCommandsDirectoryExists(commandsDirectory);
@@ -95,13 +156,14 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
     const manifest = await generateCommandManifest({ commandsDirectory });
     await writeRunManifest(projectRoot, serializeCommandManifest(manifest));
 
-    const configPath = await resolveConfigPath(projectRoot);
     const route = resolveCommandRoute(manifest, options.rawArgs);
 
-    const runDirectory = await prepareRunDirectory(projectRoot);
+    const preparedRunDirectory = await getRunDirectory();
 
     let runtimeManifest = manifest;
     let runtimeConfigPath = configPath;
+    let runtimeConfig: RuneConfig | undefined;
+    let cliInfo = packageCliInfo;
 
     if (route.kind === "command") {
       // TODO: Mirror `rune build`'s runtime dependency warnings here so
@@ -109,10 +171,10 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
       const builtSourceFilePath = await bundleCommandForRun(
         projectRoot,
         sourceDirectory,
-        runDirectory,
+        preparedRunDirectory,
         route.node,
       );
-      await copyRunAssets(sourceDirectory, runDirectory);
+      await copyRunAssets(sourceDirectory, preparedRunDirectory);
       runtimeManifest = replaceLeafSourceFilePath(manifest, route.node, builtSourceFilePath);
     }
 
@@ -122,19 +184,10 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
       (route.kind === "command" && route.helpRequested);
 
     if (willRenderHelp && configPath !== undefined) {
-      try {
-        runtimeConfigPath = await bundleConfigForRun(projectRoot, runDirectory, configPath);
-      } catch (error) {
-        // Preserve the existing contract of `loadRuneConfigSafe`: a broken
-        // `rune.config.ts` must not block help rendering. Warn and fall back to
-        // the default renderer by passing `configPath: undefined` downstream.
-        if (isBuildFailure(error)) {
-          await writeStderrLine("Warning: Failed to load rune.config.ts.");
-          runtimeConfigPath = undefined;
-        } else {
-          throw error;
-        }
-      }
+      const configResult = await getRunConfigResult();
+      runtimeConfigPath = configResult.configPath;
+      runtimeConfig = configResult.config;
+      cliInfo = applyProjectCliInfoOverrides(packageCliInfo, runtimeConfig);
     }
 
     return runManifestCommand({
@@ -144,6 +197,7 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
       version: cliInfo.version,
       cwd: options.cwd,
       configPath: runtimeConfigPath,
+      config: runtimeConfig,
     });
   } catch (error) {
     if (isBuildFailure(error)) {

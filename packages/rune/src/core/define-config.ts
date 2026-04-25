@@ -13,6 +13,21 @@ const RUNE_CONFIG_BRAND = Symbol.for("@rune-cli/rune-config");
 /** The configuration object accepted by {@link defineConfig}. */
 export interface RuneConfigInput {
   /**
+   * CLI display name used in help output and `--version` output.
+   *
+   * When omitted, Rune derives the name from `package.json` or the project
+   * directory name.
+   */
+  readonly name?: string | undefined;
+
+  /**
+   * CLI display version used in help output and `--version` output.
+   *
+   * When omitted, Rune uses `package.json`'s `version` field when available.
+   */
+  readonly version?: string | undefined;
+
+  /**
    * Custom help renderer applied to all commands, groups, and unknown-command
    * messages. Receives structured {@link HelpData} and returns the formatted
    * help string.
@@ -25,6 +40,8 @@ export interface RuneConfigInput {
 
 /** The resolved configuration object returned by {@link defineConfig}. */
 export interface RuneConfig {
+  readonly name?: string | undefined;
+  readonly version?: string | undefined;
   readonly help?: ((data: HelpData) => string) | undefined;
 }
 
@@ -52,6 +69,8 @@ export interface RuneConfig {
  */
 export function defineConfig(input: RuneConfigInput): RuneConfig {
   const config: RuneConfig = {
+    name: input.name,
+    version: input.version,
     help: input.help,
   };
 

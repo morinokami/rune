@@ -256,17 +256,21 @@ export default defineCommand({
 
 ## Help Output
 
-`--help` output is generated from `description`, `args`, `options`, `examples`, and the surrounding command tree. Override per command with `defineCommand({ help })`, or project-wide via `rune.config.ts`:
+`--help` output is generated from `description`, `args`, `options`, `examples`, and the surrounding command tree. Override per command with `defineCommand({ help })`, or configure project-wide help and CLI metadata via `rune.config.ts`:
 
 ```ts
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
+  name: "my-cli",
+  version: "1.0.0",
   help(data) {
-    return `${renderDefaultHelp(data)}\n\nDocs: https://example.com`;
+    return `${data.cliName}\n\n${renderDefaultHelp(data)}\n\nDocs: https://example.com`;
   },
 });
 ```
+
+`name` and `version` affect help output, `--version`, and JSON help metadata. When omitted, Rune derives them from `package.json`.
 
 Pass `--json` with `--help` to inspect the same help data as structured JSON. This works even for commands that do not enable runtime JSON output with `json: true`:
 
@@ -320,7 +324,7 @@ Rune ships an official [Agent Skill](https://agentskills.io/home) that gives AI 
 | --------------------- | ----------------------------------------------------------------------- |
 | `defineCommand(def)`  | Define a command. The returned value must be the file's default export. |
 | `defineGroup(def)`    | Define metadata for a command group in `_group.ts`.                     |
-| `defineConfig(def)`   | Define project-wide configuration in `rune.config.ts`.                  |
+| `defineConfig(def)`   | Define project-wide CLI metadata and help configuration.                |
 | `CommandError`        | Structured error class for command failures.                            |
 | `renderDefaultHelp()` | Render the default help output as a string; useful from custom `help`.  |
 | `runCommand()`        | (from `@rune-cli/rune/test`) Execute a command in-process for testing.  |

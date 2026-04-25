@@ -9,13 +9,37 @@ description: defineConfig 関数の API リファレンス。
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
+  name: "my-cli",
+  version: "1.0.0",
   help(data) {
-    return `My CLI\n\n${renderDefaultHelp(data)}`;
+    return `${data.cliName}\n\n${renderDefaultHelp(data)}`;
   },
 });
 ```
 
 ## プロパティ
+
+### `name`
+
+- **型:** `string`
+- **省略可能**
+
+ヘルプ出力、`--version` 出力、JSON ヘルプのメタデータで使われる CLI 表示名です。
+
+省略した場合、Rune は `package.json` から名前を導出します:
+
+1. `bin` がオブジェクトの場合、ソートされた最初のキー
+2. scope を除いた package `name`
+3. プロジェクトディレクトリ名
+
+### `version`
+
+- **型:** `string`
+- **省略可能**
+
+ヘルプ出力、`--version` 出力、JSON ヘルプのメタデータで使われる CLI 表示バージョンです。
+
+省略した場合、Rune は利用可能であれば `package.json` の `version` フィールドを使います。`defineConfig({ version })` は `package.json` を更新しません。両方を設定する場合は、リリースワークフロー側で同期してください。
 
 ### `help`
 
@@ -36,17 +60,24 @@ export default defineConfig({
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
+  name: "my-cli",
   help(data) {
     if (data.kind === "unknown") {
       return renderDefaultHelp(data);
     }
 
-    return `My CLI\n\n${renderDefaultHelp(data)}`;
+    return `${data.cliName}\n\n${renderDefaultHelp(data)}`;
   },
 });
 ```
 
 ## 挙動
+
+### メタデータの解決
+
+`defineConfig()` の `name` と `version` は、`package.json` から導出されるメタデータを上書きします。
+
+`rune.config.ts` の読み込みに失敗した場合や、有効な `defineConfig()` の結果がデフォルトエクスポートされていない場合、Rune は `package.json` 由来のメタデータにフォールバックします。
 
 ### 優先順位
 

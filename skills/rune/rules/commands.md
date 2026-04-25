@@ -56,11 +56,15 @@ For project-wide help customization, create `rune.config.ts` at the project root
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
+  name: "my-cli",
+  version: "1.0.0",
   help(data) {
-    return renderDefaultHelp(data);
+    return `${data.cliName}\n\n${renderDefaultHelp(data)}`;
   },
 });
 ```
+
+`defineConfig({ name, version })` controls the CLI display metadata used by help output, `--version`, and JSON help. If omitted, Rune derives these values from `package.json`. `defineConfig({ version })` does not update `package.json`; keep them synchronized in the release workflow when both are used.
 
 Priority order:
 

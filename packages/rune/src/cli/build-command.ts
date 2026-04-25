@@ -8,6 +8,7 @@ import {
   serializeCommandManifest,
 } from "../manifest/generate/generate-manifest";
 import {
+  applyProjectCliInfoOverrides,
   assertCommandsDirectoryExists,
   readProjectCliInfo,
   readProjectPackageJson,
@@ -15,6 +16,7 @@ import {
   resolveProjectDirectories,
   resolveProjectPath,
 } from "../project/project-files";
+import { loadRuneConfigSafe } from "../runtime/load-rune-config";
 import { copyBuiltAssets } from "./copy-assets";
 import { toPosixPath } from "./path-utils";
 import {
@@ -87,14 +89,17 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
     await assertCommandsDirectoryExists(commandsDirectory);
     const sourceManifest = await generateCommandManifest({ commandsDirectory });
     const builtManifest = createBuiltManifest(sourceManifest, sourceDirectory);
-    const cliInfo = await readProjectCliInfo(projectRoot);
+    const packageCliInfo = await readProjectCliInfo(projectRoot);
     const packageJson = await readProjectPackageJson(projectRoot);
     const configPath = await resolveConfigPath(projectRoot);
     const externalDependenciesContext = createExternalDependenciesContext();
 
     await rm(distDirectory, { recursive: true, force: true });
     await writeBuiltRuntimeFiles(distDirectory, builtManifest);
-    await Promise.all([
+    const configBuildPromise = configPath
+      ? buildConfigEntry(projectRoot, distDirectory, configPath, externalDependenciesContext)
+      : Promise.resolve(undefined);
+    const backgroundBuilds = Promise.all([
       buildCommandEntries(
         projectRoot,
         sourceDirectory,
@@ -102,11 +107,20 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
         sourceManifest,
         externalDependenciesContext,
       ),
-      buildCliEntry(distDirectory, cliInfo.name, cliInfo.version, configPath !== undefined),
-      ...(configPath
-        ? [buildConfigEntry(projectRoot, distDirectory, configPath, externalDependenciesContext)]
-        : []),
       copyBuiltAssets(sourceDirectory, distDirectory),
+    ]);
+    // Avoid unhandled rejections while waiting for config metadata.
+    void backgroundBuilds.catch(() => undefined);
+
+    const builtConfigPath = await configBuildPromise;
+    const config = builtConfigPath
+      ? await loadRuneConfigSafe(builtConfigPath, { label: "built rune.config.ts" })
+      : undefined;
+    const cliInfo = applyProjectCliInfoOverrides(packageCliInfo, config);
+
+    await Promise.all([
+      backgroundBuilds,
+      buildCliEntry(distDirectory, cliInfo.name, cliInfo.version, configPath !== undefined),
     ]);
     for (const warning of getRuntimeDependencyWarnings(
       packageJson,
