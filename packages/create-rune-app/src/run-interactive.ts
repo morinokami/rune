@@ -11,6 +11,7 @@ import { computeNextSteps } from "./next-steps.ts";
 import { getProvidedProjectState, wasExplicitlyPassed } from "./plan.ts";
 
 const INTRO_TITLE = styleText(["bgCyan", "black", "bold"], "Create Rune App");
+const DEFAULT_PROJECT_NAME = "my-rune-app";
 
 function cancelProjectCreation(): never {
   cancel("Project creation canceled");
@@ -61,18 +62,18 @@ export async function runInteractive(
 
       const promptResult = await text({
         message: "What is your project name?",
-        placeholder: "my-rune-app",
+        placeholder: DEFAULT_PROJECT_NAME,
+        defaultValue: DEFAULT_PROJECT_NAME,
         validate(value) {
-          if (value === undefined || value.trim().length === 0) {
-            return "Project name is required";
-          }
+          const projectName =
+            value === undefined || value.trim().length === 0 ? DEFAULT_PROJECT_NAME : value;
 
           // "." / "./" scaffolds into cwd; conflict check runs post-prompt.
-          if (value === "." || value === "./") {
+          if (projectName === "." || projectName === "./") {
             return undefined;
           }
 
-          const projectRoot = path.resolve(cwd, value);
+          const projectRoot = path.resolve(cwd, projectName);
 
           if (existsSync(projectRoot)) {
             return `Target directory already exists: ${projectRoot}`;
