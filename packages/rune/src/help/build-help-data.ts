@@ -82,86 +82,8 @@ export async function buildCommandHelpData(
 ): Promise<CommandHelpData> {
   const { command, pathSegments, cliName, version, subcommands } = options;
 
-  const argumentEntries: ArgumentHelpEntry[] = [];
-
-  for (const field of command.args) {
-    const required = await resolveFieldRequired(field);
-
-    if (isSchemaField(field)) {
-      argumentEntries.push({
-        name: field.name,
-        type: undefined,
-        description: field.description,
-        required,
-        ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
-        ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
-      });
-    } else if (isEnumField(field)) {
-      const entry: EnumArgumentHelpEntry = {
-        name: field.name,
-        type: "enum",
-        values: [...field.values],
-        description: field.description,
-        required,
-        ...(field.default !== undefined ? { default: field.default } : {}),
-      };
-      argumentEntries.push(entry);
-    } else {
-      const entry: PrimitiveArgumentHelpEntry = {
-        name: field.name,
-        type: field.type,
-        description: field.description,
-        required,
-        ...(field.default !== undefined ? { default: field.default } : {}),
-      };
-      argumentEntries.push(entry);
-    }
-  }
-
-  const optionEntries: UserOptionHelpEntry[] = [];
-
-  for (const field of command.options) {
-    const required = await resolveFieldRequired(field);
-
-    if (isSchemaField(field)) {
-      optionEntries.push({
-        name: field.name,
-        short: field.short,
-        type: undefined,
-        description: field.description,
-        required,
-        multiple: isMultipleOption(field),
-        negatable: false as const,
-        ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
-        ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
-      });
-    } else if (isEnumField(field)) {
-      const entry: EnumOptionHelpEntry = {
-        name: field.name,
-        short: field.short,
-        type: "enum",
-        values: [...field.values],
-        description: field.description,
-        required,
-        multiple: isMultipleOption(field),
-        negatable: false as const,
-        ...(field.default !== undefined ? { default: field.default } : {}),
-      };
-      optionEntries.push(entry);
-    } else {
-      const entry: PrimitiveOptionHelpEntry = {
-        name: field.name,
-        short: field.short,
-        type: field.type,
-        description: field.description,
-        required,
-        multiple: isMultipleOption(field),
-        negatable: field.type === "boolean" && field.default === true,
-        ...(field.default !== undefined ? { default: field.default } : {}),
-      };
-      optionEntries.push(entry);
-    }
-  }
+  const argumentEntries = await Promise.all(command.args.map(buildArgumentHelpEntry));
+  const optionEntries = await Promise.all(command.options.map(buildOptionHelpEntry));
 
   const frameworkOptions: FrameworkOptionHelpEntry[] = [
     ...(command.json ? [{ name: "json", description: "Output structured results as JSON" }] : []),
@@ -209,6 +131,84 @@ export function buildUnknownCommandHelpData(
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
+
+async function buildArgumentHelpEntry(field: CommandArgField): Promise<ArgumentHelpEntry> {
+  const required = await resolveFieldRequired(field);
+
+  if (isSchemaField(field)) {
+    return {
+      name: field.name,
+      type: undefined,
+      description: field.description,
+      required,
+      ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
+      ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
+    };
+  }
+
+  if (isEnumField(field)) {
+    return {
+      name: field.name,
+      type: "enum",
+      values: [...field.values],
+      description: field.description,
+      required,
+      ...(field.default !== undefined ? { default: field.default } : {}),
+    } satisfies EnumArgumentHelpEntry;
+  }
+
+  return {
+    name: field.name,
+    type: field.type,
+    description: field.description,
+    required,
+    ...(field.default !== undefined ? { default: field.default } : {}),
+  } satisfies PrimitiveArgumentHelpEntry;
+}
+
+async function buildOptionHelpEntry(field: CommandOptionField): Promise<UserOptionHelpEntry> {
+  const required = await resolveFieldRequired(field);
+  const multiple = isMultipleOption(field);
+
+  if (isSchemaField(field)) {
+    return {
+      name: field.name,
+      short: field.short,
+      type: undefined,
+      description: field.description,
+      required,
+      multiple,
+      negatable: false as const,
+      ...(field.typeLabel !== undefined ? { typeLabel: field.typeLabel } : {}),
+      ...(field.defaultLabel !== undefined ? { defaultLabel: field.defaultLabel } : {}),
+    };
+  }
+
+  if (isEnumField(field)) {
+    return {
+      name: field.name,
+      short: field.short,
+      type: "enum",
+      values: [...field.values],
+      description: field.description,
+      required,
+      multiple,
+      negatable: false as const,
+      ...(field.default !== undefined ? { default: field.default } : {}),
+    } satisfies EnumOptionHelpEntry;
+  }
+
+  return {
+    name: field.name,
+    short: field.short,
+    type: field.type,
+    description: field.description,
+    required,
+    multiple,
+    negatable: field.type === "boolean" && field.default === true,
+    ...(field.default !== undefined ? { default: field.default } : {}),
+  } satisfies PrimitiveOptionHelpEntry;
+}
 
 async function resolveFieldRequired(field: CommandArgField | CommandOptionField): Promise<boolean> {
   if (isSchemaField(field)) {
