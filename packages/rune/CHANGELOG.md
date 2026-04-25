@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.40
+
+### Patch Changes
+
+- [#147](https://github.com/morinokami/rune/pull/147) [`69e3cdc`](https://github.com/morinokami/rune/commit/69e3cdc4ebc320df78fb25fe31caa8f150221b54) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): allow defineConfig to override CLI metadata
+
 ## 0.0.39
 
 ### Patch Changes
