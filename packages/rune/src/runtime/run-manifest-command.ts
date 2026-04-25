@@ -1,7 +1,12 @@
 import type { CommandFailure } from "../core/command-error";
 import type { RuneConfig } from "../core/define-config";
+import type { RunCommandPipelineResult } from "../core/run-command-pipeline";
 import type { CommandManifest } from "../manifest/manifest-types";
 import type { LoadCommandFn } from "../manifest/manifest-types";
+import type {
+  ResolvedCommandRoute,
+  ResolveCommandRouteResult,
+} from "../routing/resolve-command-route";
 
 import { runCommandPipeline } from "../core/run-command-pipeline";
 import { toHelpJson } from "../help/help-json";
@@ -32,88 +37,139 @@ export interface RunManifestCommandOptions {
 // Resolves argv, loads only the matched leaf module, and executes it in-process.
 export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
   try {
-    if (options.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
+    if (isVersionRequest(options)) {
       process.stdout.write(`${options.cliName} v${options.version}\n`);
       return 0;
     }
 
     const route = resolveCommandRoute(options.manifest, options.rawArgs);
-    const helpJsonRequested = isHelpJsonRequested(route, options.rawArgs);
-    const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
+    const loadCommand = options.loadCommand ?? defaultLoadCommand;
 
-    if (route.kind === "unknown" || route.kind === "group" || route.helpRequested) {
-      if (helpJsonRequested) {
-        const resolved = await resolveHelpData({
-          manifest: options.manifest,
-          route,
-          cliName: options.cliName,
-          version: options.version,
-          loadCommand: loadCommandFn,
-        });
-
-        if (!writeJsonToStdout(toHelpJson(resolved))) {
-          return 1;
-        }
-
-        return route.kind === "unknown" ? 1 : 0;
-      }
-
-      const config =
-        options.config ??
-        (options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined);
-      const output = await renderResolvedHelp({
-        manifest: options.manifest,
-        route,
-        cliName: options.cliName,
-        version: options.version,
-        loadCommand: loadCommandFn,
-        helpRenderer: config?.help,
-      });
-
-      if (route.kind === "unknown") {
-        process.stderr.write(ensureTrailingNewline(output));
-        return 1;
-      }
-
-      process.stdout.write(output);
-      return 0;
+    if (shouldShowHelp(route)) {
+      return await renderHelpRoute(options, route, loadCommand);
     }
 
-    const command = await loadCommandFn(route.node);
-
-    const result = await runCommandPipeline({
-      command,
-      argv: route.remainingArgs,
-      cwd: options.cwd,
-      simulateAgent: options.simulateAgent,
-    });
-
-    let exitCode = result.exitCode;
-
-    if (result.jsonMode) {
-      if (result.exitCode === 0) {
-        const payload = result.data === undefined ? null : result.data;
-        if (!writeJsonToStdout(payload)) {
-          exitCode = 1;
-        }
-      } else {
-        writeJsonToStdout(renderJsonError(result.error));
-      }
-    }
-
-    if (!result.jsonMode && result.error) {
-      const renderedError = renderHumanError(result.error);
-
-      if (renderedError !== "") {
-        process.stderr.write(ensureTrailingNewline(renderedError));
-      }
-    }
-
-    return exitCode;
+    return await runResolvedCommand(options, route, loadCommand);
   } catch (error) {
     process.stderr.write(ensureTrailingNewline(formatRuntimeError(error)));
     return 1;
   }
+}
+
+function isVersionRequest(
+  options: Pick<RunManifestCommandOptions, "rawArgs" | "version">,
+): options is Pick<RunManifestCommandOptions, "rawArgs"> & { readonly version: string } {
+  return (
+    Boolean(options.version) && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])
+  );
+}
+
+// Route variants that should render help instead of executing a command.
+type HelpRoute =
+  | Exclude<ResolveCommandRouteResult, ResolvedCommandRoute>
+  | (ResolvedCommandRoute & { readonly helpRequested: true });
+
+function shouldShowHelp(route: ResolveCommandRouteResult): route is HelpRoute {
+  return route.kind === "unknown" || route.kind === "group" || route.helpRequested;
+}
+
+async function renderHelpRoute(
+  options: RunManifestCommandOptions,
+  route: HelpRoute,
+  loadCommand: LoadCommandFn,
+): Promise<number> {
+  if (isJsonHelpRequested(route, options.rawArgs)) {
+    return renderJsonHelp(options, route, loadCommand);
+  }
+
+  return renderHumanHelp(options, route, loadCommand);
+}
+
+async function renderJsonHelp(
+  options: RunManifestCommandOptions,
+  route: HelpRoute,
+  loadCommand: LoadCommandFn,
+): Promise<number> {
+  const resolved = await resolveHelpData({
+    manifest: options.manifest,
+    route,
+    cliName: options.cliName,
+    version: options.version,
+    loadCommand,
+  });
+
+  if (!writeJsonToStdout(toHelpJson(resolved))) {
+    return 1;
+  }
+
+  return route.kind === "unknown" ? 1 : 0;
+}
+
+async function renderHumanHelp(
+  options: RunManifestCommandOptions,
+  route: HelpRoute,
+  loadCommand: LoadCommandFn,
+): Promise<number> {
+  const config =
+    options.config ??
+    (options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined);
+  const output = await renderResolvedHelp({
+    manifest: options.manifest,
+    route,
+    cliName: options.cliName,
+    version: options.version,
+    loadCommand,
+    helpRenderer: config?.help,
+  });
+
+  if (route.kind === "unknown") {
+    process.stderr.write(ensureTrailingNewline(output));
+    return 1;
+  }
+
+  process.stdout.write(output);
+  return 0;
+}
+
+async function runResolvedCommand(
+  options: RunManifestCommandOptions,
+  route: ResolvedCommandRoute,
+  loadCommand: LoadCommandFn,
+): Promise<number> {
+  const command = await loadCommand(route.node);
+  const result = await runCommandPipeline({
+    command,
+    argv: route.remainingArgs,
+    cwd: options.cwd,
+    simulateAgent: options.simulateAgent,
+  });
+
+  return emitCommandResult(result);
+}
+
+function emitCommandResult(result: RunCommandPipelineResult): number {
+  let exitCode = result.exitCode;
+
+  if (result.jsonMode) {
+    if (result.exitCode === 0) {
+      const payload = result.data === undefined ? null : result.data;
+      if (!writeJsonToStdout(payload)) {
+        exitCode = 1;
+      }
+    } else {
+      writeJsonToStdout(renderJsonError(result.error));
+    }
+  }
+
+  if (!result.jsonMode && result.error) {
+    const renderedError = renderHumanError(result.error);
+
+    if (renderedError !== "") {
+      process.stderr.write(ensureTrailingNewline(renderedError));
+    }
+  }
+
+  return exitCode;
 }
 
 function ensureTrailingNewline(text: string): string {
@@ -200,10 +256,7 @@ function isJsonFlag(token: string): boolean {
   return token === "--json";
 }
 
-function isHelpJsonRequested(
-  route: ReturnType<typeof resolveCommandRoute>,
-  rawArgs: readonly string[],
-): boolean {
+function isJsonHelpRequested(route: HelpRoute, rawArgs: readonly string[]): boolean {
   if (route.kind === "unknown") {
     return (
       hasTokenBeforeTerminator(rawArgs, isHelpFlag) && hasTokenBeforeTerminator(rawArgs, isJsonFlag)
