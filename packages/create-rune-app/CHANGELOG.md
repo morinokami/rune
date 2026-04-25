@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.14
+
+### Patch Changes
+
+- [#145](https://github.com/morinokami/rune/pull/145) [`872b353`](https://github.com/morinokami/rune/commit/872b353ac7f018b1cab8e777886c0c5a09423cfa) Thanks [@morinokami](https://github.com/morinokami)! - feat(create-rune-app): use default project name when prompt is empty
+
 ## 0.0.13
 
 ### Patch Changes
