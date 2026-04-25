@@ -2,6 +2,12 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { CommandManifest, CommandManifestCommandNode } from "../manifest/manifest-types";
+import type {
+  ProjectCliInfo,
+  ProjectDirectories,
+  ProjectPackageJson,
+} from "../project/project-files";
+import type { ExternalDependenciesContext } from "./rolldown-shared";
 
 import {
   generateCommandManifest,
@@ -46,21 +52,22 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
 
   try {
     projectRoot = resolveProjectPath(options);
-    const { sourceDirectory, commandsDirectory, distDirectory } =
-      resolveProjectDirectories(projectRoot);
+    const context = await createBuildCommandContext(projectRoot);
+    const { sourceDirectory, commandsDirectory, distDirectory } = context.directories;
 
     await assertCommandsDirectoryExists(commandsDirectory);
     const sourceManifest = await generateCommandManifest({ commandsDirectory });
     const builtManifest = createBuiltManifest(sourceManifest, sourceDirectory);
-    const packageCliInfo = await readProjectCliInfo(projectRoot);
-    const packageJson = await readProjectPackageJson(projectRoot);
-    const configPath = await resolveConfigPath(projectRoot);
-    const externalDependenciesContext = createExternalDependenciesContext();
 
     await rm(distDirectory, { recursive: true, force: true });
     await writeBuiltRuntimeFiles(distDirectory, builtManifest);
-    const configBuildPromise = configPath
-      ? buildConfigEntry(projectRoot, distDirectory, configPath, externalDependenciesContext)
+    const configBuildPromise = context.configPath
+      ? buildConfigEntry(
+          projectRoot,
+          distDirectory,
+          context.configPath,
+          context.externalDependencies,
+        )
       : Promise.resolve(undefined);
     const backgroundBuilds = Promise.all([
       buildCommandEntries(
@@ -68,7 +75,7 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
         sourceDirectory,
         distDirectory,
         sourceManifest,
-        externalDependenciesContext,
+        context.externalDependencies,
       ),
       copyBuiltAssets(sourceDirectory, distDirectory),
     ]);
@@ -79,15 +86,15 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
     const config = builtConfigPath
       ? await loadRuneConfigSafe(builtConfigPath, { label: "built rune.config.ts" })
       : undefined;
-    const cliInfo = applyProjectCliInfoOverrides(packageCliInfo, config);
+    const cliInfo = applyProjectCliInfoOverrides(context.packageCliInfo, config);
 
     await Promise.all([
       backgroundBuilds,
-      buildCliEntry(distDirectory, cliInfo.name, cliInfo.version, configPath !== undefined),
+      buildCliEntry(distDirectory, cliInfo.name, cliInfo.version, context.configPath !== undefined),
     ]);
     for (const warning of getRuntimeDependencyWarnings(
-      packageJson,
-      externalDependenciesContext.getExternalPackages(),
+      context.packageJson,
+      context.externalDependencies.getExternalPackages(),
     )) {
       await writeStderrLine(warning);
     }
@@ -95,14 +102,36 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
     await writeStdout(`Built CLI to ${path.join(distDirectory, BUILD_CLI_FILENAME)}\n`);
     return 0;
   } catch (error) {
-    if (isBuildFailure(error)) {
-      await writeStderrLine(formatBuildFailure(projectRoot, error));
-      return 1;
-    }
+    return reportBuildCommandError(projectRoot, error);
+  }
+}
 
-    await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune build");
+interface BuildCommandContext {
+  readonly directories: ProjectDirectories;
+  readonly packageCliInfo: ProjectCliInfo;
+  readonly packageJson?: ProjectPackageJson | undefined;
+  readonly configPath?: string | undefined;
+  readonly externalDependencies: ExternalDependenciesContext;
+}
+
+async function createBuildCommandContext(projectRoot: string): Promise<BuildCommandContext> {
+  return {
+    directories: resolveProjectDirectories(projectRoot),
+    packageCliInfo: await readProjectCliInfo(projectRoot),
+    packageJson: await readProjectPackageJson(projectRoot),
+    configPath: await resolveConfigPath(projectRoot),
+    externalDependencies: createExternalDependenciesContext(),
+  };
+}
+
+async function reportBuildCommandError(projectRoot: string, error: unknown): Promise<number> {
+  if (isBuildFailure(error)) {
+    await writeStderrLine(formatBuildFailure(projectRoot, error));
     return 1;
   }
+
+  await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune build");
+  return 1;
 }
 
 // ---------------------------------------------------------------------------
