@@ -1,4 +1,5 @@
 import type { CommandFailure } from "../core/command-error";
+import type { RuneConfig } from "../core/define-config";
 import type { CommandManifest } from "../manifest/manifest-types";
 import type { LoadCommandFn } from "../manifest/manifest-types";
 
@@ -21,6 +22,9 @@ export interface RunManifestCommandOptions {
   // Path to the rune.config.ts (or built config.mjs) module. Loaded lazily
   // only when help rendering is needed.
   readonly configPath?: string | undefined;
+  // Already-loaded config, used by callers that need config metadata before
+  // dispatching to the manifest runtime.
+  readonly config?: RuneConfig | undefined;
   // Forwarded to `runCommandPipeline`. See `RunCommandPipelineInput.simulateAgent`.
   readonly simulateAgent?: boolean | undefined;
 }
@@ -170,7 +174,9 @@ export async function runManifestCommand(options: RunManifestCommandOptions): Pr
         return route.kind === "unknown" ? 1 : 0;
       }
 
-      const config = options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined;
+      const config =
+        options.config ??
+        (options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined);
       const output = await renderResolvedHelp({
         manifest: options.manifest,
         route,

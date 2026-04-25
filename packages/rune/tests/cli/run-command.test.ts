@@ -350,6 +350,57 @@ export default defineCommand({
     expect(captured.stdout).toContain(`Usage: ${path.basename(projectRoot)} <command>\n`);
     expect(captured.stderr).toBe("");
   });
+
+  test("runRuneCli uses defineConfig name and version for help output", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "package-cli", version: "1.0.0" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({ name: "config-cli", version: "2.0.0" });
+`,
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toContain("Usage: config-cli <command>\n");
+    expect(captured.stdout).toContain("-V, --version");
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli uses defineConfig name and package version when config version is omitted", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "package-cli", version: "1.0.0" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({ name: "config-cli" });
+`,
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "--version"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("config-cli v1.0.0\n");
+    expect(captured.stderr).toBe("");
+  });
 });
 
 describe("command layouts", () => {
@@ -404,6 +455,50 @@ describe("early exits and validation", () => {
 
     expect(captured.exitCode).toBe(0);
     expect(captured.stdout).toBe("mycli v1.2.3\n");
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli returns the defineConfig version before validating src/commands", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "package-cli" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({ name: "config-cli", version: "2.0.0" });
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "--version"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("config-cli v2.0.0\n");
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli does not early-return for --version when config and package versions are omitted", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "package-cli" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({ name: "config-cli" });
+`,
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "--version"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toContain("Usage: config-cli <command>\n");
+    expect(captured.stdout).not.toContain("--version");
     expect(captured.stderr).toBe("");
   });
 });

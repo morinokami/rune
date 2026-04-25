@@ -188,18 +188,22 @@ export async function buildConfigEntry(
   distDirectory: string,
   configPath: string,
   externalDependenciesContext = createExternalDependenciesContext(),
-): Promise<void> {
+): Promise<string> {
+  const outputPath = path.join(distDirectory, BUILD_CONFIG_FILENAME);
+
   await build({
     ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
     input: configPath,
     plugins: [externalDependenciesContext.plugin],
     output: {
       // Rune assembles dist across multiple builds, so each step must preserve prior output.
-      file: path.join(distDirectory, BUILD_CONFIG_FILENAME),
+      file: outputPath,
       format: "es",
       cleanDir: false,
     },
   });
+
+  return outputPath;
 }
 
 export async function buildCliEntry(

@@ -1,6 +1,8 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
+import type { RuneConfig } from "../core/define-config";
+
 // ---------------------------------------------------------------------------
 // Constants & types
 // ---------------------------------------------------------------------------
@@ -24,6 +26,8 @@ export interface ProjectCliInfo {
   readonly name: string;
   readonly version?: string | undefined;
 }
+
+export type ProjectCliInfoOverrides = Pick<RuneConfig, "name" | "version">;
 
 export interface ResolveProjectPathOptions {
   readonly cwd?: string | undefined;
@@ -85,6 +89,16 @@ export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCl
   return {
     name: name ?? path.basename(projectRoot),
     version: packageJson?.version,
+  };
+}
+
+export function applyProjectCliInfoOverrides(
+  cliInfo: ProjectCliInfo,
+  overrides: ProjectCliInfoOverrides | undefined,
+): ProjectCliInfo {
+  return {
+    name: overrides?.name ?? cliInfo.name,
+    version: overrides?.version ?? cliInfo.version,
   };
 }
 
