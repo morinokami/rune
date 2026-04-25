@@ -116,6 +116,45 @@ export interface UnknownHelpJson {
 
 export type HelpJson = CommandHelpJson | GroupHelpJson | UnknownHelpJson;
 
+export function toHelpJson(resolved: ResolvedHelpData): HelpJson {
+  const { data } = resolved;
+
+  switch (data.kind) {
+    case "command":
+      return {
+        schemaVersion: HELP_JSON_SCHEMA_VERSION,
+        kind: "command",
+        cli: createCli(data),
+        command: createCommandMetadata({ ...data, aliases: resolved.aliases }),
+        args: data.arguments.map(mapArgument),
+        options: mapOptions(data.options, data.frameworkOptions),
+        commands: data.subcommands.map((entry) => createCommandSummary(data.pathSegments, entry)),
+      };
+    case "group":
+      return {
+        schemaVersion: HELP_JSON_SCHEMA_VERSION,
+        kind: "group",
+        cli: createCli(data),
+        command: createCommandMetadata({ ...data, aliases: resolved.aliases }),
+        commands: data.subcommands.map((entry) => createCommandSummary(data.pathSegments, entry)),
+        options: mapOptions([], data.frameworkOptions),
+      };
+    case "unknown":
+      return {
+        schemaVersion: HELP_JSON_SCHEMA_VERSION,
+        kind: "unknown",
+        cli: createCli(data),
+        attemptedPath: [...data.attemptedPath],
+        matchedPath: [...data.matchedPath],
+        unknownSegment: data.unknownSegment,
+        availableCommands: data.availableSubcommands.map((entry) =>
+          createCommandSummary(data.matchedPath, entry),
+        ),
+        suggestions: createSuggestionSummaries(data),
+      };
+  }
+}
+
 function createCli(data: HelpData): HelpJsonCli {
   return {
     name: data.cliName,
@@ -258,43 +297,4 @@ function createSuggestionSummaries(data: Extract<HelpData, { kind: "unknown" }>)
       },
     ),
   );
-}
-
-export function toHelpJson(resolved: ResolvedHelpData): HelpJson {
-  const { data } = resolved;
-
-  switch (data.kind) {
-    case "command":
-      return {
-        schemaVersion: HELP_JSON_SCHEMA_VERSION,
-        kind: "command",
-        cli: createCli(data),
-        command: createCommandMetadata({ ...data, aliases: resolved.aliases }),
-        args: data.arguments.map(mapArgument),
-        options: mapOptions(data.options, data.frameworkOptions),
-        commands: data.subcommands.map((entry) => createCommandSummary(data.pathSegments, entry)),
-      };
-    case "group":
-      return {
-        schemaVersion: HELP_JSON_SCHEMA_VERSION,
-        kind: "group",
-        cli: createCli(data),
-        command: createCommandMetadata({ ...data, aliases: resolved.aliases }),
-        commands: data.subcommands.map((entry) => createCommandSummary(data.pathSegments, entry)),
-        options: mapOptions([], data.frameworkOptions),
-      };
-    case "unknown":
-      return {
-        schemaVersion: HELP_JSON_SCHEMA_VERSION,
-        kind: "unknown",
-        cli: createCli(data),
-        attemptedPath: [...data.attemptedPath],
-        matchedPath: [...data.matchedPath],
-        unknownSegment: data.unknownSegment,
-        availableCommands: data.availableSubcommands.map((entry) =>
-          createCommandSummary(data.matchedPath, entry),
-        ),
-        suggestions: createSuggestionSummaries(data),
-      };
-  }
 }

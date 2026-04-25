@@ -53,6 +53,75 @@ export type ResolveCommandRouteResult =
   | ResolvedCommandGroupRoute
   | UnknownCommandRoute;
 
+// Resolves CLI argv tokens against the manifest without importing command modules.
+export function resolveCommandRoute(
+  manifest: CommandManifest,
+  rawArgs: readonly string[],
+): ResolveCommandRouteResult {
+  const nodeMap = createCommandManifestNodeMap(manifest);
+  const rootNode = nodeMap[""];
+
+  if (rootNode === undefined) {
+    throw new Error("Manifest root node is missing");
+  }
+
+  let currentNode: CommandManifestNode = rootNode;
+  let tokenIndex = 0;
+
+  while (tokenIndex < rawArgs.length) {
+    const token = rawArgs[tokenIndex];
+
+    if (isOptionLikeToken(token)) {
+      break;
+    }
+
+    const childPath = [...currentNode.pathSegments, token] as CommandManifestPath;
+    const childNode: CommandManifestNode | undefined = nodeMap[commandManifestPathToKey(childPath)];
+
+    if (childNode === undefined) {
+      const candidates = collectSiblingCandidates(currentNode, nodeMap);
+      const suggestions = getSuggestedChildNames(token, candidates);
+
+      if (currentNode.kind === "group" || suggestions.length > 0) {
+        return {
+          kind: "unknown",
+          attemptedPath: [...currentNode.pathSegments, token],
+          matchedPath: currentNode.pathSegments,
+          unknownSegment: token,
+          availableChildNames: currentNode.childNames,
+          suggestions,
+        };
+      }
+
+      break;
+    }
+
+    currentNode = childNode;
+    tokenIndex += 1;
+  }
+
+  const remainingArgs = rawArgs.slice(tokenIndex);
+  const helpRequested = getHelpRequested(remainingArgs);
+
+  if (currentNode.kind === "group") {
+    return {
+      kind: "group",
+      node: currentNode,
+      matchedPath: currentNode.pathSegments,
+      remainingArgs,
+      helpRequested,
+    };
+  }
+
+  return {
+    kind: "command",
+    node: currentNode,
+    matchedPath: currentNode.pathSegments,
+    remainingArgs,
+    helpRequested,
+  };
+}
+
 function isOptionLikeToken(token: string): boolean {
   return token === "--" || token.startsWith("-");
 }
@@ -129,73 +198,4 @@ function collectSiblingCandidates(
   }
 
   return candidates;
-}
-
-// Resolves CLI argv tokens against the manifest without importing command modules.
-export function resolveCommandRoute(
-  manifest: CommandManifest,
-  rawArgs: readonly string[],
-): ResolveCommandRouteResult {
-  const nodeMap = createCommandManifestNodeMap(manifest);
-  const rootNode = nodeMap[""];
-
-  if (rootNode === undefined) {
-    throw new Error("Manifest root node is missing");
-  }
-
-  let currentNode: CommandManifestNode = rootNode;
-  let tokenIndex = 0;
-
-  while (tokenIndex < rawArgs.length) {
-    const token = rawArgs[tokenIndex];
-
-    if (isOptionLikeToken(token)) {
-      break;
-    }
-
-    const childPath = [...currentNode.pathSegments, token] as CommandManifestPath;
-    const childNode: CommandManifestNode | undefined = nodeMap[commandManifestPathToKey(childPath)];
-
-    if (childNode === undefined) {
-      const candidates = collectSiblingCandidates(currentNode, nodeMap);
-      const suggestions = getSuggestedChildNames(token, candidates);
-
-      if (currentNode.kind === "group" || suggestions.length > 0) {
-        return {
-          kind: "unknown",
-          attemptedPath: [...currentNode.pathSegments, token],
-          matchedPath: currentNode.pathSegments,
-          unknownSegment: token,
-          availableChildNames: currentNode.childNames,
-          suggestions,
-        };
-      }
-
-      break;
-    }
-
-    currentNode = childNode;
-    tokenIndex += 1;
-  }
-
-  const remainingArgs = rawArgs.slice(tokenIndex);
-  const helpRequested = getHelpRequested(remainingArgs);
-
-  if (currentNode.kind === "group") {
-    return {
-      kind: "group",
-      node: currentNode,
-      matchedPath: currentNode.pathSegments,
-      remainingArgs,
-      helpRequested,
-    };
-  }
-
-  return {
-    kind: "command",
-    node: currentNode,
-    matchedPath: currentNode.pathSegments,
-    remainingArgs,
-    helpRequested,
-  };
 }

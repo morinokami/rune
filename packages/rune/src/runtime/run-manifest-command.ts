@@ -29,6 +29,93 @@ export interface RunManifestCommandOptions {
   readonly simulateAgent?: boolean | undefined;
 }
 
+// Resolves argv, loads only the matched leaf module, and executes it in-process.
+export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
+  try {
+    if (options.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
+      process.stdout.write(`${options.cliName} v${options.version}\n`);
+      return 0;
+    }
+
+    const route = resolveCommandRoute(options.manifest, options.rawArgs);
+    const helpJsonRequested = isHelpJsonRequested(route, options.rawArgs);
+    const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
+
+    if (route.kind === "unknown" || route.kind === "group" || route.helpRequested) {
+      if (helpJsonRequested) {
+        const resolved = await resolveHelpData({
+          manifest: options.manifest,
+          route,
+          cliName: options.cliName,
+          version: options.version,
+          loadCommand: loadCommandFn,
+        });
+
+        if (!writeJsonToStdout(toHelpJson(resolved))) {
+          return 1;
+        }
+
+        return route.kind === "unknown" ? 1 : 0;
+      }
+
+      const config =
+        options.config ??
+        (options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined);
+      const output = await renderResolvedHelp({
+        manifest: options.manifest,
+        route,
+        cliName: options.cliName,
+        version: options.version,
+        loadCommand: loadCommandFn,
+        helpRenderer: config?.help,
+      });
+
+      if (route.kind === "unknown") {
+        process.stderr.write(ensureTrailingNewline(output));
+        return 1;
+      }
+
+      process.stdout.write(output);
+      return 0;
+    }
+
+    const command = await loadCommandFn(route.node);
+
+    const result = await runCommandPipeline({
+      command,
+      argv: route.remainingArgs,
+      cwd: options.cwd,
+      simulateAgent: options.simulateAgent,
+    });
+
+    let exitCode = result.exitCode;
+
+    if (result.jsonMode) {
+      if (result.exitCode === 0) {
+        const payload = result.data === undefined ? null : result.data;
+        if (!writeJsonToStdout(payload)) {
+          exitCode = 1;
+        }
+      } else {
+        writeJsonToStdout(renderJsonError(result.error));
+      }
+    }
+
+    if (!result.jsonMode && result.error) {
+      const renderedError = renderHumanError(result.error);
+
+      if (renderedError !== "") {
+        process.stderr.write(ensureTrailingNewline(renderedError));
+      }
+    }
+
+    return exitCode;
+  } catch (error) {
+    process.stderr.write(ensureTrailingNewline(formatRuntimeError(error)));
+    return 1;
+  }
+}
+
 function ensureTrailingNewline(text: string): string {
   return text.endsWith("\n") ? text : `${text}\n`;
 }
@@ -142,92 +229,5 @@ function writeJsonToStdout(
     process.stdout.write(`${JSON.stringify(fallback)}\n`);
     process.stderr.write("Failed to serialize command output\n");
     return false;
-  }
-}
-
-// Resolves argv, loads only the matched leaf module, and executes it in-process.
-export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
-  try {
-    if (options.version && options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
-      process.stdout.write(`${options.cliName} v${options.version}\n`);
-      return 0;
-    }
-
-    const route = resolveCommandRoute(options.manifest, options.rawArgs);
-    const helpJsonRequested = isHelpJsonRequested(route, options.rawArgs);
-    const loadCommandFn = options.loadCommand ?? defaultLoadCommand;
-
-    if (route.kind === "unknown" || route.kind === "group" || route.helpRequested) {
-      if (helpJsonRequested) {
-        const resolved = await resolveHelpData({
-          manifest: options.manifest,
-          route,
-          cliName: options.cliName,
-          version: options.version,
-          loadCommand: loadCommandFn,
-        });
-
-        if (!writeJsonToStdout(toHelpJson(resolved))) {
-          return 1;
-        }
-
-        return route.kind === "unknown" ? 1 : 0;
-      }
-
-      const config =
-        options.config ??
-        (options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined);
-      const output = await renderResolvedHelp({
-        manifest: options.manifest,
-        route,
-        cliName: options.cliName,
-        version: options.version,
-        loadCommand: loadCommandFn,
-        helpRenderer: config?.help,
-      });
-
-      if (route.kind === "unknown") {
-        process.stderr.write(ensureTrailingNewline(output));
-        return 1;
-      }
-
-      process.stdout.write(output);
-      return 0;
-    }
-
-    const command = await loadCommandFn(route.node);
-
-    const result = await runCommandPipeline({
-      command,
-      argv: route.remainingArgs,
-      cwd: options.cwd,
-      simulateAgent: options.simulateAgent,
-    });
-
-    let exitCode = result.exitCode;
-
-    if (result.jsonMode) {
-      if (result.exitCode === 0) {
-        const payload = result.data === undefined ? null : result.data;
-        if (!writeJsonToStdout(payload)) {
-          exitCode = 1;
-        }
-      } else {
-        writeJsonToStdout(renderJsonError(result.error));
-      }
-    }
-
-    if (!result.jsonMode && result.error) {
-      const renderedError = renderHumanError(result.error);
-
-      if (renderedError !== "") {
-        process.stderr.write(ensureTrailingNewline(renderedError));
-      }
-    }
-
-    return exitCode;
-  } catch (error) {
-    process.stderr.write(ensureTrailingNewline(formatRuntimeError(error)));
-    return 1;
   }
 }

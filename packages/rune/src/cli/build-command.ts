@@ -38,43 +38,6 @@ export interface RunBuildCommandOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Manifest & path helpers
-// ---------------------------------------------------------------------------
-
-function replaceFileExtension(filePath: string, extension: string): string {
-  const parsedPath = path.parse(filePath);
-  return path.join(parsedPath.dir, `${parsedPath.name}${extension}`);
-}
-
-function createBuiltManifest(manifest: CommandManifest, sourceDirectory: string): CommandManifest {
-  return {
-    nodes: manifest.nodes.map((node) => {
-      if (node.kind !== "command") {
-        return node;
-      }
-
-      const relativeSourceFilePath = path.relative(sourceDirectory, node.sourceFilePath);
-
-      return {
-        ...node,
-        sourceFilePath: toPosixPath(replaceFileExtension(relativeSourceFilePath, ".mjs")),
-      } satisfies CommandManifestCommandNode;
-    }),
-  };
-}
-
-async function writeBuiltRuntimeFiles(
-  distDirectory: string,
-  manifest: CommandManifest,
-): Promise<void> {
-  await mkdir(distDirectory, { recursive: true });
-  await writeFile(
-    path.join(distDirectory, BUILD_MANIFEST_FILENAME),
-    serializeCommandManifest(manifest),
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -140,4 +103,41 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
     await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune build");
     return 1;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Manifest & path helpers
+// ---------------------------------------------------------------------------
+
+function replaceFileExtension(filePath: string, extension: string): string {
+  const parsedPath = path.parse(filePath);
+  return path.join(parsedPath.dir, `${parsedPath.name}${extension}`);
+}
+
+function createBuiltManifest(manifest: CommandManifest, sourceDirectory: string): CommandManifest {
+  return {
+    nodes: manifest.nodes.map((node) => {
+      if (node.kind !== "command") {
+        return node;
+      }
+
+      const relativeSourceFilePath = path.relative(sourceDirectory, node.sourceFilePath);
+
+      return {
+        ...node,
+        sourceFilePath: toPosixPath(replaceFileExtension(relativeSourceFilePath, ".mjs")),
+      } satisfies CommandManifestCommandNode;
+    }),
+  };
+}
+
+async function writeBuiltRuntimeFiles(
+  distDirectory: string,
+  manifest: CommandManifest,
+): Promise<void> {
+  await mkdir(distDirectory, { recursive: true });
+  await writeFile(
+    path.join(distDirectory, BUILD_MANIFEST_FILENAME),
+    serializeCommandManifest(manifest),
+  );
 }

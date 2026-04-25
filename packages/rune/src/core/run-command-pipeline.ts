@@ -49,7 +49,89 @@ export interface RunCommandPipelineResult<TCommandData = unknown> {
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Shared command pipeline used by both the real CLI and the test harness.
+ *
+ * Handles `--json` flag extraction, argv parsing, and command execution for
+ * a resolved leaf command. Callers are responsible for routing, module
+ * loading, output presentation (JSON serialization, stderr formatting), and
+ * providing an appropriate {@link OutputSink}.
+ */
+export async function runCommandPipeline<TCommand extends RunnableCommand>(
+  input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
+): Promise<RunCommandPipelineResult<InferCommandData<TCommand>>> {
+  const { command, argv, cwd, sink = defaultSink, simulateAgent } = input;
+  const commandDefinition = command as unknown as DefinedCommand<
+    readonly CommandArgField[],
+    readonly CommandOptionField[]
+  >;
+
+  const { jsonMode: explicitJsonMode, parseArgv } = commandDefinition.json
+    ? extractJsonFlag(argv)
+    : { jsonMode: false, parseArgv: argv };
+  const agentDetected = simulateAgent ?? isAgent;
+  const jsonMode = commandDefinition.json && (explicitJsonMode || agentDetected);
+
+  const output = createOutput(sink, { silentStdout: jsonMode });
+
+  const parsed = await parseCommandArgs(commandDefinition, parseArgv);
+
+  if (!parsed.ok) {
+    return {
+      parseOk: false,
+      exitCode: 1,
+      error: normalizeParseFailure(parsed.error.message),
+      data: undefined,
+      jsonMode,
+    };
+  }
+
+  try {
+    const args = addCamelCaseAliases(
+      normalizeToCanonicalKeys(commandDefinition.args, {
+        ...parsed.value.args,
+      } as Record<string, unknown>),
+    );
+    const options = addCamelCaseAliases(
+      normalizeOptions(commandDefinition.options, parsed.value.options as Record<string, unknown>),
+    );
+
+    // The `command.run` signature is generic, but at this layer we operate on
+    // erased `DefinedCommand` instances. The casts above produce the shapes
+    // that `command.run` expects at runtime; TypeScript cannot verify this
+    // statically, so we use `as never` to satisfy the call-site constraint.
+    const data = await commandDefinition.run({
+      options: options as never,
+      args: args as never,
+      cwd: cwd ?? process.cwd(),
+      rawArgs: argv,
+      output,
+    });
+
+    return {
+      parseOk: true,
+      exitCode: 0,
+      data: data as InferCommandData<TCommand>,
+      jsonMode,
+    };
+  } catch (error) {
+    const failure = normalizeExecutionFailure(error);
+
+    return {
+      parseOk: true,
+      exitCode: failure.exitCode,
+      error: failure,
+      data: undefined,
+      jsonMode,
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
 // ---------------------------------------------------------------------------
 
 const defaultSink: OutputSink = {
@@ -193,86 +275,4 @@ function normalizeOptions(
   }
 
   return options;
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-/**
- * Shared command pipeline used by both the real CLI and the test harness.
- *
- * Handles `--json` flag extraction, argv parsing, and command execution for
- * a resolved leaf command. Callers are responsible for routing, module
- * loading, output presentation (JSON serialization, stderr formatting), and
- * providing an appropriate {@link OutputSink}.
- */
-export async function runCommandPipeline<TCommand extends RunnableCommand>(
-  input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
-): Promise<RunCommandPipelineResult<InferCommandData<TCommand>>> {
-  const { command, argv, cwd, sink = defaultSink, simulateAgent } = input;
-  const commandDefinition = command as unknown as DefinedCommand<
-    readonly CommandArgField[],
-    readonly CommandOptionField[]
-  >;
-
-  const { jsonMode: explicitJsonMode, parseArgv } = commandDefinition.json
-    ? extractJsonFlag(argv)
-    : { jsonMode: false, parseArgv: argv };
-  const agentDetected = simulateAgent ?? isAgent;
-  const jsonMode = commandDefinition.json && (explicitJsonMode || agentDetected);
-
-  const output = createOutput(sink, { silentStdout: jsonMode });
-
-  const parsed = await parseCommandArgs(commandDefinition, parseArgv);
-
-  if (!parsed.ok) {
-    return {
-      parseOk: false,
-      exitCode: 1,
-      error: normalizeParseFailure(parsed.error.message),
-      data: undefined,
-      jsonMode,
-    };
-  }
-
-  try {
-    const args = addCamelCaseAliases(
-      normalizeToCanonicalKeys(commandDefinition.args, {
-        ...parsed.value.args,
-      } as Record<string, unknown>),
-    );
-    const options = addCamelCaseAliases(
-      normalizeOptions(commandDefinition.options, parsed.value.options as Record<string, unknown>),
-    );
-
-    // The `command.run` signature is generic, but at this layer we operate on
-    // erased `DefinedCommand` instances. The casts above produce the shapes
-    // that `command.run` expects at runtime; TypeScript cannot verify this
-    // statically, so we use `as never` to satisfy the call-site constraint.
-    const data = await commandDefinition.run({
-      options: options as never,
-      args: args as never,
-      cwd: cwd ?? process.cwd(),
-      rawArgs: argv,
-      output,
-    });
-
-    return {
-      parseOk: true,
-      exitCode: 0,
-      data: data as InferCommandData<TCommand>,
-      jsonMode,
-    };
-  } catch (error) {
-    const failure = normalizeExecutionFailure(error);
-
-    return {
-      parseOk: true,
-      exitCode: failure.exitCode,
-      error: failure,
-      data: undefined,
-      jsonMode,
-    };
-  }
 }

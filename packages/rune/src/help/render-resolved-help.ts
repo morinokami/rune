@@ -32,17 +32,6 @@ export interface ResolveHelpDataOptions {
   readonly loadCommand: LoadCommandFn;
 }
 
-function renderHelpSafe<T extends HelpData>(render: (data: T) => string, data: T): string {
-  try {
-    return render(data);
-  } catch {
-    process.stderr.write(
-      "Warning: Custom help renderer threw an error. Using default help renderer.\n",
-    );
-    return renderDefaultHelp(data);
-  }
-}
-
 export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<ResolvedHelpData> {
   if (options.route.kind === "unknown") {
     const data = buildUnknownCommandHelpData(
@@ -104,5 +93,16 @@ export async function renderResolvedHelp(options: RenderResolvedHelpOptions): Pr
       const render = resolved.commandHelp ?? options.helpRenderer ?? renderDefaultHelp;
       return renderHelpSafe(render, resolved.data);
     }
+  }
+}
+
+function renderHelpSafe<T extends HelpData>(render: (data: T) => string, data: T): string {
+  try {
+    return render(data);
+  } catch {
+    process.stderr.write(
+      "Warning: Custom help renderer threw an error. Using default help renderer.\n",
+    );
+    return renderDefaultHelp(data);
   }
 }

@@ -15,6 +15,45 @@ export interface CommandMetadata {
   readonly examples: readonly string[];
 }
 
+export async function extractMetadataFromSourceFile(
+  sourceFilePath: string,
+): Promise<CommandMetadata | undefined> {
+  const sourceText = await readFile(sourceFilePath, "utf8");
+  const { program } = await parse(sourceFilePath, sourceText);
+  const knownMetadata = new Map<string, CommandMetadata | undefined>();
+
+  for (const statement of program.body) {
+    if (statement.type === "VariableDeclaration") {
+      for (const declaration of statement.declarations) {
+        if (declaration.id.type !== "Identifier" || !declaration.init) {
+          continue;
+        }
+
+        knownMetadata.set(
+          declaration.id.name,
+          extractMetadataFromCommandDefinition(declaration.init, program.body, knownMetadata),
+        );
+      }
+
+      continue;
+    }
+
+    if (statement.type === "ExportDefaultDeclaration") {
+      if (isExpression(statement.declaration)) {
+        return extractMetadataFromCommandDefinition(
+          statement.declaration,
+          program.body,
+          knownMetadata,
+        );
+      }
+
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
 function getPropertyNameText(key: PropertyKey, computed: boolean): string | undefined {
   if (computed) {
     return undefined;
@@ -214,45 +253,6 @@ function isNamedCallExpression(expression: Expression, name: string): boolean {
   }
 
   return false;
-}
-
-export async function extractMetadataFromSourceFile(
-  sourceFilePath: string,
-): Promise<CommandMetadata | undefined> {
-  const sourceText = await readFile(sourceFilePath, "utf8");
-  const { program } = await parse(sourceFilePath, sourceText);
-  const knownMetadata = new Map<string, CommandMetadata | undefined>();
-
-  for (const statement of program.body) {
-    if (statement.type === "VariableDeclaration") {
-      for (const declaration of statement.declarations) {
-        if (declaration.id.type !== "Identifier" || !declaration.init) {
-          continue;
-        }
-
-        knownMetadata.set(
-          declaration.id.name,
-          extractMetadataFromCommandDefinition(declaration.init, program.body, knownMetadata),
-        );
-      }
-
-      continue;
-    }
-
-    if (statement.type === "ExportDefaultDeclaration") {
-      if (isExpression(statement.declaration)) {
-        return extractMetadataFromCommandDefinition(
-          statement.declaration,
-          program.body,
-          knownMetadata,
-        );
-      }
-
-      return undefined;
-    }
-  }
-
-  return undefined;
 }
 
 function isExpression(node: ExportDefaultDeclarationKind): node is Expression {

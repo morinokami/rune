@@ -25,24 +25,7 @@ import { isSchemaField } from "../core/schema-field";
 import { resolveSubcommandHelpEntries } from "./resolve-subcommand-help-entries";
 
 // ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-async function resolveFieldRequired(field: CommandArgField | CommandOptionField): Promise<boolean> {
-  if (isSchemaField(field)) {
-    const omittedValidation = await field.schema["~standard"].validate(undefined);
-    return !("value" in omittedValidation);
-  }
-
-  return field.required === true && field.default === undefined;
-}
-
-function isMultipleOption(field: CommandOptionField): boolean {
-  return "multiple" in field && field.multiple === true;
-}
-
-// ---------------------------------------------------------------------------
-// Builder options
+// Public types
 // ---------------------------------------------------------------------------
 
 export interface BuildGroupHelpDataOptions {
@@ -61,7 +44,7 @@ export interface BuildCommandHelpDataOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Builder functions
+// Public API
 // ---------------------------------------------------------------------------
 
 export function buildGroupHelpData(options: BuildGroupHelpDataOptions): GroupHelpData {
@@ -221,4 +204,21 @@ export function buildUnknownCommandHelpData(
     availableSubcommands,
     suggestions: [...route.suggestions],
   };
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+async function resolveFieldRequired(field: CommandArgField | CommandOptionField): Promise<boolean> {
+  if (isSchemaField(field)) {
+    const omittedValidation = await field.schema["~standard"].validate(undefined);
+    return !("value" in omittedValidation);
+  }
+
+  return field.required === true && field.default === undefined;
+}
+
+function isMultipleOption(field: CommandOptionField): boolean {
+  return "multiple" in field && field.multiple === true;
 }

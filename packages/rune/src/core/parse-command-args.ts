@@ -61,6 +61,107 @@ type ParseArgsOptionConfig = {
   readonly multiple?: boolean | undefined;
 };
 
+export async function parseCommandArgs<
+  TArgsFields extends readonly CommandArgField[],
+  TOptionsFields extends readonly CommandOptionField[],
+>(
+  command: DefinedCommand<TArgsFields, TOptionsFields>,
+  rawArgs: readonly string[],
+): Promise<
+  ParseCommandArgsResult<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>
+> {
+  let parsed: NodeParseArgsResult | undefined;
+
+  try {
+    parsed = parseArgs({
+      args: [...rawArgs],
+      allowPositionals: true,
+      strict: true,
+      tokens: true,
+      options: buildParseArgsOptions(command.options),
+    });
+  } catch (error) {
+    return mapNodeParseArgsError(error);
+  }
+
+  const duplicateError = detectDuplicateOption(command.options, parsed.tokens);
+
+  if (duplicateError) {
+    return duplicateError;
+  }
+
+  const parsedArgs: Record<string, unknown> = {};
+  const parsedOptions: Record<string, unknown> = {};
+
+  for (const [index, field] of command.args.entries()) {
+    const result = await parseArgumentField(field, parsed.positionals[index]);
+
+    if (!result.ok) {
+      return result;
+    }
+
+    if (result.present) {
+      parsedArgs[field.name] = result.value;
+    }
+  }
+
+  if (parsed.positionals.length > command.args.length) {
+    return createUnexpectedArgumentError(parsed.positionals[command.args.length]);
+  }
+
+  for (const field of command.options) {
+    const rawValue = parsed.values[field.name];
+    const negated = isNegatableOption(field) ? parsed.values[negationName(field.name)] : undefined;
+
+    if (rawValue !== undefined && negated !== undefined) {
+      return createConflictingOptionError(field);
+    }
+
+    if (negated !== undefined) {
+      parsedOptions[field.name] = false;
+      continue;
+    }
+
+    // Values returned by `parseArgs` have already been tokenized and matched to this option.
+    if (rawValue !== undefined) {
+      const result = isMultipleOption(field)
+        ? await parseMultipleOptionField(field, rawValue)
+        : await parseOptionField(field, rawValue);
+
+      if (!result.ok) {
+        return result;
+      }
+
+      if (result.present) {
+        parsedOptions[field.name] = result.value;
+      }
+
+      continue;
+    }
+
+    const result = await resolveMissingField(field, () => createMissingOptionError(field));
+
+    if (!result.ok) {
+      return result;
+    }
+
+    if (result.present) {
+      parsedOptions[field.name] = result.value;
+    } else if (!isSchemaField(field) && field.type === "boolean") {
+      parsedOptions[field.name] = false;
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      options: addCamelCaseAliases(parsedOptions) as InferNamedFields<TOptionsFields, true>,
+      args: addCamelCaseAliases(parsedArgs) as InferNamedFields<TArgsFields>,
+      rawArgs,
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Negatable boolean options
 // ---------------------------------------------------------------------------
@@ -572,109 +673,4 @@ function detectDuplicateOption(
   }
 
   return undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Orchestration
-// ---------------------------------------------------------------------------
-
-export async function parseCommandArgs<
-  TArgsFields extends readonly CommandArgField[],
-  TOptionsFields extends readonly CommandOptionField[],
->(
-  command: DefinedCommand<TArgsFields, TOptionsFields>,
-  rawArgs: readonly string[],
-): Promise<
-  ParseCommandArgsResult<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>
-> {
-  let parsed: NodeParseArgsResult | undefined;
-
-  try {
-    parsed = parseArgs({
-      args: [...rawArgs],
-      allowPositionals: true,
-      strict: true,
-      tokens: true,
-      options: buildParseArgsOptions(command.options),
-    });
-  } catch (error) {
-    return mapNodeParseArgsError(error);
-  }
-
-  const duplicateError = detectDuplicateOption(command.options, parsed.tokens);
-
-  if (duplicateError) {
-    return duplicateError;
-  }
-
-  const parsedArgs: Record<string, unknown> = {};
-  const parsedOptions: Record<string, unknown> = {};
-
-  for (const [index, field] of command.args.entries()) {
-    const result = await parseArgumentField(field, parsed.positionals[index]);
-
-    if (!result.ok) {
-      return result;
-    }
-
-    if (result.present) {
-      parsedArgs[field.name] = result.value;
-    }
-  }
-
-  if (parsed.positionals.length > command.args.length) {
-    return createUnexpectedArgumentError(parsed.positionals[command.args.length]);
-  }
-
-  for (const field of command.options) {
-    const rawValue = parsed.values[field.name];
-    const negated = isNegatableOption(field) ? parsed.values[negationName(field.name)] : undefined;
-
-    if (rawValue !== undefined && negated !== undefined) {
-      return createConflictingOptionError(field);
-    }
-
-    if (negated !== undefined) {
-      parsedOptions[field.name] = false;
-      continue;
-    }
-
-    // Values returned by `parseArgs` have already been tokenized and matched to this option.
-    if (rawValue !== undefined) {
-      const result = isMultipleOption(field)
-        ? await parseMultipleOptionField(field, rawValue)
-        : await parseOptionField(field, rawValue);
-
-      if (!result.ok) {
-        return result;
-      }
-
-      if (result.present) {
-        parsedOptions[field.name] = result.value;
-      }
-
-      continue;
-    }
-
-    const result = await resolveMissingField(field, () => createMissingOptionError(field));
-
-    if (!result.ok) {
-      return result;
-    }
-
-    if (result.present) {
-      parsedOptions[field.name] = result.value;
-    } else if (!isSchemaField(field) && field.type === "boolean") {
-      parsedOptions[field.name] = false;
-    }
-  }
-
-  return {
-    ok: true,
-    value: {
-      options: addCamelCaseAliases(parsedOptions) as InferNamedFields<TOptionsFields, true>,
-      args: addCamelCaseAliases(parsedArgs) as InferNamedFields<TArgsFields>,
-      rawArgs,
-    },
-  };
 }

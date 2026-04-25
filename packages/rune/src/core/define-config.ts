@@ -1,12 +1,6 @@
 import type { HelpData } from "./help-types";
 
 // ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const RUNE_CONFIG_BRAND = Symbol.for("@rune-cli/rune-config");
-
-// ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
 
@@ -89,3 +83,9 @@ export function isRuneConfig(value: unknown): value is RuneConfig {
     (value as { [RUNE_CONFIG_BRAND]?: unknown })[RUNE_CONFIG_BRAND] === true
   );
 }
+
+// ---------------------------------------------------------------------------
+// Private constants
+// ---------------------------------------------------------------------------
+
+const RUNE_CONFIG_BRAND = Symbol.for("@rune-cli/rune-config");

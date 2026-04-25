@@ -1,26 +1,5 @@
 import type { ProjectPackageJson } from "../project/project-files";
 
-function isDeclaredRuntimeDependency(
-  packageJson: ProjectPackageJson | undefined,
-  packageName: string,
-): boolean {
-  return (
-    packageJson?.dependencies?.[packageName] !== undefined ||
-    packageJson?.optionalDependencies?.[packageName] !== undefined ||
-    packageJson?.peerDependencies?.[packageName] !== undefined
-  );
-}
-
-function isDevDependencyOnly(
-  packageJson: ProjectPackageJson | undefined,
-  packageName: string,
-): boolean {
-  return (
-    packageJson?.devDependencies?.[packageName] !== undefined &&
-    !isDeclaredRuntimeDependency(packageJson, packageName)
-  );
-}
-
 export function getRuntimeDependencyWarnings(
   packageJson: ProjectPackageJson | undefined,
   externalPackages: ReadonlySet<string>,
@@ -47,4 +26,25 @@ export function getRuntimeDependencyWarnings(
   }
 
   return warnings;
+}
+
+function isDeclaredRuntimeDependency(
+  packageJson: ProjectPackageJson | undefined,
+  packageName: string,
+): boolean {
+  return (
+    packageJson?.dependencies?.[packageName] !== undefined ||
+    packageJson?.optionalDependencies?.[packageName] !== undefined ||
+    packageJson?.peerDependencies?.[packageName] !== undefined
+  );
+}
+
+function isDevDependencyOnly(
+  packageJson: ProjectPackageJson | undefined,
+  packageName: string,
+): boolean {
+  return (
+    packageJson?.devDependencies?.[packageName] !== undefined &&
+    !isDeclaredRuntimeDependency(packageJson, packageName)
+  );
 }

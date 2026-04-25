@@ -3,15 +3,6 @@ import path from "node:path";
 
 import type { RuneConfig } from "../core/define-config";
 
-// ---------------------------------------------------------------------------
-// Constants & types
-// ---------------------------------------------------------------------------
-
-const SOURCE_DIRECTORY_NAME = "src";
-const COMMANDS_DIRECTORY_NAME = path.join(SOURCE_DIRECTORY_NAME, "commands");
-const DIST_DIRECTORY_NAME = "dist";
-const CONFIG_FILENAME = "rune.config.ts";
-
 export interface ProjectPackageJson {
   readonly bin?: string | Readonly<Record<string, string>> | undefined;
   readonly dependencies?: Readonly<Record<string, string>> | undefined;
@@ -41,7 +32,7 @@ export interface ProjectDirectories {
 }
 
 // ---------------------------------------------------------------------------
-// Path resolution
+// Public API
 // ---------------------------------------------------------------------------
 
 export function resolveProjectPath(options: ResolveProjectPathOptions): string {
@@ -56,31 +47,6 @@ export function resolveProjectDirectories(projectRoot: string): ProjectDirectori
     distDirectory: path.join(projectRoot, DIST_DIRECTORY_NAME),
   };
 }
-
-// ---------------------------------------------------------------------------
-// Project metadata helpers
-// ---------------------------------------------------------------------------
-
-function resolveCliNameFromPackageJson(packageJson: ProjectPackageJson): string | undefined {
-  if (packageJson.bin && typeof packageJson.bin === "object") {
-    const binNames = Object.keys(packageJson.bin).sort((left, right) => left.localeCompare(right));
-
-    if (binNames.length > 0) {
-      return binNames[0];
-    }
-  }
-
-  if (packageJson.name && packageJson.name.length > 0) {
-    const packageNameSegments = packageJson.name.split("/");
-    return packageNameSegments.at(-1) ?? packageJson.name;
-  }
-
-  return undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCliInfo> {
   const packageJson = await readProjectPackageJson(projectRoot);
@@ -150,4 +116,34 @@ export async function assertCommandsDirectoryExists(commandsDirectory: string): 
       `Commands directory not found at ${COMMANDS_DIRECTORY_NAME}. Create it or check the --project <path> option.`,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Private constants
+// ---------------------------------------------------------------------------
+
+const SOURCE_DIRECTORY_NAME = "src";
+const COMMANDS_DIRECTORY_NAME = path.join(SOURCE_DIRECTORY_NAME, "commands");
+const DIST_DIRECTORY_NAME = "dist";
+const CONFIG_FILENAME = "rune.config.ts";
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+function resolveCliNameFromPackageJson(packageJson: ProjectPackageJson): string | undefined {
+  if (packageJson.bin && typeof packageJson.bin === "object") {
+    const binNames = Object.keys(packageJson.bin).sort((left, right) => left.localeCompare(right));
+
+    if (binNames.length > 0) {
+      return binNames[0];
+    }
+  }
+
+  if (packageJson.name && packageJson.name.length > 0) {
+    const packageNameSegments = packageJson.name.split("/");
+    return packageNameSegments.at(-1) ?? packageJson.name;
+  }
+
+  return undefined;
 }

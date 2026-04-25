@@ -6,12 +6,6 @@ import type { CommandMetadata } from "./extract-description";
 
 import { validateGroupMetaFile } from "./validate-group-meta";
 
-const COMMAND_ENTRY_FILE = "index.ts";
-const GROUP_META_FILE = "_group.ts";
-const BARE_COMMAND_EXTENSION = ".ts";
-const DECLARATION_FILE_SUFFIXES = [".d.ts", ".d.mts", ".d.cts"];
-const TEST_COMMAND_NAME_SUFFIXES = [".test", ".spec"];
-
 export interface WalkDirectoryResult {
   readonly nodes: readonly CommandManifestNode[];
   readonly hasNode: boolean;
@@ -31,86 +25,6 @@ export function comparePathSegments(left: CommandManifestPath, right: CommandMan
   }
 
   return left.length - right.length;
-}
-
-function collectSiblingEntries(
-  childResults: readonly { directoryName: string; walkResult: WalkDirectoryResult }[],
-  bareCommandNodes: readonly CommandManifestNode[],
-  pathSegments: readonly string[],
-): readonly { readonly name: string; readonly aliases: readonly string[] }[] {
-  const entries: { name: string; aliases: readonly string[] }[] = [];
-
-  for (const childResult of childResults) {
-    if (!childResult.walkResult.hasNode) {
-      continue;
-    }
-
-    // Find the direct child node (the one whose pathSegments matches this level).
-    const childNode = childResult.walkResult.nodes.find(
-      (n) =>
-        n.pathSegments.length === pathSegments.length + 1 &&
-        n.pathSegments[pathSegments.length] === childResult.directoryName,
-    );
-
-    entries.push({
-      name: childResult.directoryName,
-      aliases: childNode?.aliases ?? [],
-    });
-  }
-
-  for (const bareNode of bareCommandNodes) {
-    const name = bareNode.pathSegments[bareNode.pathSegments.length - 1];
-
-    entries.push({
-      name,
-      aliases: bareNode.aliases,
-    });
-  }
-
-  return entries;
-}
-
-function validateSiblingAliases(
-  siblings: readonly { readonly name: string; readonly aliases: readonly string[] }[],
-): void {
-  // All canonical names and aliases that occupy the same namespace.
-  const seen = new Map<string, string>();
-
-  for (const sibling of siblings) {
-    const existing = seen.get(sibling.name);
-
-    if (existing !== undefined) {
-      throw new Error(`Command name conflict: "${sibling.name}" is already used by "${existing}".`);
-    }
-
-    seen.set(sibling.name, sibling.name);
-
-    for (const alias of sibling.aliases) {
-      if (alias === sibling.name) {
-        throw new Error(
-          `Command alias "${alias}" for "${sibling.name}" is the same as its canonical name.`,
-        );
-      }
-
-      const conflicting = seen.get(alias);
-
-      if (conflicting !== undefined) {
-        throw new Error(
-          `Command alias conflict: alias "${alias}" for "${sibling.name}" conflicts with "${conflicting}".`,
-        );
-      }
-
-      seen.set(alias, sibling.name);
-    }
-  }
-}
-
-function isPrivateRouteEntry(name: string): boolean {
-  return name.startsWith("_");
-}
-
-function isTestCommandName(commandName: string): boolean {
-  return TEST_COMMAND_NAME_SUFFIXES.some((suffix) => commandName.endsWith(suffix));
 }
 
 export async function walkCommandsDirectory(
@@ -316,4 +230,90 @@ export async function walkCommandsDirectory(
     nodes: [node, ...descendantNodes, ...bareCommandNodes],
     hasNode: true,
   };
+}
+
+const COMMAND_ENTRY_FILE = "index.ts";
+const GROUP_META_FILE = "_group.ts";
+const BARE_COMMAND_EXTENSION = ".ts";
+const DECLARATION_FILE_SUFFIXES = [".d.ts", ".d.mts", ".d.cts"];
+const TEST_COMMAND_NAME_SUFFIXES = [".test", ".spec"];
+
+function collectSiblingEntries(
+  childResults: readonly { directoryName: string; walkResult: WalkDirectoryResult }[],
+  bareCommandNodes: readonly CommandManifestNode[],
+  pathSegments: readonly string[],
+): readonly { readonly name: string; readonly aliases: readonly string[] }[] {
+  const entries: { name: string; aliases: readonly string[] }[] = [];
+
+  for (const childResult of childResults) {
+    if (!childResult.walkResult.hasNode) {
+      continue;
+    }
+
+    // Find the direct child node (the one whose pathSegments matches this level).
+    const childNode = childResult.walkResult.nodes.find(
+      (n) =>
+        n.pathSegments.length === pathSegments.length + 1 &&
+        n.pathSegments[pathSegments.length] === childResult.directoryName,
+    );
+
+    entries.push({
+      name: childResult.directoryName,
+      aliases: childNode?.aliases ?? [],
+    });
+  }
+
+  for (const bareNode of bareCommandNodes) {
+    const name = bareNode.pathSegments[bareNode.pathSegments.length - 1];
+
+    entries.push({
+      name,
+      aliases: bareNode.aliases,
+    });
+  }
+
+  return entries;
+}
+
+function validateSiblingAliases(
+  siblings: readonly { readonly name: string; readonly aliases: readonly string[] }[],
+): void {
+  // All canonical names and aliases that occupy the same namespace.
+  const seen = new Map<string, string>();
+
+  for (const sibling of siblings) {
+    const existing = seen.get(sibling.name);
+
+    if (existing !== undefined) {
+      throw new Error(`Command name conflict: "${sibling.name}" is already used by "${existing}".`);
+    }
+
+    seen.set(sibling.name, sibling.name);
+
+    for (const alias of sibling.aliases) {
+      if (alias === sibling.name) {
+        throw new Error(
+          `Command alias "${alias}" for "${sibling.name}" is the same as its canonical name.`,
+        );
+      }
+
+      const conflicting = seen.get(alias);
+
+      if (conflicting !== undefined) {
+        throw new Error(
+          `Command alias conflict: alias "${alias}" for "${sibling.name}" conflicts with "${conflicting}".`,
+        );
+      }
+
+      seen.set(alias, sibling.name);
+    }
+  }
+}
+
+function isPrivateRouteEntry(name: string): boolean {
+  return name.startsWith("_");
+}
+
+function isTestCommandName(commandName: string): boolean {
+  return TEST_COMMAND_NAME_SUFFIXES.some((suffix) => commandName.endsWith(suffix));
 }

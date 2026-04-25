@@ -29,77 +29,10 @@ import {
 import { formatBuildFailure, isBuildFailure } from "./rolldown-shared";
 import { writeStderrLine, writeStdout } from "./write-result";
 
-// ---------------------------------------------------------------------------
-// Constants & types
-// ---------------------------------------------------------------------------
-
-const RUN_MANIFEST_DIRECTORY_PATH = ".rune";
-const RUN_MANIFEST_FILENAME = "manifest.json";
-
 export interface RunRunCommandOptions {
   readonly rawArgs: readonly string[];
   readonly cwd?: string | undefined;
   readonly projectPath?: string | undefined;
-}
-
-interface RunConfigLoadResult {
-  readonly configPath?: string | undefined;
-  readonly config?: RuneConfig | undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Manifest helpers
-// ---------------------------------------------------------------------------
-
-async function writeRunManifest(projectRoot: string, manifestContents: string): Promise<void> {
-  const manifestDirectory = path.join(projectRoot, RUN_MANIFEST_DIRECTORY_PATH);
-  const manifestPath = path.join(manifestDirectory, RUN_MANIFEST_FILENAME);
-
-  await mkdir(manifestDirectory, { recursive: true });
-  await writeFile(manifestPath, manifestContents);
-}
-
-function replaceLeafSourceFilePath(
-  manifest: CommandManifest,
-  leaf: CommandManifestCommandNode,
-  builtSourceFilePath: string,
-): CommandManifest {
-  return {
-    nodes: manifest.nodes.map((node) => {
-      if (node.kind !== "command" || node.sourceFilePath !== leaf.sourceFilePath) {
-        return node;
-      }
-
-      return { ...node, sourceFilePath: builtSourceFilePath };
-    }),
-  };
-}
-
-async function loadBundledRunConfigSafe(
-  projectRoot: string,
-  runDirectory: string,
-  configPath: string | undefined,
-): Promise<RunConfigLoadResult> {
-  if (configPath === undefined) {
-    return { configPath: undefined, config: undefined };
-  }
-
-  try {
-    const bundledConfigPath = await bundleConfigForRun(projectRoot, runDirectory, configPath);
-    return {
-      configPath: bundledConfigPath,
-      config: await loadRuneConfigSafe(bundledConfigPath),
-    };
-  } catch (error) {
-    // Preserve the existing contract: a broken `rune.config.ts` must not block
-    // help rendering or metadata fallback.
-    if (isBuildFailure(error)) {
-      await writeStderrLine("Warning: Failed to load rune.config.ts.");
-      return { configPath: undefined, config: undefined };
-    }
-
-    throw error;
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -207,5 +140,68 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
 
     await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune run");
     return 1;
+  }
+}
+
+const RUN_MANIFEST_DIRECTORY_PATH = ".rune";
+const RUN_MANIFEST_FILENAME = "manifest.json";
+
+interface RunConfigLoadResult {
+  readonly configPath?: string | undefined;
+  readonly config?: RuneConfig | undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Manifest helpers
+// ---------------------------------------------------------------------------
+
+async function writeRunManifest(projectRoot: string, manifestContents: string): Promise<void> {
+  const manifestDirectory = path.join(projectRoot, RUN_MANIFEST_DIRECTORY_PATH);
+  const manifestPath = path.join(manifestDirectory, RUN_MANIFEST_FILENAME);
+
+  await mkdir(manifestDirectory, { recursive: true });
+  await writeFile(manifestPath, manifestContents);
+}
+
+function replaceLeafSourceFilePath(
+  manifest: CommandManifest,
+  leaf: CommandManifestCommandNode,
+  builtSourceFilePath: string,
+): CommandManifest {
+  return {
+    nodes: manifest.nodes.map((node) => {
+      if (node.kind !== "command" || node.sourceFilePath !== leaf.sourceFilePath) {
+        return node;
+      }
+
+      return { ...node, sourceFilePath: builtSourceFilePath };
+    }),
+  };
+}
+
+async function loadBundledRunConfigSafe(
+  projectRoot: string,
+  runDirectory: string,
+  configPath: string | undefined,
+): Promise<RunConfigLoadResult> {
+  if (configPath === undefined) {
+    return { configPath: undefined, config: undefined };
+  }
+
+  try {
+    const bundledConfigPath = await bundleConfigForRun(projectRoot, runDirectory, configPath);
+    return {
+      configPath: bundledConfigPath,
+      config: await loadRuneConfigSafe(bundledConfigPath),
+    };
+  } catch (error) {
+    // Preserve the existing contract: a broken `rune.config.ts` must not block
+    // help rendering or metadata fallback.
+    if (isBuildFailure(error)) {
+      await writeStderrLine("Warning: Failed to load rune.config.ts.");
+      return { configPath: undefined, config: undefined };
+    }
+
+    throw error;
   }
 }
