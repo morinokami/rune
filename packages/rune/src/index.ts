@@ -1,17 +1,14 @@
-export { CommandError, defineCommand, defineGroup } from "@rune-cli/core";
+export { CommandError } from "./core/command-error";
+export { defineCommand } from "./core/define-command";
+export { defineConfig } from "./core/define-config";
+export { defineGroup } from "./core/define-group";
+export type { CommandContext, DefinedCommand } from "./core/command-types";
+export type { DefinedGroup } from "./core/define-group";
+export type { CommandArgField, CommandOptionField } from "./core/field-types";
 export type {
-  CommandArgField,
-  CommandContext,
   CommandHelpData,
-  CommandOptionField,
-  DefinedCommand,
-  DefinedGroup,
-} from "@rune-cli/core";
-
-export { defineConfig } from "./define-config";
-export { renderDefaultHelp } from "./manifest/runtime/render-default-help";
-export type {
   GroupHelpData,
   HelpData,
   UnknownCommandHelpData,
-} from "./manifest/runtime/build-help-data";
+} from "./core/help-types";
+export { renderDefaultHelp } from "./help/render-default-help";

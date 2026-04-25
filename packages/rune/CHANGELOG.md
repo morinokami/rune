@@ -1,5 +1,23 @@
 # @rune-cli/rune
 
+## 0.0.39
+
+### Patch Changes
+
+- [#142](https://github.com/morinokami/rune/pull/142) [`8c1e1ee`](https://github.com/morinokami/rune/commit/8c1e1ee66488756df40e57b93dca1b3a1c456446) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): auto-enable JSON mode under AI agents
+
+## 0.0.38
+
+### Patch Changes
+
+- [#140](https://github.com/morinokami/rune/pull/140) [`10b5147`](https://github.com/morinokami/rune/commit/10b5147f259525f72b79cfd24089a2d5e3ff7f34) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add JSON help introspection
+
+## 0.0.37
+
+### Patch Changes
+
+- [#138](https://github.com/morinokami/rune/pull/138) [`c631753`](https://github.com/morinokami/rune/commit/c63175335fc881213741cbcefcc462a84ba1b7d7) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): emit compact JSON in --json mode
+
 ## 0.0.36
 
 ### Patch Changes

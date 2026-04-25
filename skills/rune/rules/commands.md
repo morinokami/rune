@@ -68,6 +68,16 @@ Priority order:
 2. `defineConfig({ help })`
 3. `renderDefaultHelp()`
 
+### JSON help
+
+Use `--help --json` to inspect the same help data as structured JSON:
+
+```sh
+my-cli deploy --help --json
+```
+
+This works for commands, groups, and unknown-command suggestions. It does not require the command to set `json: true`; runtime JSON output and JSON help are separate features. Custom help renderers are text-only and are not applied to `--help --json`.
+
 ### CommandContext (`ctx`)
 
 | Property  | Type                | Description                                            |
@@ -228,8 +238,9 @@ export default defineCommand({
 });
 ```
 
-- **With `--json`**: `output.log()` suppressed, return value printed as formatted JSON to stdout
+- **With `--json`**: `output.log()` suppressed, return value printed as a single-line JSON document to stdout (no indentation)
 - **Without `--json`**: `output.log()` works normally, return value is not printed
+- **Under AI agents**: Rune auto-enables JSON mode when it detects an AI agent environment (via std-env's `isAgent`), even without `--json`. CI and shell pipes are unaffected — only known agent environment variables trigger this.
 - `output.error()` always writes to stderr regardless of mode
 - `--json` is only recognized before the `--` terminator
 - Return value must be serializable by `JSON.stringify()`

@@ -7,8 +7,6 @@ import {
   generateCommandManifest,
   serializeCommandManifest,
 } from "../manifest/generate/generate-manifest";
-import { resolveCommandRoute } from "../manifest/runtime/resolve-command-route";
-import { runManifestCommand } from "../manifest/runtime/run-manifest-command";
 import {
   assertCommandsDirectoryExists,
   readProjectCliInfo,
@@ -16,13 +14,15 @@ import {
   resolveProjectDirectories,
   resolveProjectPath,
 } from "../project/project-files";
+import { isVersionFlag } from "../routing/framework-flags";
+import { resolveCommandRoute } from "../routing/resolve-command-route";
+import { runManifestCommand } from "../runtime/run-manifest-command";
 import {
   bundleCommandForRun,
   bundleConfigForRun,
   copyRunAssets,
   prepareRunDirectory,
 } from "./bundle-for-run";
-import { isVersionFlag } from "./flags";
 import { formatBuildFailure, isBuildFailure } from "./rolldown-shared";
 import { writeStderrLine, writeStdout } from "./write-result";
 

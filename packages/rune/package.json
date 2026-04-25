@@ -1,6 +1,6 @@
 {
   "name": "@rune-cli/rune",
-  "version": "0.0.36",
+  "version": "0.0.39",
   "description": "Rune is an agent-native CLI framework designed for the agentic era.",
   "homepage": "https://github.com/morinokami/rune#readme",
   "bugs": {
@@ -25,10 +25,6 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
-    "./cli": {
-      "types": "./dist/cli.d.mts",
-      "import": "./dist/cli.mjs"
-    },
     "./test": {
       "types": "./dist/test.d.mts",
       "import": "./dist/test.mjs"
@@ -46,15 +42,16 @@
   },
   "dependencies": {
     "oxc-parser": "catalog:",
-    "rolldown": "catalog:"
+    "rolldown": "catalog:",
+    "std-env": "catalog:"
   },
   "devDependencies": {
-    "@rune-cli/core": "workspace:*",
-    "@rune-cli/test-utils": "workspace:*",
+    "@standard-schema/spec": "catalog:",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "zod": "catalog:"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -9,22 +9,6 @@
       "entry": ["vite.config.ts"],
       "ignoreDependencies": ["@arethetypeswrong/cli", "@changesets/cli", "pkg-pr-new", "publint"]
     },
-    "packages/core": {
-      "entry": ["src/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
-      "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignoreDependencies": ["@typescript/native-preview"]
-    },
-    "packages/create-rune-app": {
-      "entry": ["src/commands/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
-      "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignoreDependencies": ["@typescript/native-preview"]
-    },
-    "packages/test-utils": {
-      "entry": ["src/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
-      "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignoreDependencies": ["@typescript/native-preview"]
-    },
-    "docs": {},
     "packages/rune": {
       "entry": [
         "src/index.ts",
@@ -36,6 +20,12 @@
       ],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
       "ignoreDependencies": ["@typescript/native-preview", "vp"]
-    }
+    },
+    "packages/create-rune-app": {
+      "entry": ["src/commands/index.ts", "tests/**/*.test.ts", "vite.config.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignoreDependencies": ["@typescript/native-preview"]
+    },
+    "docs": {}
   }
 }

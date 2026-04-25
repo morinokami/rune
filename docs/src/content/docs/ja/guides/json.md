@@ -29,22 +29,11 @@ export default defineCommand({
 
 ## 出力の振る舞い
 
-ユーザーが `--json` フラグを付けてコマンドを実行すると、`run()` の戻り値が整形された JSON として stdout に出力されます:
+ユーザーが `--json` フラグを付けてコマンドを実行すると、`run()` の戻り値がインデントなしの 1 行の JSON ドキュメントとして stdout に出力されます:
 
 ```bash
 $ your-cli projects list --json
-{
-  "projects": [
-    {
-      "id": 1,
-      "name": "alpha"
-    },
-    {
-      "id": 2,
-      "name": "beta"
-    }
-  ]
-}
+{"projects":[{"id":1,"name":"alpha"},{"id":2,"name":"beta"}]}
 ```
 
 `--json` フラグが渡された場合、`output.log()` による出力は自動的に抑制されます。一方、`output.error()` は引き続き stderr に出力されます。JSON モードでは成功・失敗を問わず stdout には常に 1 つの JSON ドキュメントだけが出力されるため、`jq` などのツールやプログラムから stdout をそのまま利用できます。
@@ -76,6 +65,10 @@ export default defineCommand({
 
 JSON モードの抑制対象はフレームワークの `output` API のみです。`console.log()` や `process.stdout.write()` で直接書き込まれた出力は抑制されず、JSON ペイロードに混入する原因になります。コマンドの出力には `output.log()` と `output.error()` を使用してください。
 
+## AI エージェント実行時の自動有効化
+
+`json: true` が設定されたコマンドでは、CLI が AI エージェント（Claude Code、Cursor、Codex など）から呼び出されていることを検知すると、`--json` フラグが明示されていなくても Rune が自動的に JSON モードを有効化します。これにより、人間には読みやすいテキスト出力を、エージェントには構造化された JSON 出力を、単一のコマンドで提供できます。エージェント側が `--json` の存在を知って付与する必要はありません。
+
 ## `output.log()` が重要な理由
 
 Rune の出力ヘルパーは単なる書き方の好みではありません:
@@ -99,13 +92,7 @@ JSON モードでコマンドが失敗した場合、エラー情報が `error` 
 
 ```bash
 $ your-cli projects list --json
-{
-  "error": {
-    "kind": "config/not-found",
-    "message": "Config file was not found",
-    "hint": "Create rune.config.ts"
-  }
-}
+{"error":{"kind":"config/not-found","message":"Config file was not found","hint":"Create rune.config.ts"}}
 ```
 
 エラーペイロードには以下のフィールドが含まれます:

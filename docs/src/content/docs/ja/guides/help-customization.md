@@ -57,7 +57,7 @@ export default defineConfig({
 });
 ```
 
-この設定により、すべてのコマンド、グループ、未知のコマンド時のヘルプ画面の先頭に「My CLI v1.0」が表示されるようになります。
+この設定により、すべてのコマンド、グループ、コマンドが見つからない場合のヘルプ画面の先頭に「My CLI v1.0」が表示されるようになります。
 
 `help` の `data` 引数は `HelpData` union で、`data.kind` によってケースを分岐できます:
 
@@ -80,7 +80,7 @@ export default defineConfig({
 
 - `"command"`: 個別コマンドのヘルプ
 - `"group"`: サブコマンドをもつグループのヘルプ
-- `"unknown"`: 未知のコマンドが入力されたときのヘルプ
+- `"unknown"`: コマンドが見つからない場合のヘルプ
 
 詳細は [`defineConfig()` のリファレンス](/ja/reference/define-config/)を参照してください。
 
@@ -92,7 +92,7 @@ export default defineConfig({
 2. `defineConfig({ help })`: プロジェクト全体のレンダラー
 3. Rune の組み込みデフォルトレンダラー
 
-コマンドに `help` が定義されていれば常にそれが使われ、`rune.config.ts` の `help` やデフォルトレンダラーは呼ばれません。`help` が定義されていないコマンドや、グループ・未知のコマンドには、プロジェクト全体の `help` が適用されます。どちらも定義されていなければ、Rune の組み込みデフォルトレンダラーが使われます。
+コマンドに `help` が定義されていれば常にそれが使われ、`rune.config.ts` の `help` やデフォルトレンダラーは呼ばれません。`help` が定義されていないコマンドや、グループ、コマンドが見つからない場合には、プロジェクト全体の `help` が適用されます。どちらも定義されていなければ、Rune の組み込みデフォルトレンダラーが使われます。
 
 ## `renderDefaultHelp` を活用する
 
@@ -115,3 +115,14 @@ export default defineConfig({
 ## エラー時のフォールバック
 
 `defineCommand({ help })` や `defineConfig({ help })` で指定した関数が例外を投げた場合、Rune はデフォルトのヘルプレンダラーにフォールバックし、stderr に警告を出力します。同じフォールバックは、`rune.config.ts` の読み込みに失敗した場合や、有効な `defineConfig()` の結果がデフォルトエクスポートされていない場合にも適用されます。これにより、カスタムレンダラーや設定にバグがあっても `--help` 自体は常に利用可能です。
+
+## JSON ヘルプ
+
+`--help` と一緒に `--json` を渡すと、テキストではなく構造化された JSON 説明を出力できます:
+
+```bash
+$ my-cli deploy --help --json
+{"schemaVersion":1,"kind":"command","cli":{"name":"my-cli"},"command":{"path":["deploy"],"name":"deploy","aliases":[],"examples":[]},"args":[],"options":[{"name":"help","short":"h","source":"framework","type":"boolean","description":"Show help","required":false,"multiple":false,"negatable":false}],"commands":[]}
+```
+
+JSON ヘルプは、コマンドやグループの説明だけでなく、コマンドが見つからない場合の候補表示にも対応しています。これはコマンドの実行結果ではなく、CLI のコマンド構成や引数・オプションを説明するものなので、コマンド側で `json: true` を設定している必要はありません。`defineCommand({ help })` や `rune.config.ts` のカスタムヘルプレンダラーはテキスト専用であり、`--help --json` には適用されません。
