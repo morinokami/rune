@@ -3,6 +3,8 @@ import path from "node:path";
 
 import type { RuneConfig } from "../core/define-config";
 import type { CommandManifest, CommandManifestCommandNode } from "../manifest/manifest-types";
+import type { ProjectCliInfo, ProjectDirectories } from "../project/project-files";
+import type { ResolveCommandRouteResult } from "../routing/resolve-command-route";
 
 import {
   generateCommandManifest,
@@ -50,105 +52,190 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
 
   try {
     projectRoot = resolveProjectPath(options);
-    const { sourceDirectory, commandsDirectory } = resolveProjectDirectories(projectRoot);
-    const packageCliInfo = await readProjectCliInfo(projectRoot);
-    const configPath = await resolveConfigPath(projectRoot);
-    let runDirectory: string | undefined;
-    let runConfigResult: RunConfigLoadResult | undefined;
+    const context = await createRunCommandContext(projectRoot);
 
-    async function getRunDirectory(): Promise<string> {
-      runDirectory ??= await prepareRunDirectory(projectRoot);
-      return runDirectory;
-    }
-
-    async function getRunConfigResult(): Promise<RunConfigLoadResult> {
-      runConfigResult ??= await loadBundledRunConfigSafe(
-        projectRoot,
-        await getRunDirectory(),
-        configPath,
-      );
-      return runConfigResult;
-    }
-
-    if (options.rawArgs.length === 1 && isVersionFlag(options.rawArgs[0])) {
-      let cliInfo = packageCliInfo;
-
-      if (configPath !== undefined) {
-        const loadedConfig = await getRunConfigResult();
-        cliInfo = applyProjectCliInfoOverrides(packageCliInfo, loadedConfig.config);
-      }
-
+    if (isVersionRequest(options.rawArgs)) {
+      const cliInfo = await resolveCliInfoForVersion(context);
       if (cliInfo.version) {
         await writeStdout(`${cliInfo.name} v${cliInfo.version}\n`);
         return 0;
       }
     }
 
-    await assertCommandsDirectoryExists(commandsDirectory);
-
-    const manifest = await generateCommandManifest({ commandsDirectory });
-    await writeRunManifest(projectRoot, serializeCommandManifest(manifest));
-
+    await assertCommandsDirectoryExists(context.directories.commandsDirectory);
+    const manifest = await generateCommandManifest({
+      commandsDirectory: context.directories.commandsDirectory,
+    });
+    await writeRunManifest(context.projectRoot, serializeCommandManifest(manifest));
     const route = resolveCommandRoute(manifest, options.rawArgs);
-
-    const preparedRunDirectory = await getRunDirectory();
-
-    let runtimeManifest = manifest;
-    let runtimeConfigPath = configPath;
-    let runtimeConfig: RuneConfig | undefined;
-    let cliInfo = packageCliInfo;
-
-    if (route.kind === "command") {
-      // TODO: Mirror `rune build`'s runtime dependency warnings here so
-      // dev-only imports are surfaced during local iteration as well.
-      const builtSourceFilePath = await bundleCommandForRun(
-        projectRoot,
-        sourceDirectory,
-        preparedRunDirectory,
-        route.node,
-      );
-      await copyRunAssets(sourceDirectory, preparedRunDirectory);
-      runtimeManifest = replaceLeafSourceFilePath(manifest, route.node, builtSourceFilePath);
-    }
-
-    const willRenderHelp =
-      route.kind === "group" ||
-      route.kind === "unknown" ||
-      (route.kind === "command" && route.helpRequested);
-
-    if (willRenderHelp && configPath !== undefined) {
-      const configResult = await getRunConfigResult();
-      runtimeConfigPath = configResult.configPath;
-      runtimeConfig = configResult.config;
-      cliInfo = applyProjectCliInfoOverrides(packageCliInfo, runtimeConfig);
-    }
+    const runtime = await resolveRuntime(context, manifest, route);
 
     return runManifestCommand({
-      manifest: runtimeManifest,
+      manifest: runtime.manifest,
       rawArgs: options.rawArgs,
-      cliName: cliInfo.name,
-      version: cliInfo.version,
+      cliName: runtime.cliInfo.name,
+      version: runtime.cliInfo.version,
       cwd: options.cwd,
-      configPath: runtimeConfigPath,
-      config: runtimeConfig,
+      configPath: runtime.configPath,
+      config: runtime.config,
     });
   } catch (error) {
-    if (isBuildFailure(error)) {
-      await writeStderrLine(formatBuildFailure(projectRoot, error));
-      return 1;
-    }
-
-    await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune run");
-    return 1;
+    return reportRunCommandError(projectRoot, error);
   }
 }
 
 const RUN_MANIFEST_DIRECTORY_PATH = ".rune";
 const RUN_MANIFEST_FILENAME = "manifest.json";
 
+interface RunCommandContext {
+  readonly projectRoot: string;
+  readonly directories: ProjectDirectories;
+  readonly packageCliInfo: ProjectCliInfo;
+  readonly configPath?: string | undefined;
+  readonly resources: LazyRunResources;
+}
+
+interface LazyRunResources {
+  readonly getRunDirectory: () => Promise<string>;
+  readonly getRunConfigResult: () => Promise<RunConfigLoadResult>;
+}
+
 interface RunConfigLoadResult {
   readonly configPath?: string | undefined;
   readonly config?: RuneConfig | undefined;
+}
+
+interface ResolvedRuntime extends RunConfigLoadResult {
+  readonly manifest: CommandManifest;
+  readonly cliInfo: ProjectCliInfo;
+}
+
+async function createRunCommandContext(projectRoot: string): Promise<RunCommandContext> {
+  const directories = resolveProjectDirectories(projectRoot);
+  const packageCliInfo = await readProjectCliInfo(projectRoot);
+  const configPath = await resolveConfigPath(projectRoot);
+
+  return {
+    projectRoot,
+    directories,
+    packageCliInfo,
+    configPath,
+    resources: createLazyRunResources(projectRoot, configPath),
+  };
+}
+
+function createLazyRunResources(
+  projectRoot: string,
+  configPath: string | undefined,
+): LazyRunResources {
+  let runDirectory: string | undefined;
+  let runConfigResult: RunConfigLoadResult | undefined;
+
+  async function getRunDirectory(): Promise<string> {
+    runDirectory ??= await prepareRunDirectory(projectRoot);
+    return runDirectory;
+  }
+
+  async function getRunConfigResult(): Promise<RunConfigLoadResult> {
+    runConfigResult ??= await loadBundledRunConfigSafe(
+      projectRoot,
+      await getRunDirectory(),
+      configPath,
+    );
+    return runConfigResult;
+  }
+
+  return {
+    getRunDirectory,
+    getRunConfigResult,
+  };
+}
+
+function isVersionRequest(rawArgs: readonly string[]): boolean {
+  return rawArgs.length === 1 && isVersionFlag(rawArgs[0]);
+}
+
+async function resolveCliInfoForVersion(
+  context: Pick<RunCommandContext, "configPath" | "packageCliInfo" | "resources">,
+): Promise<ProjectCliInfo> {
+  if (context.configPath === undefined) {
+    return context.packageCliInfo;
+  }
+
+  const loadedConfig = await context.resources.getRunConfigResult();
+  return applyProjectCliInfoOverrides(context.packageCliInfo, loadedConfig.config);
+}
+
+async function resolveRuntime(
+  context: Pick<
+    RunCommandContext,
+    "configPath" | "directories" | "packageCliInfo" | "projectRoot" | "resources"
+  >,
+  manifest: CommandManifest,
+  route: ResolveCommandRouteResult,
+): Promise<ResolvedRuntime> {
+  const commandRuntimeManifest = await applyCommandBundlingToManifest(context, manifest, route);
+  const helpConfig = shouldRenderHelp(route) ? await loadHelpConfig(context) : null;
+
+  return {
+    manifest: commandRuntimeManifest,
+    cliInfo: helpConfig
+      ? applyProjectCliInfoOverrides(context.packageCliInfo, helpConfig.config)
+      : context.packageCliInfo,
+    configPath: helpConfig === null ? context.configPath : helpConfig.configPath,
+    config: helpConfig?.config,
+  };
+}
+
+async function applyCommandBundlingToManifest(
+  context: Pick<RunCommandContext, "directories" | "projectRoot" | "resources">,
+  manifest: CommandManifest,
+  route: ResolveCommandRouteResult,
+): Promise<CommandManifest> {
+  if (route.kind !== "command") {
+    return manifest;
+  }
+
+  // TODO: Mirror `rune build`'s runtime dependency warnings here so
+  // dev-only imports are surfaced during local iteration as well.
+  const runDirectory = await context.resources.getRunDirectory();
+  const builtSourceFilePath = await bundleCommandForRun(
+    context.projectRoot,
+    context.directories.sourceDirectory,
+    runDirectory,
+    route.node,
+  );
+  await copyRunAssets(context.directories.sourceDirectory, runDirectory);
+
+  return replaceLeafSourceFilePath(manifest, route.node, builtSourceFilePath);
+}
+
+async function loadHelpConfig(
+  context: Pick<RunCommandContext, "configPath" | "resources">,
+): Promise<RunConfigLoadResult | null> {
+  if (context.configPath === undefined) {
+    return null;
+  }
+
+  return context.resources.getRunConfigResult();
+}
+
+function shouldRenderHelp(route: ResolveCommandRouteResult): boolean {
+  return (
+    route.kind === "group" ||
+    route.kind === "unknown" ||
+    (route.kind === "command" && route.helpRequested)
+  );
+}
+
+async function reportRunCommandError(projectRoot: string, error: unknown): Promise<number> {
+  if (isBuildFailure(error)) {
+    await writeStderrLine(formatBuildFailure(projectRoot, error));
+    return 1;
+  }
+
+  await writeStderrLine(error instanceof Error ? error.message : "Failed to run rune run");
+  return 1;
 }
 
 // ---------------------------------------------------------------------------
