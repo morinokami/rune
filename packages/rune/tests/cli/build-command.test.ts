@@ -192,6 +192,43 @@ export default defineCommand({
     expect(helpResult.stderr).toBe("");
   });
 
+  test("the built CLI parses defineConfig options", async () => {
+    const { projectRoot } = await createBuildProject({
+      "rune.config.ts": `import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+});
+`,
+      "src/commands/deploy/index.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  async run(ctx) {
+    console.log(\`profile=\${ctx.options.profile}\`);
+  },
+});
+`,
+    });
+
+    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    expect(buildResult.exitCode).toBe(0);
+    expect(buildResult.stderr).toBe("");
+
+    const defaultResult = await captureBuiltCliResult(projectRoot, ["deploy"]);
+    const providedResult = await captureBuiltCliResult(projectRoot, ["deploy", "--profile", "dev"]);
+
+    expect(defaultResult).toEqual({
+      exitCode: 0,
+      stdout: "profile=prod\n",
+      stderr: "",
+    });
+    expect(providedResult).toEqual({
+      exitCode: 0,
+      stdout: "profile=dev\n",
+      stderr: "",
+    });
+  });
+
   test("runRuneCli builds a bare file command and emits the correct dist path", async () => {
     const { projectRoot } = await createBuildProject({
       "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";

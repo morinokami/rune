@@ -29,6 +29,7 @@ import {
   prepareRunDirectory,
 } from "./bundle-for-run";
 import { formatBuildFailure, isBuildFailure } from "./rolldown-shared";
+import { regenerateGlobalOptionsTypes } from "./sync-global-options";
 import { writeStderrLine, writeStdout } from "./write-result";
 
 export interface RunRunCommandOptions {
@@ -63,6 +64,10 @@ export async function runRunCommand(options: RunRunCommandOptions): Promise<numb
     }
 
     await assertCommandsDirectoryExists(context.directories.commandsDirectory);
+    await regenerateGlobalOptionsTypes({
+      projectRoot: context.projectRoot,
+      configPath: context.configPath,
+    });
     const manifest = await generateCommandManifest({
       commandsDirectory: context.directories.commandsDirectory,
     });
@@ -175,15 +180,15 @@ async function resolveRuntime(
   route: ResolveCommandRouteResult,
 ): Promise<ResolvedRuntime> {
   const commandRuntimeManifest = await applyCommandBundlingToManifest(context, manifest, route);
-  const helpConfig = shouldRenderHelp(route) ? await loadHelpConfig(context) : null;
+  const runtimeConfig = shouldLoadConfig(route) ? await loadHelpConfig(context) : null;
 
   return {
     manifest: commandRuntimeManifest,
-    cliInfo: helpConfig
-      ? applyProjectCliInfoOverrides(context.packageCliInfo, helpConfig.config)
+    cliInfo: runtimeConfig
+      ? applyProjectCliInfoOverrides(context.packageCliInfo, runtimeConfig.config)
       : context.packageCliInfo,
-    configPath: helpConfig === null ? context.configPath : helpConfig.configPath,
-    config: helpConfig?.config,
+    configPath: runtimeConfig === null ? context.configPath : runtimeConfig.configPath,
+    config: runtimeConfig?.config,
   };
 }
 
@@ -226,6 +231,10 @@ function shouldRenderHelp(route: ResolveCommandRouteResult): boolean {
     route.kind === "unknown" ||
     (route.kind === "command" && route.helpRequested)
   );
+}
+
+function shouldLoadConfig(route: ResolveCommandRouteResult): boolean {
+  return route.kind === "command" || shouldRenderHelp(route);
 }
 
 async function reportRunCommandError(projectRoot: string, error: unknown): Promise<number> {

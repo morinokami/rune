@@ -38,6 +38,19 @@ export type InferNamedFields<
     OptionalNamedFields<TFields, TBooleanAlwaysPresent>
 >;
 
+/** Project-wide options generated from `defineConfig({ options })`. */
+export interface RuneConfigOptions {}
+
+export type InferConfigOptions<TConfig> = TConfig extends {
+  readonly options: infer TOptionsFields extends readonly CommandOptionField[];
+}
+  ? InferNamedFields<TOptionsFields, true>
+  : {};
+
+type CommandContextOptions<TOptionsFields extends readonly CommandOptionField[]> = Simplify<
+  InferNamedFields<TOptionsFields, true> & RuneConfigOptions
+>;
+
 /** Runtime data passed into a command's `run` function. */
 export interface CommandContext<TOptions, TArgs> {
   /** Parsed and validated positional argument values keyed by field name. */
@@ -115,7 +128,7 @@ export interface DefineCommandInput<
    */
   readonly run: (
     ctx: CommandContext<
-      InferNamedFields<NormalizeFields<TOptionsFields, CommandOptionField>, true>,
+      CommandContextOptions<NormalizeFields<TOptionsFields, CommandOptionField>>,
       InferNamedFields<NormalizeFields<TArgsFields, CommandArgField>>
     >,
   ) => TJson extends true ? TRunResult : void | Promise<void>;
@@ -136,7 +149,7 @@ export interface DefinedCommand<
   readonly options: TOptionsFields;
   readonly help?: ((data: CommandHelpData) => string) | undefined;
   readonly run: (
-    ctx: CommandContext<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>,
+    ctx: CommandContext<CommandContextOptions<TOptionsFields>, InferNamedFields<TArgsFields>>,
   ) => TJson extends true ? TCommandData | Promise<TCommandData> : void | Promise<void>;
 }
 

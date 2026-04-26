@@ -137,4 +137,26 @@ test("injects custom cwd", async () => {
 });
 ```
 
+## Testing with global options
+
+When your project defines `defineConfig({ options })`, create a helper that bakes in your project config once and use it like `runCommand()`:
+
+```ts
+import { expect, test } from "vitest";
+import { createRunCommand } from "@rune-cli/rune/test";
+
+import config from "../rune.config";
+import deploy from "../src/commands/deploy";
+
+const runCommand = createRunCommand(config);
+
+test("uses the configured profile", async () => {
+  const result = await runCommand(deploy, ["--profile", "dev"]);
+
+  expect(result.exitCode).toBe(0);
+});
+```
+
+This keeps command tests on the same parse-and-validation path as the real CLI without repeating the global options in each test.
+
 For full API details, see the [Test Utilities reference](/reference/test-utils/).

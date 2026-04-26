@@ -76,6 +76,17 @@ export function parseRunArgs(argv: readonly string[]): ParsedRunArgs | EarlyExit
 }
 
 export function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
+  return parseProjectOnlyArgs(argv, "build");
+}
+
+export function parseSyncArgs(argv: readonly string[]): ParsedBuildArgs | EarlyExit {
+  return parseProjectOnlyArgs(argv, "sync");
+}
+
+function parseProjectOnlyArgs(
+  argv: readonly string[],
+  commandName: "build" | "sync",
+): ParsedBuildArgs | EarlyExit {
   let projectPath: string | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -98,7 +109,7 @@ export function parseBuildArgs(argv: readonly string[]): ParsedBuildArgs | Early
     return {
       ok: false,
       exitCode: 1,
-      output: `Unexpected argument for rune build: ${token}`,
+      output: `Unexpected argument for rune ${commandName}: ${token}`,
       stream: "stderr",
     };
   }

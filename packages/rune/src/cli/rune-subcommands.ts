@@ -5,8 +5,14 @@ import type { EarlyExit } from "./rune-options";
 
 import { defineCommand } from "../core/define-command";
 import { runBuildCommand } from "./build-command";
-import { isRuneHelpRequested, parseBuildArgs, parseRunArgs } from "./parse-rune-subcommand-args";
+import {
+  isRuneHelpRequested,
+  parseBuildArgs,
+  parseRunArgs,
+  parseSyncArgs,
+} from "./parse-rune-subcommand-args";
 import { runRunCommand } from "./run-command";
+import { runSyncCommand } from "./sync-command";
 
 export interface RuneSubcommandDispatchContext {
   readonly cwd?: string | undefined;
@@ -92,6 +98,21 @@ const runeBuildCommand = defineCommand({
   },
 });
 
+const runeSyncCommand = defineCommand({
+  description: "Generate Rune project type metadata and validate global options",
+  options: [
+    {
+      name: "project",
+      type: "string",
+      description: "Path to the Rune project root (default: current directory)",
+    },
+  ],
+  examples: ["rune sync", "rune sync --project ./my-app"],
+  run() {
+    // Not called. This definition exists only for help metadata.
+  },
+});
+
 const runeSubcommands: readonly RuneSubcommandDescriptor[] = [
   {
     name: "build",
@@ -109,6 +130,27 @@ const runeSubcommands: readonly RuneSubcommandDescriptor[] = [
         run: ({ cwd }) =>
           runBuildCommand({
             projectPath: parsedBuildArgs.projectPath,
+            cwd,
+          }),
+      };
+    },
+  },
+  {
+    name: "sync",
+    command: runeSyncCommand,
+    isHelpRequested: isRuneHelpRequested,
+    resolveInvocation(remainingArgs) {
+      const parsedSyncArgs = parseSyncArgs(remainingArgs);
+
+      if (!parsedSyncArgs.ok) {
+        return parsedSyncArgs;
+      }
+
+      return {
+        ok: true,
+        run: ({ cwd }) =>
+          runSyncCommand({
+            projectPath: parsedSyncArgs.projectPath,
             cwd,
           }),
       };

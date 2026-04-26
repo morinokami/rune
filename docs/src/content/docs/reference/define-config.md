@@ -11,6 +11,7 @@ import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 export default defineConfig({
   name: "my-cli",
   version: "1.0.0",
+  options: [{ name: "profile", type: "string", default: "prod" }],
   help(data) {
     return `${data.cliName}\n\n${renderDefaultHelp(data)}`;
   },
@@ -70,6 +71,35 @@ export default defineConfig({
   },
 });
 ```
+
+### `options`
+
+- **Type:** `CommandOptionField[]`
+- **Optional**
+
+Global options that are available to every executable command. They use the same field shape as [`defineCommand({ options })`](/reference/define-command/).
+
+```ts
+import { defineConfig } from "@rune-cli/rune";
+import { z } from "zod";
+
+export default defineConfig({
+  options: [
+    { name: "profile", type: "string", default: "prod" },
+    { name: "region", schema: z.enum(["ap-northeast-1", "us-east-1"]).optional() },
+  ],
+});
+```
+
+Global options are parsed after Rune resolves the executable command:
+
+```sh
+my-cli deploy --profile dev
+```
+
+They are shown in executable command help, but not in the help for groups that only route to subcommands. Global options must be optional: `required: true` and schemas that reject `undefined` are not supported.
+
+Run `rune sync` after changing `rune.config.ts` to refresh `.rune/global-options.d.ts` for editor type inference. `rune run` regenerates the same file before execution, and `rune build` regenerates it and validates global options against command options before building.
 
 ## Behavior
 

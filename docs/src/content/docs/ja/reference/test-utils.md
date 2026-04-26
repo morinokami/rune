@@ -3,7 +3,7 @@ title: テストユーティリティ
 description: Rune のテストユーティリティの API リファレンス。
 ---
 
-Rune は、子プロセスを起動せずにコマンドをインプロセスでテストするための `runCommand()` を提供しています。`@rune-cli/rune/test` からインポートしてください。
+Rune は、子プロセスを起動せずにコマンドをインプロセスでテストするためのヘルパーを `@rune-cli/rune/test` から提供しています。`runCommand()` は単一コマンドをそのまま実行する基本のヘルパーで、`createRunCommand()` はプロジェクト設定を組み込んだ `runCommand` を作成するファクトリです。
 
 ```ts
 import { runCommand } from "@rune-cli/rune/test";
@@ -64,6 +64,26 @@ function runCommand(
 - **省略可能**
 
 `ctx.cwd` に注入されるワーキングディレクトリの値。`process.cwd()` は変更しません。
+
+#### `globalOptions`
+
+- **型:** `CommandOptionField[]`
+- **省略可能**
+
+グローバルオプションを注入する低レベル API です。通常のテストでは `createRunCommand(config)` を使ってください。
+
+## `createRunCommand()`
+
+プロジェクト設定を組み込んだ `runCommand()` ヘルパーを作成します。プロジェクトで `defineConfig({ options })` を定義している場合に使います。
+
+```ts
+import { createRunCommand } from "@rune-cli/rune/test";
+import config from "../rune.config";
+
+const runCommand = createRunCommand(config);
+```
+
+返される関数は `runCommand(command, argv, context)` と同じ形で呼び出せ、各コマンド実行に `config.options` を注入します。
 
 ### CommandExecutionResult
 

@@ -1,3 +1,4 @@
+import type { CommandOptionField } from "../core/field-types";
 import type { HelpData } from "../core/help-types";
 import type {
   CommandManifest,
@@ -22,6 +23,7 @@ export interface RenderResolvedHelpOptions {
   readonly version?: string | undefined;
   readonly loadCommand: LoadCommandFn;
   readonly helpRenderer?: ((data: HelpData) => string) | undefined;
+  readonly globalOptions?: readonly CommandOptionField[] | undefined;
 }
 
 export interface ResolveHelpDataOptions {
@@ -30,6 +32,7 @@ export interface ResolveHelpDataOptions {
   readonly cliName: string;
   readonly version?: string | undefined;
   readonly loadCommand: LoadCommandFn;
+  readonly globalOptions?: readonly CommandOptionField[] | undefined;
 }
 
 export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<ResolvedHelpData> {
@@ -71,6 +74,7 @@ export async function resolveHelpData(options: ResolveHelpDataOptions): Promise<
     cliName: options.cliName,
     version: options.version,
     subcommands,
+    globalOptions: options.globalOptions,
   });
 
   return { data, aliases: [...node.aliases], commandHelp: command.help };
