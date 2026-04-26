@@ -338,7 +338,7 @@ describe("parse failures", () => {
       exitCode: 1,
       error: {
         kind: "rune/invalid-arguments",
-        message: "Missing required option:\n\n  --name <string>",
+        message: "Missing required option:\n  --name <string>",
         exitCode: 1,
       },
       data: undefined,

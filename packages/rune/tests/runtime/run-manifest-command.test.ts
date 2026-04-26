@@ -607,7 +607,7 @@ describe("json mode", () => {
     expect(JSON.parse(captured.stdout)).toEqual({
       error: {
         kind: "rune/invalid-arguments",
-        message: "Missing required option:\n\n  --count <number>",
+        message: "Missing required option:\n  --count <number>",
       },
     });
     expect(captured.stderr).toBe("");
@@ -707,7 +707,7 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(1);
     expect(captured.stdout).toBe("");
-    expect(captured.stderr).toBe("Missing required option:\n\n  --name <string>\n");
+    expect(captured.stderr).toBe("Missing required option:\n  --name <string>\n");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
       "create",
     ]);

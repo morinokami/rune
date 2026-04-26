@@ -143,7 +143,7 @@ describe("human error rendering", () => {
     expect(result.stderr).toBe("");
     expect(result.error).toEqual({
       kind: "rune/invalid-arguments",
-      message: "Missing required argument:\n\n  id",
+      message: "Missing required argument:\n  id",
       exitCode: 1,
     });
   });

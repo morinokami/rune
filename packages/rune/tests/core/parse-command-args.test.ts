@@ -81,7 +81,7 @@ describe("primitive parsing and defaults", () => {
     expect(result).toEqual({
       ok: false,
       error: {
-        message: 'Invalid value for argument enabled:\n\n  Expected boolean, received "yes"',
+        message: 'Invalid value for argument enabled:\n  Expected boolean, received "yes"',
       },
     });
   });
@@ -351,7 +351,7 @@ describe("multiple options", () => {
     expect(result).toEqual({
       ok: false,
       error: {
-        message: "Missing required option:\n\n  --tag <string>",
+        message: "Missing required option:\n  --tag <string>",
       },
     });
   });
@@ -375,7 +375,7 @@ describe("multiple options", () => {
       ok: false,
       error: {
         message:
-          'Invalid value for option --count <number>:\n\n  Value #2: Expected number, received "oops"\n  Value #3: Expected number, received "bad"',
+          'Invalid value for option --count <number>:\n  Value #2: Expected number, received "oops"\n  Value #3: Expected number, received "bad"',
       },
     });
   });
@@ -444,7 +444,7 @@ describe("missing required fields", () => {
           args: [{ name: "id", type: "string", required: true }],
           async run() {},
         }),
-      message: "Missing required argument:\n\n  id",
+      message: "Missing required argument:\n  id",
     },
     {
       label: "a required option",
@@ -453,7 +453,7 @@ describe("missing required fields", () => {
           options: [{ name: "name", type: "string", required: true }],
           async run() {},
         }),
-      message: "Missing required option:\n\n  --name <string>",
+      message: "Missing required option:\n  --name <string>",
     },
     {
       label: "a required boolean option",
@@ -462,7 +462,7 @@ describe("missing required fields", () => {
           options: [{ name: "force", type: "boolean", required: true }],
           async run() {},
         }),
-      message: "Missing required option:\n\n  --force",
+      message: "Missing required option:\n  --force",
     },
     {
       label: "a required schema-backed argument",
@@ -471,7 +471,7 @@ describe("missing required fields", () => {
           args: [{ name: "token", schema: z.string() }],
           async run() {},
         }),
-      message: "Missing required argument:\n\n  token",
+      message: "Missing required argument:\n  token",
     },
     {
       label: "a required schema-backed option",
@@ -480,7 +480,7 @@ describe("missing required fields", () => {
           options: [{ name: "token", schema: z.string() }],
           async run() {},
         }),
-      message: "Missing required option:\n\n  --token",
+      message: "Missing required option:\n  --token",
     },
   ])("parseCommandArgs fails when $label is missing", async ({ define, message }) => {
     const result = await parseCommandArgs(define() as unknown as DefinedCommand, []);
@@ -504,7 +504,7 @@ describe("invalid values", () => {
           async run() {},
         }),
       argv: ["--count", "abc"],
-      message: 'Invalid value for option --count <number>:\n\n  Expected number, received "abc"',
+      message: 'Invalid value for option --count <number>:\n  Expected number, received "abc"',
     },
     {
       label: "an invalid number argument",
@@ -514,7 +514,7 @@ describe("invalid values", () => {
           async run() {},
         }),
       argv: ["oops"],
-      message: 'Invalid value for argument count:\n\n  Expected number, received "oops"',
+      message: 'Invalid value for argument count:\n  Expected number, received "oops"',
     },
   ])("parseCommandArgs fails for $label", async ({ define, argv, message }) => {
     const result = await parseCommandArgs(define() as unknown as DefinedCommand, argv);
