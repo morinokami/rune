@@ -33,11 +33,11 @@ import { validateCommandAliases } from "./validate-command-aliases";
  * ```ts
  * export default defineCommand({
  *   description: "Greet someone",
- *   args: [
- *     { name: "name", type: "string", required: true },
- *   ],
  *   options: [
  *     { name: "loud", type: "boolean", short: "l" },
+ *   ],
+ *   args: [
+ *     { name: "name", type: "string", required: true },
  *   ],
  *   run(ctx) {
  *     const greeting = `Hello, ${ctx.args.name}!`;

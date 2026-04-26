@@ -16,7 +16,7 @@ import { isSchemaField } from "./schema-field";
 
 type RunnableCommand = Pick<
   DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
-  "json" | "args" | "options"
+  "json" | "options" | "args"
 > & {
   readonly run: (ctx: any) => unknown;
 };

@@ -21,11 +21,11 @@ test("SingleLetter remains the union of lowercase and uppercase letters", () => 
 test("defineCommand infers primitive arg and option shapes", () => {
   const basicCommand = defineCommand({
     description: "Create a project",
-    args: [{ name: "id", type: "string", required: true }],
     options: [
       { name: "name", type: "string", required: true },
       { name: "force", type: "boolean", short: "f" },
     ],
+    args: [{ name: "id", type: "string", required: true }],
     async run() {},
   });
 
@@ -38,13 +38,13 @@ test("defineCommand infers primitive arg and option shapes", () => {
 
 test("defineCommand infers schema-backed and default-backed field types", () => {
   const schemaBackedCommand = defineCommand({
-    args: [
-      { name: "id", type: "string", required: true },
-      { name: "mode", schema: z.string().optional() },
-    ],
     options: [
       { name: "count", type: "number", default: 1 },
       { name: "token", schema: z.string() },
+    ],
+    args: [
+      { name: "id", type: "string", required: true },
+      { name: "mode", schema: z.string().optional() },
     ],
     async run(ctx) {
       expectTypeOf(ctx.args.id).toEqualTypeOf<string>();
@@ -152,11 +152,11 @@ test("defineCommand rejects json: false as a marker-style boolean", () => {
 
 test("defineCommand exposes camelCase aliases for kebab-case field names", () => {
   const cmd = defineCommand({
-    args: [{ name: "my-arg", type: "string", required: true }],
     options: [
       { name: "dry-run", type: "boolean" },
       { name: "output-dir", type: "string", required: true },
     ],
+    args: [{ name: "my-arg", type: "string", required: true }],
     async run(ctx) {
       // camelCase access
       expectTypeOf(ctx.args.myArg).toEqualTypeOf<string>();

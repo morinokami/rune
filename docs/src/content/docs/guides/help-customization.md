@@ -3,7 +3,7 @@ title: Help Customization
 description: Learn how to customize the help output of your CLI.
 ---
 
-Rune automatically generates help output from a command's `description`, `args`, `options`, and `examples`. If you need more control over the generated help output, you can customize it per command with `defineCommand({ help })`, or apply a project-wide style through `rune.config.ts`.
+Rune automatically generates help output from a command's `description`, `options`, `args`, and `examples`. If you need more control over the generated help output, you can customize it per command with `defineCommand({ help })`, or apply a project-wide style through `rune.config.ts`.
 
 ## Per-command customization
 
@@ -40,7 +40,7 @@ Options:
   -h, --help  Show help
 ```
 
-`CommandHelpData` includes the command name, path segments, arguments, options, and subcommand definitions. You can use these fields to build an entirely custom layout from scratch. See the [`defineCommand()` reference](/reference/define-command/#help) for details.
+`CommandHelpData` includes the command name, path segments, options, arguments, and subcommand definitions. You can use these fields to build an entirely custom layout from scratch. See the [`defineCommand()` reference](/reference/define-command/#help) for details.
 
 ## Project-level customization
 
@@ -125,4 +125,4 @@ $ my-cli deploy --help --json
 {"schemaVersion":1,"kind":"command","cli":{"name":"my-cli"},"command":{"path":["deploy"],"name":"deploy","aliases":[],"examples":[]},"args":[],"options":[{"name":"help","short":"h","source":"framework","type":"boolean","description":"Show help","required":false,"multiple":false,"negatable":false}],"commands":[]}
 ```
 
-JSON help works for commands, groups, and unknown-command suggestions. It does not require the command to set `json: true`, because it describes the CLI's command structure, arguments, and options rather than the command's runtime output. Custom help renderers from `defineCommand({ help })` and `rune.config.ts` are text-only and are not applied to `--help --json`.
+JSON help works for commands, groups, and unknown-command suggestions. It does not require the command to set `json: true`, because it describes the CLI's command structure, options, and arguments rather than the command's runtime output. Custom help renderers from `defineCommand({ help })` and `rune.config.ts` are text-only and are not applied to `--help --json`.

@@ -489,8 +489,8 @@ export default defineCommand({
 
 export default defineCommand({
   description: "Say hello",
-  args: [],
   options: [],
+  args: [],
   async run() {
     console.log("hello");
   },

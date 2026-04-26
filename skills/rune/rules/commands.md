@@ -13,9 +13,9 @@ Creates a CLI command. The returned object must be the file's default export.
 ```ts
 export default defineCommand({
   description: "Greet someone",
-  args: [{ name: "name", type: "string", required: true }],
   options: [{ name: "loud", type: "boolean", short: "l" }],
-  run({ args, options, output }) {
+  args: [{ name: "name", type: "string", required: true }],
+  run({ options, args, output }) {
     const greeting = `Hello, ${args.name}!`;
     output.log(options.loud ? greeting.toUpperCase() : greeting);
   },
@@ -154,19 +154,19 @@ Use any [Standard Schema](https://standardschema.dev) object (Zod, Valibot, etc.
 import { z } from "zod";
 
 export default defineCommand({
-  args: [
-    { name: "id", schema: z.uuid() },
-    { name: "mode", schema: z.string().optional() },
-  ],
   options: [
     { name: "port", schema: z.coerce.number().int().positive() },
     { name: "tag", schema: z.array(z.string()).default([]), multiple: true },
     { name: "force", schema: z.boolean(), flag: true },
   ],
+  args: [
+    { name: "id", schema: z.uuid() },
+    { name: "mode", schema: z.string().optional() },
+  ],
   async run(ctx) {
-    // ctx.args.id — validated UUID string
     // ctx.options.port — validated positive integer
     // ctx.options.force — boolean flag
+    // ctx.args.id — validated UUID string
   },
 });
 ```

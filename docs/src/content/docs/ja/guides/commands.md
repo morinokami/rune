@@ -7,7 +7,7 @@ description: Rune におけるコマンドの定義方法について学ぶ。
 
 [ルーティング](/ja/guides/routing/)のガイドでも述べたように、Rune では `src/commands` 以下の `index.ts` またはその他のルーティング対象 `.ts` ファイルにより個別のコマンドを定義します。コマンドの定義ファイル内では、`defineCommand()` 関数を使用します。この関数は、コマンドの説明文や引数、オプション、コマンドの実体となる `run` 関数などを指定するためのオブジェクトを受け取り、コマンドオブジェクトを返します。このオブジェクトをデフォルトエクスポートすることで、Rune はそのファイルをプロジェクトのコマンドとして認識します。
 
-以下は英語で挨拶するコマンドの定義例です。位置引数 `args` とオプション `options` をまず定義し、その後に `run` 関数を定義してコマンドのビジネスロジックを与えています:
+以下は英語で挨拶するコマンドの定義例です。オプション `options` と位置引数 `args` をまず定義し、その後に `run` 関数を定義してコマンドのビジネスロジックを与えています:
 
 ```ts
 // src/commands/index.ts
@@ -15,6 +15,12 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Greet someone",
+  options: [
+    {
+      name: "loud",
+      type: "boolean",
+    },
+  ],
   args: [
     {
       name: "name",
@@ -22,13 +28,7 @@ export default defineCommand({
       required: true,
     },
   ],
-  options: [
-    {
-      name: "loud",
-      type: "boolean",
-    },
-  ],
-  run({ args, options, output }) {
+  run({ options, args, output }) {
     const greeting = `Hello, ${args.name}!`;
     output.log(options.loud ? greeting.toUpperCase() : greeting);
   },
@@ -188,12 +188,6 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Build the project",
-  args: [{
-    name: "target",
-    type: "enum",
-    values: ["web", "node"],
-    required: true,
-  }],
   options: [
     {
       name: "mode",
@@ -203,8 +197,14 @@ export default defineCommand({
       description: "Build mode",
     },
   ],
-  run({ args, options, output }) {
-    // args.target は "web" | "node"、options.mode は "dev" | "prod"
+  args: [{
+    name: "target",
+    type: "enum",
+    values: ["web", "node"],
+    required: true,
+  }],
+  run({ options, args, output }) {
+    // options.mode は "dev" | "prod"、args.target は "web" | "node"
     output.log(`Building ${args.target} in ${options.mode} mode`);
   },
 });
@@ -241,7 +241,7 @@ repeatable option は、プリミティブの string/number オプション、en
 
 ## kebab-case のフィールド名
 
-引数やオプションの名前にハイフンを含む場合（例: `dry-run`）、`ctx.args` や `ctx.options` ではもとの名前に加えて camelCase 形式でもアクセスできます:
+オプションや引数の名前にハイフンを含む場合（例: `dry-run`）、`ctx.options` や `ctx.args` ではもとの名前に加えて camelCase 形式でもアクセスできます:
 
 ```ts
 import { defineCommand } from "@rune-cli/rune";

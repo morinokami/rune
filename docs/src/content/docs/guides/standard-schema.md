@@ -3,11 +3,11 @@ title: Standard Schema
 description: Learn how to use Standard Schema for validation and transformation in Rune commands.
 ---
 
-In addition to the primitive types (`"string" | "number" | "boolean"`) and the built-in enum type (`type: "enum"` with `values`) declared via the `type` property, Rune's arguments and options accept any [Standard Schema](https://standardschema.dev) compliant object through the `schema` property. This lets you plug in schema libraries like Zod or Valibot to apply validation and transformation that goes well beyond simple type checks.
+In addition to the primitive types (`"string" | "number" | "boolean"`) and the built-in enum type (`type: "enum"` with `values`) declared via the `type` property, Rune's options and arguments accept any [Standard Schema](https://standardschema.dev) compliant object through the `schema` property. This lets you plug in schema libraries like Zod or Valibot to apply validation and transformation that goes well beyond simple type checks.
 
 ## Choosing between primitives and schemas
 
-A single field uses exactly one of `type` or `schema`, never both. Which one you pick depends on how much validation and transformation the argument or option needs.
+A single field uses exactly one of `type` or `schema`, never both. Which one you pick depends on how much validation and transformation the option or argument needs.
 
 | What you want | Use |
 |---|---|
@@ -30,13 +30,6 @@ import { z } from "zod";
 
 export default defineCommand({
   description: "Fetch a resource by id",
-  args: [
-    {
-      name: "id",
-      schema: z.uuid(),
-      description: "Resource id (UUID)",
-    },
-  ],
   options: [
     {
       name: "retries",
@@ -44,9 +37,16 @@ export default defineCommand({
       description: "Number of retry attempts",
     },
   ],
-  run({ args, options }) {
-    // args.id is string (validated as UUID)
+  args: [
+    {
+      name: "id",
+      schema: z.uuid(),
+      description: "Resource id (UUID)",
+    },
+  ],
+  run({ options, args }) {
     // options.retries is number (validated and coerced to an integer in 0–10)
+    // args.id is string (validated as UUID)
   },
 });
 ```

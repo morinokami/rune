@@ -7,7 +7,7 @@ import { computeNextSteps } from "./next-steps.ts";
 import { getProvidedProjectState } from "./plan.ts";
 
 export async function runNonInteractive(ctx: RunContext, services: Services): Promise<void> {
-  const { args, cwd, options, output } = ctx;
+  const { options, args, cwd, output } = ctx;
   const pm = services.detectPackageManager();
   const provided = getProvidedProjectState(cwd, args.projectName);
 

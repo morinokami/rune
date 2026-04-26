@@ -23,8 +23,8 @@ describe("run execution", () => {
 
 export default defineCommand({
   description: "Say hello",
-  args: [],
   options: [{ name: "name", type: "string", required: true }],
+  args: [],
   async run(ctx) {
     console.log(\`hello \${ctx.options.name}\`);
   },
@@ -138,8 +138,8 @@ describe("run subcommand parsing", () => {
         "src/commands/create/index.ts": `import { defineCommand } from ${coreEntryPath};
 
 export default defineCommand({
-  args: [],
   options: [{ name: "project", type: "string", required: true }],
+  args: [],
   async run(ctx) {
     console.log(\`create \${ctx.options.project}\`);
   },
@@ -167,8 +167,8 @@ export default defineCommand({
 
 export default defineCommand({
   description: "Say hello",
-  args: [],
   options: [],
+  args: [],
   async run() {
     console.log("hello");
   },
@@ -224,8 +224,8 @@ export default defineCommand({
         "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
 
 export default defineCommand({
-  args: [],
   options: [],
+  args: [],
   async run() {
     console.log("hello");
   },
@@ -260,8 +260,8 @@ export default defineCommand({
 
 export default defineCommand({
   description: "Say hello",
-  args: [],
   options: [],
+  args: [],
   async run() {
     console.log("hello");
   },

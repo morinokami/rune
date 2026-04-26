@@ -229,13 +229,6 @@ export default defineCommand({
 
   export default defineCommand({
     description: "Transform the input text",
-    args: [
-      {
-        name: "input",
-        type: "string",
-        required: true,
-      },
-    ],
 +   options: [
 +     {
 +       name: "mode",
@@ -245,9 +238,16 @@ export default defineCommand({
 +       description: "Transformation to apply",
 +     },
 +   ],
+    args: [
+      {
+        name: "input",
+        type: "string",
+        required: true,
+      },
+    ],
 -   run({ args, output }) {
 -     output.log(args.input.toUpperCase());
-+   run({ args, options, output }) {
++   run({ options, args, output }) {
 +     const result = options.mode === "upper" ? args.input.toUpperCase() : args.input.toLowerCase();
 +     output.log(result);
     },
@@ -283,7 +283,7 @@ export default defineCommand({
   </TabItem>
 </Tabs>
 
-`--help` で、引数やオプションの情報が自動的にヘルプに反映されていることも確認できます:
+`--help` で、オプションや引数の情報が自動的にヘルプに反映されていることも確認できます:
 
 ```
 Transform the input text

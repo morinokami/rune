@@ -43,7 +43,7 @@ test("greets by name", async () => {
 });
 ```
 
-引数やオプションは、実際の CLI と同じ文字列配列として渡します:
+オプションや引数は、実際の CLI と同じ文字列配列として渡します:
 
 ```ts
 test("greets loudly with --loud flag", async () => {
