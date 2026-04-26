@@ -43,12 +43,12 @@ Greet someone
 
 Usage: my-cli [options] <name>
 
-Arguments:
-  name <string>
-
 Options:
   --loud
   -h, --help  Show help
+
+Arguments:
+  name <string>
 
 $ my-cli foo
 Hello, foo!
