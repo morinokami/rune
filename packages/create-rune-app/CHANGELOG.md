@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.15
+
+### Patch Changes
+
+- [#149](https://github.com/morinokami/rune/pull/149) [`f8f91ab`](https://github.com/morinokami/rune/commit/f8f91ab570f43377cba9fbc71f6552a455ba44ab) Thanks [@morinokami](https://github.com/morinokami)! - chore: prefer options before arguments in help and examples
+
 ## 0.0.14
 
 ### Patch Changes
