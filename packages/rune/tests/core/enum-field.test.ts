@@ -113,7 +113,7 @@ describe("enum field parsing", () => {
     expect(result).toEqual({
       ok: false,
       error: {
-        message: 'Invalid value for option --n:\n\n  Expected one of: 1, 2, 3. Received: "007".',
+        message: 'Invalid value for option --n:\n  Expected one of: 1, 2, 3. Received: "007".',
       },
     });
   });
@@ -130,7 +130,7 @@ describe("enum field parsing", () => {
       ok: false,
       error: {
         message:
-          'Invalid value for option --mode:\n\n  Expected one of: dev, prod. Received: "staging".',
+          'Invalid value for option --mode:\n  Expected one of: dev, prod. Received: "staging".',
       },
     });
   });
@@ -183,7 +183,7 @@ describe("enum field parsing", () => {
       ok: false,
       error: {
         message:
-          'Invalid value for argument mode:\n\n  Expected one of: dev, prod. Received: "staging".',
+          'Invalid value for argument mode:\n  Expected one of: dev, prod. Received: "staging".',
       },
     });
   });

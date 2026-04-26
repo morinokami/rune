@@ -270,7 +270,7 @@ function createMissingOptionError(field: CommandOptionField): ParseFailure {
   return {
     ok: false,
     error: {
-      message: `Missing required option:\n\n  ${formatOptionLabel(field)}`,
+      message: `Missing required option:\n  ${formatOptionLabel(field)}`,
     },
   };
 }
@@ -279,7 +279,7 @@ function createMissingArgumentError(field: CommandArgField): ParseFailure {
   return {
     ok: false,
     error: {
-      message: `Missing required argument:\n\n  ${formatArgumentLabel(field)}`,
+      message: `Missing required argument:\n  ${formatArgumentLabel(field)}`,
     },
   };
 }
@@ -291,7 +291,7 @@ function createInvalidOptionError(
   return {
     ok: false,
     error: {
-      message: `Invalid value for option ${formatOptionLabel(field)}:\n\n  ${messages.join("\n  ")}`,
+      message: `Invalid value for option ${formatOptionLabel(field)}:\n  ${messages.join("\n  ")}`,
     },
   };
 }
@@ -303,7 +303,7 @@ function createInvalidArgumentError(
   return {
     ok: false,
     error: {
-      message: `Invalid value for argument ${formatArgumentLabel(field)}:\n\n  ${messages.join("\n  ")}`,
+      message: `Invalid value for argument ${formatArgumentLabel(field)}:\n  ${messages.join("\n  ")}`,
     },
   };
 }
