@@ -26,6 +26,42 @@ export interface RuneSubcommandDescriptor {
   ) => RuneSubcommandInvocation | EarlyExit;
 }
 
+export function getRuneSubcommand(name: string | undefined): RuneSubcommandDescriptor | undefined {
+  return runeSubcommands.find((descriptor) => descriptor.name === name);
+}
+
+export function createRuneCliManifest(): CommandManifest {
+  return {
+    nodes: [
+      {
+        kind: "group",
+        pathSegments: [],
+        childNames: runeSubcommands.map((descriptor) => descriptor.name),
+        aliases: [],
+      },
+      ...runeSubcommands.map((descriptor) => ({
+        kind: "command" as const,
+        pathSegments: [descriptor.name],
+        childNames: [],
+        aliases: [],
+        description: descriptor.command.description,
+        sourceFilePath: "",
+      })),
+    ],
+  };
+}
+
+export const loadRuneCommand: LoadCommandFn = async (node) => {
+  const name = node.pathSegments.at(-1);
+  const command = name ? runeCommandMap[name] : undefined;
+
+  if (!command) {
+    throw new Error(`Unknown Rune CLI command: ${node.pathSegments.join(" ")}`);
+  }
+
+  return command;
+};
+
 const runeRunCommand = defineCommand({
   description: "Run a Rune project directly from source",
   options: [
@@ -105,39 +141,3 @@ const runeSubcommands: readonly RuneSubcommandDescriptor[] = [
 const runeCommandMap: Readonly<
   Record<string, DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>>
 > = Object.fromEntries(runeSubcommands.map((descriptor) => [descriptor.name, descriptor.command]));
-
-export function getRuneSubcommand(name: string | undefined): RuneSubcommandDescriptor | undefined {
-  return runeSubcommands.find((descriptor) => descriptor.name === name);
-}
-
-export function createRuneCliManifest(): CommandManifest {
-  return {
-    nodes: [
-      {
-        kind: "group",
-        pathSegments: [],
-        childNames: runeSubcommands.map((descriptor) => descriptor.name),
-        aliases: [],
-      },
-      ...runeSubcommands.map((descriptor) => ({
-        kind: "command" as const,
-        pathSegments: [descriptor.name],
-        childNames: [],
-        aliases: [],
-        description: descriptor.command.description,
-        sourceFilePath: "",
-      })),
-    ],
-  };
-}
-
-export const loadRuneCommand: LoadCommandFn = async (node) => {
-  const name = node.pathSegments.at(-1);
-  const command = name ? runeCommandMap[name] : undefined;
-
-  if (!command) {
-    throw new Error(`Unknown Rune CLI command: ${node.pathSegments.join(" ")}`);
-  }
-
-  return command;
-};

@@ -1,5 +1,19 @@
 # @rune-cli/rune
 
+## 0.0.41
+
+### Patch Changes
+
+- [#151](https://github.com/morinokami/rune/pull/151) [`27dc388`](https://github.com/morinokami/rune/commit/27dc38872a677591cdc8ba23ae38f63808205b15) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): use single newline in parse errors
+
+- [#149](https://github.com/morinokami/rune/pull/149) [`f8f91ab`](https://github.com/morinokami/rune/commit/f8f91ab570f43377cba9fbc71f6552a455ba44ab) Thanks [@morinokami](https://github.com/morinokami)! - chore: prefer options before arguments in help and examples
+
+## 0.0.40
+
+### Patch Changes
+
+- [#147](https://github.com/morinokami/rune/pull/147) [`69e3cdc`](https://github.com/morinokami/rune/commit/69e3cdc4ebc320df78fb25fe31caa8f150221b54) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): allow defineConfig to override CLI metadata
+
 ## 0.0.39
 
 ### Patch Changes

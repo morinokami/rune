@@ -117,14 +117,6 @@ describe("help data builders", () => {
   test("buildCommandHelpData produces correct argument and option entries", async () => {
     const command = defineCommand({
       description: "Create a project",
-      args: [
-        {
-          name: "id",
-          type: "string",
-          required: true,
-          description: "Project identifier",
-        },
-      ],
       options: [
         {
           name: "name",
@@ -137,6 +129,14 @@ describe("help data builders", () => {
           type: "boolean",
           default: true,
           description: "Colorize output",
+        },
+      ],
+      args: [
+        {
+          name: "id",
+          type: "string",
+          required: true,
+          description: "Project identifier",
         },
       ],
       json: true,

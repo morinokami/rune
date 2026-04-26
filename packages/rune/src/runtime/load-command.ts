@@ -6,6 +6,10 @@ import type { LoadCommandFn } from "../manifest/manifest-types";
 
 import { isDefinedCommand } from "../core/define-command";
 
+// Default loader that imports the command module from its source file path.
+export const defaultLoadCommand: LoadCommandFn = (node) =>
+  loadCommandFromModule(node.sourceFilePath);
+
 // Loads a command module and verifies that its default export was created with defineCommand().
 async function loadCommandFromModule(
   sourceFilePath: string,
@@ -66,7 +70,3 @@ function describeCommandModuleExport(value: unknown): string {
 
   return "an unsupported value";
 }
-
-// Default loader that imports the command module from its source file path.
-export const defaultLoadCommand: LoadCommandFn = (node) =>
-  loadCommandFromModule(node.sourceFilePath);

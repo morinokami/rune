@@ -9,7 +9,7 @@ Key features:
 
 - File-based command routing — directory structure maps directly to the CLI command tree
 - Type-safe command definitions with full inference from `defineCommand()`
-- [Standard Schema](https://standardschema.dev/) support for args and options (Zod, Valibot, ArkType, ...)
+- [Standard Schema](https://standardschema.dev/) support for options and args (Zod, Valibot, ArkType, ...)
 - Built-in `--json` mode that turns the same command into a machine-readable API, auto-enabled under AI agents
 - In-process test utility with no child-process overhead
 - Automatic `--help` generation, with per-command and project-wide customization hooks
@@ -97,9 +97,9 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Greet someone",
-  args: [{ name: "name", type: "string", required: true }],
   options: [{ name: "loud", type: "boolean", short: "l" }],
-  run({ args, options, output }) {
+  args: [{ name: "name", type: "string", required: true }],
+  run({ options, args, output }) {
     const greeting = `Hello, ${args.name}!`;
     output.log(options.loud ? greeting.toUpperCase() : greeting);
   },
@@ -118,9 +118,9 @@ export default defineGroup({
 });
 ```
 
-## Arguments and Options
+## Options and Arguments
 
-`args` are positional; `options` are `--name` flags. Required `args` must come before optional ones.
+`options` are `--name` flags; `args` are positional. Required `args` must come before optional ones.
 
 ### Primitive Fields
 
@@ -136,13 +136,13 @@ export default defineGroup({
 
 ```ts
 defineCommand({
-  args: [{ name: "name", type: "string", required: true }],
   options: [
     { name: "retries", type: "number", default: 3, description: "Retry count" },
     { name: "verbose", type: "boolean", short: "v" },
   ],
-  run({ args, options }) {
-    // args.name: string, options.retries: number, options.verbose: boolean
+  args: [{ name: "name", type: "string", required: true }],
+  run({ options, args }) {
+    // options.retries: number, options.verbose: boolean, args.name: string
   },
 });
 ```
@@ -153,10 +153,10 @@ Use `type: "enum"` with a `values` list to accept only a fixed set of string or 
 
 ```ts
 defineCommand({
-  args: [{ name: "target", type: "enum", values: ["web", "node"], required: true }],
   options: [{ name: "mode", type: "enum", values: ["dev", "prod"], default: "dev" }],
-  run({ args, options }) {
-    // args.target: "web" | "node", options.mode: "dev" | "prod"
+  args: [{ name: "target", type: "enum", values: ["web", "node"], required: true }],
+  run({ options, args }) {
+    // options.mode: "dev" | "prod", args.target: "web" | "node"
   },
 });
 ```
@@ -191,10 +191,10 @@ import { z } from "zod";
 
 export default defineCommand({
   description: "Fetch a resource by id",
-  args: [{ name: "id", schema: z.uuid(), typeLabel: "uuid", description: "Resource id" }],
   options: [{ name: "retries", schema: z.coerce.number().int().min(0).max(10), defaultLabel: "3" }],
-  run({ args, options }) {
-    // args.id: string, options.retries: number
+  args: [{ name: "id", schema: z.uuid(), typeLabel: "uuid", description: "Resource id" }],
+  run({ options, args }) {
+    // options.retries: number, args.id: string
   },
 });
 ```
@@ -256,17 +256,21 @@ export default defineCommand({
 
 ## Help Output
 
-`--help` output is generated from `description`, `args`, `options`, `examples`, and the surrounding command tree. Override per command with `defineCommand({ help })`, or project-wide via `rune.config.ts`:
+`--help` output is generated from `description`, `options`, `args`, `examples`, and the surrounding command tree. Override per command with `defineCommand({ help })`, or configure project-wide help and CLI metadata via `rune.config.ts`:
 
 ```ts
 import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 
 export default defineConfig({
+  name: "my-cli",
+  version: "1.0.0",
   help(data) {
-    return `${renderDefaultHelp(data)}\n\nDocs: https://example.com`;
+    return `${data.cliName}\n\n${renderDefaultHelp(data)}\n\nDocs: https://example.com`;
   },
 });
 ```
+
+`name` and `version` affect help output, `--version`, and JSON help metadata. When omitted, Rune derives them from `package.json`.
 
 Pass `--json` with `--help` to inspect the same help data as structured JSON. This works even for commands that do not enable runtime JSON output with `json: true`:
 
@@ -320,7 +324,7 @@ Rune ships an official [Agent Skill](https://agentskills.io/home) that gives AI 
 | --------------------- | ----------------------------------------------------------------------- |
 | `defineCommand(def)`  | Define a command. The returned value must be the file's default export. |
 | `defineGroup(def)`    | Define metadata for a command group in `_group.ts`.                     |
-| `defineConfig(def)`   | Define project-wide configuration in `rune.config.ts`.                  |
+| `defineConfig(def)`   | Define project-wide CLI metadata and help configuration.                |
 | `CommandError`        | Structured error class for command failures.                            |
 | `renderDefaultHelp()` | Render the default help output as a string; useful from custom `help`.  |
 | `runCommand()`        | (from `@rune-cli/rune/test`) Execute a command in-process for testing.  |

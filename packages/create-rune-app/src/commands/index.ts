@@ -9,13 +9,6 @@ import { defaultServices } from "../services/index.ts";
 
 const command = defineCommand({
   description: "Create a new Rune CLI project",
-  args: [
-    {
-      name: "projectName",
-      type: "string",
-      description: "Directory name for the new project",
-    },
-  ],
   options: [
     {
       name: "yes",
@@ -34,6 +27,13 @@ const command = defineCommand({
       type: "boolean",
       default: true,
       description: "Initialize a git repository",
+    },
+  ],
+  args: [
+    {
+      name: "projectName",
+      type: "string",
+      description: "Directory name for the new project",
     },
   ],
   async run(ctx) {

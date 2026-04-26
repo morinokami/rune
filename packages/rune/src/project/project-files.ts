@@ -1,14 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
-// ---------------------------------------------------------------------------
-// Constants & types
-// ---------------------------------------------------------------------------
-
-const SOURCE_DIRECTORY_NAME = "src";
-const COMMANDS_DIRECTORY_NAME = path.join(SOURCE_DIRECTORY_NAME, "commands");
-const DIST_DIRECTORY_NAME = "dist";
-const CONFIG_FILENAME = "rune.config.ts";
+import type { RuneConfig } from "../core/define-config";
 
 export interface ProjectPackageJson {
   readonly bin?: string | Readonly<Record<string, string>> | undefined;
@@ -25,6 +18,8 @@ export interface ProjectCliInfo {
   readonly version?: string | undefined;
 }
 
+export type ProjectCliInfoOverrides = Pick<RuneConfig, "name" | "version">;
+
 export interface ResolveProjectPathOptions {
   readonly cwd?: string | undefined;
   readonly projectPath?: string | undefined;
@@ -37,7 +32,7 @@ export interface ProjectDirectories {
 }
 
 // ---------------------------------------------------------------------------
-// Path resolution
+// Public API
 // ---------------------------------------------------------------------------
 
 export function resolveProjectPath(options: ResolveProjectPathOptions): string {
@@ -53,31 +48,6 @@ export function resolveProjectDirectories(projectRoot: string): ProjectDirectori
   };
 }
 
-// ---------------------------------------------------------------------------
-// Project metadata helpers
-// ---------------------------------------------------------------------------
-
-function resolveCliNameFromPackageJson(packageJson: ProjectPackageJson): string | undefined {
-  if (packageJson.bin && typeof packageJson.bin === "object") {
-    const binNames = Object.keys(packageJson.bin).sort((left, right) => left.localeCompare(right));
-
-    if (binNames.length > 0) {
-      return binNames[0];
-    }
-  }
-
-  if (packageJson.name && packageJson.name.length > 0) {
-    const packageNameSegments = packageJson.name.split("/");
-    return packageNameSegments.at(-1) ?? packageJson.name;
-  }
-
-  return undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCliInfo> {
   const packageJson = await readProjectPackageJson(projectRoot);
   const name = packageJson ? resolveCliNameFromPackageJson(packageJson) : undefined;
@@ -85,6 +55,16 @@ export async function readProjectCliInfo(projectRoot: string): Promise<ProjectCl
   return {
     name: name ?? path.basename(projectRoot),
     version: packageJson?.version,
+  };
+}
+
+export function applyProjectCliInfoOverrides(
+  cliInfo: ProjectCliInfo,
+  overrides: ProjectCliInfoOverrides | undefined,
+): ProjectCliInfo {
+  return {
+    name: overrides?.name ?? cliInfo.name,
+    version: overrides?.version ?? cliInfo.version,
   };
 }
 
@@ -136,4 +116,34 @@ export async function assertCommandsDirectoryExists(commandsDirectory: string): 
       `Commands directory not found at ${COMMANDS_DIRECTORY_NAME}. Create it or check the --project <path> option.`,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Private constants
+// ---------------------------------------------------------------------------
+
+const SOURCE_DIRECTORY_NAME = "src";
+const COMMANDS_DIRECTORY_NAME = path.join(SOURCE_DIRECTORY_NAME, "commands");
+const DIST_DIRECTORY_NAME = "dist";
+const CONFIG_FILENAME = "rune.config.ts";
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+function resolveCliNameFromPackageJson(packageJson: ProjectPackageJson): string | undefined {
+  if (packageJson.bin && typeof packageJson.bin === "object") {
+    const binNames = Object.keys(packageJson.bin).sort((left, right) => left.localeCompare(right));
+
+    if (binNames.length > 0) {
+      return binNames[0];
+    }
+  }
+
+  if (packageJson.name && packageJson.name.length > 0) {
+    const packageNameSegments = packageJson.name.split("/");
+    return packageNameSegments.at(-1) ?? packageJson.name;
+  }
+
+  return undefined;
 }

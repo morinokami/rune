@@ -19,6 +19,95 @@ export { formatBuildFailure, isBuildFailure } from "./rolldown-shared";
 export const BUILD_CLI_FILENAME = "cli.mjs";
 export const BUILD_MANIFEST_FILENAME = "manifest.json";
 
+export async function buildCommandEntries(
+  projectRoot: string,
+  sourceDirectory: string,
+  distDirectory: string,
+  manifest: CommandManifest,
+  externalDependenciesContext = createExternalDependenciesContext(),
+): Promise<void> {
+  const input = createCommandInputMap(manifest, sourceDirectory);
+
+  if (Object.keys(input).length === 0) {
+    return;
+  }
+
+  await build({
+    ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
+    input,
+    plugins: [externalDependenciesContext.plugin],
+    output: {
+      // Rune assembles dist across multiple builds, so each step must preserve prior output.
+      dir: distDirectory,
+      format: "es",
+      entryFileNames: "[name].mjs",
+      chunkFileNames: "chunks/[name]-[hash].mjs",
+      cleanDir: false,
+    },
+  });
+}
+
+export async function buildConfigEntry(
+  projectRoot: string,
+  distDirectory: string,
+  configPath: string,
+  externalDependenciesContext = createExternalDependenciesContext(),
+): Promise<string> {
+  const outputPath = path.join(distDirectory, BUILD_CONFIG_FILENAME);
+
+  await build({
+    ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
+    input: configPath,
+    plugins: [externalDependenciesContext.plugin],
+    output: {
+      // Rune assembles dist across multiple builds, so each step must preserve prior output.
+      file: outputPath,
+      format: "es",
+      cleanDir: false,
+    },
+  });
+
+  return outputPath;
+}
+
+export async function buildCliEntry(
+  distDirectory: string,
+  cliName: string,
+  version: string | undefined,
+  hasConfig: boolean,
+): Promise<void> {
+  const runtimeHelperEntryPath = await resolveRuntimeHelperEntryPath();
+  const runtimeHelperDirectory = path.dirname(runtimeHelperEntryPath);
+  const externalDependenciesContext = createExternalDependenciesContext();
+
+  await build({
+    ...createSharedBuildConfig(runtimeHelperDirectory, false),
+    input: BUILT_CLI_ENTRY_ID,
+    plugins: [
+      // The built CLI entry currently imports only the in-repo runtime helper.
+      // Keep it on the same shared externalization plugin for consistency, but
+      // do not surface its package set in warnings unless this template grows
+      // third-party runtime imports in the future.
+      externalDependenciesContext.plugin,
+      createBuiltCliEntryPlugin(
+        renderBuiltCliEntry(
+          cliName,
+          version,
+          `./${path.basename(runtimeHelperEntryPath)}`,
+          hasConfig,
+        ),
+      ),
+    ],
+    output: {
+      // Rune assembles dist across multiple builds, so each step must preserve prior output.
+      file: path.join(distDirectory, BUILD_CLI_FILENAME),
+      format: "es",
+      banner: "#!/usr/bin/env node",
+      cleanDir: false,
+    },
+  });
+}
+
 const BUILD_CONFIG_FILENAME = "config.mjs";
 const RUNE_PACKAGE_NAME = "@rune-cli/rune";
 const BUILT_CLI_ENTRY_ID = "virtual:rune-built-cli-entry";
@@ -153,89 +242,4 @@ async function resolveRuntimeHelperEntryPath(): Promise<string> {
   }
 
   throw new Error("Could not locate Rune runtime helper entry");
-}
-
-export async function buildCommandEntries(
-  projectRoot: string,
-  sourceDirectory: string,
-  distDirectory: string,
-  manifest: CommandManifest,
-  externalDependenciesContext = createExternalDependenciesContext(),
-): Promise<void> {
-  const input = createCommandInputMap(manifest, sourceDirectory);
-
-  if (Object.keys(input).length === 0) {
-    return;
-  }
-
-  await build({
-    ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
-    input,
-    plugins: [externalDependenciesContext.plugin],
-    output: {
-      // Rune assembles dist across multiple builds, so each step must preserve prior output.
-      dir: distDirectory,
-      format: "es",
-      entryFileNames: "[name].mjs",
-      chunkFileNames: "chunks/[name]-[hash].mjs",
-      cleanDir: false,
-    },
-  });
-}
-
-export async function buildConfigEntry(
-  projectRoot: string,
-  distDirectory: string,
-  configPath: string,
-  externalDependenciesContext = createExternalDependenciesContext(),
-): Promise<void> {
-  await build({
-    ...createSharedBuildConfig(projectRoot, await resolveBuildTsconfig(projectRoot)),
-    input: configPath,
-    plugins: [externalDependenciesContext.plugin],
-    output: {
-      // Rune assembles dist across multiple builds, so each step must preserve prior output.
-      file: path.join(distDirectory, BUILD_CONFIG_FILENAME),
-      format: "es",
-      cleanDir: false,
-    },
-  });
-}
-
-export async function buildCliEntry(
-  distDirectory: string,
-  cliName: string,
-  version: string | undefined,
-  hasConfig: boolean,
-): Promise<void> {
-  const runtimeHelperEntryPath = await resolveRuntimeHelperEntryPath();
-  const runtimeHelperDirectory = path.dirname(runtimeHelperEntryPath);
-  const externalDependenciesContext = createExternalDependenciesContext();
-
-  await build({
-    ...createSharedBuildConfig(runtimeHelperDirectory, false),
-    input: BUILT_CLI_ENTRY_ID,
-    plugins: [
-      // The built CLI entry currently imports only the in-repo runtime helper.
-      // Keep it on the same shared externalization plugin for consistency, but
-      // do not surface its package set in warnings unless this template grows
-      // third-party runtime imports in the future.
-      externalDependenciesContext.plugin,
-      createBuiltCliEntryPlugin(
-        renderBuiltCliEntry(
-          cliName,
-          version,
-          `./${path.basename(runtimeHelperEntryPath)}`,
-          hasConfig,
-        ),
-      ),
-    ],
-    output: {
-      // Rune assembles dist across multiple builds, so each step must preserve prior output.
-      file: path.join(distDirectory, BUILD_CLI_FILENAME),
-      format: "es",
-      banner: "#!/usr/bin/env node",
-      cleanDir: false,
-    },
-  });
 }

@@ -25,7 +25,7 @@ export async function runInteractive(
   ctx: InteractiveRunContext,
   services: Services,
 ): Promise<void> {
-  const { args, cwd, options, output, rawArgs } = ctx;
+  const { options, args, cwd, output, rawArgs } = ctx;
   intro(INTRO_TITLE);
   const pm = services.detectPackageManager();
   const provided = getProvidedProjectState(cwd, args.projectName);

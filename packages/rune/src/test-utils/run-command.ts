@@ -6,24 +6,10 @@ import { runCommandPipeline } from "../core/run-command-pipeline";
 
 type RunnableCommand = Pick<
   DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
-  "json" | "args" | "options"
+  "json" | "options" | "args"
 > & {
   readonly run: (ctx: any) => unknown;
 };
-
-function renderHumanError(error: CommandFailure): string {
-  const lines = [error.message];
-
-  if (error.hint) {
-    lines.push(`Hint: ${error.hint}`);
-  }
-
-  return lines.join("\n");
-}
-
-function ensureTrailingNewline(text: string): string {
-  return text.endsWith("\n") ? text : `${text}\n`;
-}
 
 export interface RunCommandContext {
   /** Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`. */
@@ -149,4 +135,18 @@ export async function runCommand<TCommand extends RunnableCommand>(
     error: result.error,
     data: result.data as InferCommandData<TCommand>,
   };
+}
+
+function renderHumanError(error: CommandFailure): string {
+  const lines = [error.message];
+
+  if (error.hint) {
+    lines.push(`Hint: ${error.hint}`);
+  }
+
+  return lines.join("\n");
+}
+
+function ensureTrailingNewline(text: string): string {
+  return text.endsWith("\n") ? text : `${text}\n`;
 }

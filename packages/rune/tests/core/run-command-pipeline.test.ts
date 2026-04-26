@@ -14,8 +14,8 @@ describe("context and execution", () => {
     };
 
     const command = defineCommand({
-      args: [{ name: "id", type: "string", required: true }],
       options: [{ name: "name", type: "string", required: true }],
+      args: [{ name: "id", type: "string", required: true }],
       async run(ctx) {
         observed.name = ctx.options.name;
         observed.id = ctx.args.id;
@@ -77,8 +77,8 @@ describe("context and execution", () => {
     const observed = { opt: "", arg: "" };
 
     const command = defineCommand({
-      args: [{ name: "my-arg", type: "string", required: true }],
       options: [{ name: "dry-run", type: "boolean" }],
+      args: [{ name: "my-arg", type: "string", required: true }],
       run(ctx) {
         observed.opt = String(ctx.options.dryRun);
         observed.arg = ctx.args.myArg;
@@ -97,8 +97,8 @@ describe("context and execution", () => {
     const observed = { kebab: "", camel: "", optKebab: false, optCamel: false };
 
     const command = defineCommand({
-      args: [{ name: "my-arg", type: "string", required: true }],
       options: [{ name: "dry-run", type: "boolean" }],
+      args: [{ name: "my-arg", type: "string", required: true }],
       run(ctx) {
         observed.camel = ctx.args.myArg;
         observed.kebab = ctx.args["my-arg"];
@@ -338,7 +338,7 @@ describe("parse failures", () => {
       exitCode: 1,
       error: {
         kind: "rune/invalid-arguments",
-        message: "Missing required option:\n\n  --name <string>",
+        message: "Missing required option:\n  --name <string>",
         exitCode: 1,
       },
       data: undefined,

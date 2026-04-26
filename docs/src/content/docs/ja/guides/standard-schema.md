@@ -3,11 +3,11 @@ title: Standard Schema
 description: Rune のコマンドで Standard Schema によるバリデーションと変換を利用する方法について学ぶ。
 ---
 
-Rune の引数やオプションは、`type` プロパティで指定するプリミティブ型（`"string" | "number" | "boolean"`）と組み込みの enum 型（`type: "enum"` と `values`）に加えて、`schema` プロパティで [Standard Schema](https://standardschema.dev) に準拠した任意のスキーマを指定できます。これにより、Zod や Valibot などのスキーマライブラリをそのまま活用して、単純な型チェックを超えたバリデーションと変換を引数・オプションに適用できます。
+Rune のオプションや引数は、`type` プロパティで指定するプリミティブ型（`"string" | "number" | "boolean"`）と組み込みの enum 型（`type: "enum"` と `values`）に加えて、`schema` プロパティで [Standard Schema](https://standardschema.dev) に準拠した任意のスキーマを指定できます。これにより、Zod や Valibot などのスキーマライブラリをそのまま活用して、単純な型チェックを超えたバリデーションと変換をオプション・引数に適用できます。
 
 ## プリミティブ型との使い分け
 
-`type` と `schema` は同じフィールドに対していずれか一方のみを使用できます。どちらを選ぶかは、その引数・オプションに必要な検証・変換のレベルによって決まります。
+`type` と `schema` は同じフィールドに対していずれか一方のみを使用できます。どちらを選ぶかは、そのオプション・引数に必要な検証・変換のレベルによって決まります。
 
 | やりたいこと | 使うもの |
 |---|---|
@@ -30,13 +30,6 @@ import { z } from "zod";
 
 export default defineCommand({
   description: "Fetch a resource by id",
-  args: [
-    {
-      name: "id",
-      schema: z.uuid(),
-      description: "Resource id (UUID)",
-    },
-  ],
   options: [
     {
       name: "retries",
@@ -44,9 +37,16 @@ export default defineCommand({
       description: "Number of retry attempts",
     },
   ],
-  run({ args, options }) {
-    // args.id は string（UUID 形式として検証済み）
+  args: [
+    {
+      name: "id",
+      schema: z.uuid(),
+      description: "Resource id (UUID)",
+    },
+  ],
+  run({ options, args }) {
     // options.retries は number（0〜10 の整数に検証・変換済み）
+    // args.id は string（UUID 形式として検証済み）
   },
 });
 ```

@@ -11,13 +11,28 @@ import type {
   UnknownCommandHelpData,
 } from "../core/help-types";
 
-function formatEnumValuesTypeHint(values: readonly (string | number)[]): string {
-  return `<${values.join("|")}>`;
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export function renderDefaultHelp(data: HelpData): string {
+  switch (data.kind) {
+    case "group":
+      return renderGroupHelpFromData(data);
+    case "command":
+      return renderCommandHelpFromData(data);
+    case "unknown":
+      return renderUnknownHelpFromData(data);
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Formatting helpers
+// Private helpers - formatting
 // ---------------------------------------------------------------------------
+
+function formatEnumValuesTypeHint(values: readonly (string | number)[]): string {
+  return `<${values.join("|")}>`;
+}
 
 function formatCommandName(cliName: string, pathSegments: readonly string[]): string {
   return pathSegments.length === 0 ? cliName : `${cliName} ${pathSegments.join(" ")}`;
@@ -118,8 +133,12 @@ function formatUserOptionDefaultSuffix(
   return `(default: ${formatDefaultValue(entry.default)})`;
 }
 
+function formatFrameworkOptionLabel(entry: FrameworkOptionHelpEntry): string {
+  return entry.short ? `-${entry.short}, --${entry.name}` : `--${entry.name}`;
+}
+
 // ---------------------------------------------------------------------------
-// Internal renderers
+// Private helpers - rendering
 // ---------------------------------------------------------------------------
 
 function renderGroupHelpFromData(data: GroupHelpData): string {
@@ -157,16 +176,12 @@ function renderGroupHelpFromData(data: GroupHelpData): string {
   return `${parts.join("\n\n")}\n`;
 }
 
-function formatFrameworkOptionLabel(entry: FrameworkOptionHelpEntry): string {
-  return entry.short ? `-${entry.short}, --${entry.name}` : `--${entry.name}`;
-}
-
 function renderCommandHelpFromData(data: CommandHelpData): string {
   const usageArguments = formatUsageArguments(data.arguments);
   const optionUsageSuffix = data.options.length > 0 ? "[options]" : "";
   const subcommandUsageSuffix = data.subcommands.length > 0 ? "[command]" : "";
   const commandName = formatCommandName(data.cliName, data.pathSegments);
-  const usageParts = [commandName, subcommandUsageSuffix, usageArguments, optionUsageSuffix]
+  const usageParts = [commandName, optionUsageSuffix, subcommandUsageSuffix, usageArguments]
     .filter((part) => part.length > 0)
     .join(" ");
 
@@ -189,17 +204,6 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
     );
   }
 
-  if (data.arguments.length > 0) {
-    parts.push(
-      `Arguments:\n${formatSectionEntries(
-        data.arguments.map((entry) => ({
-          label: formatArgumentLabel(entry),
-          description: joinDescription(entry.description, formatArgumentDefaultSuffix(entry)),
-        })),
-      )}`,
-    );
-  }
-
   const optionEntries = [
     ...data.options.map((entry) => ({
       label: formatUserOptionLabel(entry),
@@ -212,6 +216,17 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
   ];
 
   parts.push(`Options:\n${formatSectionEntries(optionEntries)}`);
+
+  if (data.arguments.length > 0) {
+    parts.push(
+      `Arguments:\n${formatSectionEntries(
+        data.arguments.map((entry) => ({
+          label: formatArgumentLabel(entry),
+          description: joinDescription(entry.description, formatArgumentDefaultSuffix(entry)),
+        })),
+      )}`,
+    );
+  }
 
   if (data.examples.length > 0) {
     parts.push(formatExamplesSection(data.examples));
@@ -229,19 +244,4 @@ function renderUnknownHelpFromData(data: UnknownCommandHelpData): string {
   }
 
   return `${parts.join("\n\n")}\n`;
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-export function renderDefaultHelp(data: HelpData): string {
-  switch (data.kind) {
-    case "group":
-      return renderGroupHelpFromData(data);
-    case "command":
-      return renderCommandHelpFromData(data);
-    case "unknown":
-      return renderUnknownHelpFromData(data);
-  }
 }

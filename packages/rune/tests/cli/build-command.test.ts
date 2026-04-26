@@ -159,6 +159,39 @@ export default defineCommand({
     expect(commandHelpResult.stdout).not.toContain("Description:");
   });
 
+  test("the built CLI uses defineConfig name and version", async () => {
+    const { projectRoot } = await createBuildProject({
+      "rune.config.ts": `import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({ name: "config-cli", version: "2.0.0" });
+`,
+      "src/commands/hello/index.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Say hello",
+  async run() {},
+});
+`,
+    });
+
+    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    expect(buildResult.exitCode).toBe(0);
+    expect(buildResult.stderr).toBe("");
+
+    const versionResult = await captureBuiltCliResult(projectRoot, ["--version"]);
+    expect(versionResult).toEqual({
+      exitCode: 0,
+      stdout: "config-cli v2.0.0\n",
+      stderr: "",
+    });
+
+    const helpResult = await captureBuiltCliResult(projectRoot, []);
+    expect(helpResult.exitCode).toBe(0);
+    expect(helpResult.stdout).toContain("Usage: config-cli <command>\n");
+    expect(helpResult.stdout).toContain("-V, --version");
+    expect(helpResult.stderr).toBe("");
+  });
+
   test("runRuneCli builds a bare file command and emits the correct dist path", async () => {
     const { projectRoot } = await createBuildProject({
       "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";
@@ -456,8 +489,8 @@ export default defineCommand({
 
 export default defineCommand({
   description: "Say hello",
-  args: [],
   options: [],
+  args: [],
   async run() {
     console.log("hello");
   },

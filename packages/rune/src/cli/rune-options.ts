@@ -12,6 +12,44 @@ export interface ParsedRuneManagedOption {
   readonly nextIndex: number;
 }
 
+export function getRuneManagedOptionNextIndex(
+  argv: readonly string[],
+  index: number,
+): number | undefined {
+  return matchRuneManagedOption(argv, index)?.nextIndex;
+}
+
+export function tryConsumeRuneManagedOption(
+  argv: readonly string[],
+  index: number,
+): ParsedRuneManagedOption | EarlyExit | undefined {
+  const match = matchRuneManagedOption(argv, index);
+
+  if (!match) {
+    return undefined;
+  }
+
+  if (match.spec.name === "project") {
+    if (match.value === undefined) {
+      return {
+        ok: false,
+        exitCode: 1,
+        output: "Missing value for --project. Usage: --project <path>",
+        stream: "stderr",
+      };
+    }
+
+    return {
+      ok: true,
+      name: "project",
+      value: match.value,
+      nextIndex: match.nextIndex,
+    };
+  }
+
+  return undefined;
+}
+
 interface RuneManagedOptionSpec {
   readonly name: ParsedRuneManagedOption["name"];
   readonly takesValue: boolean;
@@ -51,44 +89,6 @@ function matchRuneManagedOption(
         nextIndex: index + 1,
       };
     }
-  }
-
-  return undefined;
-}
-
-export function getRuneManagedOptionNextIndex(
-  argv: readonly string[],
-  index: number,
-): number | undefined {
-  return matchRuneManagedOption(argv, index)?.nextIndex;
-}
-
-export function tryConsumeRuneManagedOption(
-  argv: readonly string[],
-  index: number,
-): ParsedRuneManagedOption | EarlyExit | undefined {
-  const match = matchRuneManagedOption(argv, index);
-
-  if (!match) {
-    return undefined;
-  }
-
-  if (match.spec.name === "project") {
-    if (match.value === undefined) {
-      return {
-        ok: false,
-        exitCode: 1,
-        output: "Missing value for --project. Usage: --project <path>",
-        stream: "stderr",
-      };
-    }
-
-    return {
-      ok: true,
-      name: "project",
-      value: match.value,
-      nextIndex: match.nextIndex,
-    };
   }
 
   return undefined;

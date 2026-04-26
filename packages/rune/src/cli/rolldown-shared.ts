@@ -8,59 +8,10 @@ import path from "node:path";
 // ---------------------------------------------------------------------------
 
 export const BUILD_TARGET = "node22";
-const BUNDLED_PACKAGE_NAMES = new Set(["@rune-cli/rune", "std-env"]);
-const NODE_MODULES_SEGMENT_RE = /(^|[\\/])node_modules([\\/]|$)/;
 
 export interface ExternalDependenciesContext {
   readonly plugin: Plugin;
   readonly getExternalPackages: () => ReadonlySet<string>;
-}
-
-function isBareSpecifier(id: string): boolean {
-  return !id.startsWith(".") && !id.startsWith("/") && !id.startsWith("\0") && !path.isAbsolute(id);
-}
-
-function resolvePackageName(specifier: string): string | undefined {
-  if (!isBareSpecifier(specifier) || specifier.startsWith("node:")) {
-    return undefined;
-  }
-
-  if (specifier.startsWith("@")) {
-    const segments = specifier.split("/");
-    return segments.length >= 2 ? `${segments[0]}/${segments[1]}` : specifier;
-  }
-
-  const [packageName] = specifier.split("/");
-  return packageName;
-}
-
-function shouldBundlePackage(specifier: string): boolean {
-  const packageName = resolvePackageName(specifier);
-  return packageName !== undefined && BUNDLED_PACKAGE_NAMES.has(packageName);
-}
-
-function isResolvedIdObject(
-  resolved: ResolveIdResult,
-): resolved is Exclude<ResolveIdResult, null | undefined | false | string> {
-  return typeof resolved === "object" && resolved !== null && "id" in resolved;
-}
-
-function shouldExternalizeResolvedId(source: string, resolved: ResolveIdResult): boolean {
-  if (!isBareSpecifier(source) || shouldBundlePackage(source)) {
-    return false;
-  }
-
-  const resolvedId = isResolvedIdObject(resolved) ? resolved : undefined;
-
-  if (!resolvedId) {
-    return false;
-  }
-
-  return (
-    resolvedId.external === true ||
-    resolvedId.external === "absolute" ||
-    NODE_MODULES_SEGMENT_RE.test(resolvedId.id)
-  );
 }
 
 export function createExternalDependenciesContext(): ExternalDependenciesContext {
@@ -174,4 +125,54 @@ export function formatBuildFailure(projectRoot: string, error: BundleError): str
     : firstError.loc.file;
 
   return `Failed to compile ${filePath}:${firstError.loc.line}:${firstError.loc.column + 1}: ${firstError.message}`;
+}
+
+const BUNDLED_PACKAGE_NAMES = new Set(["@rune-cli/rune", "std-env"]);
+const NODE_MODULES_SEGMENT_RE = /(^|[\\/])node_modules([\\/]|$)/;
+
+function isBareSpecifier(id: string): boolean {
+  return !id.startsWith(".") && !id.startsWith("/") && !id.startsWith("\0") && !path.isAbsolute(id);
+}
+
+function resolvePackageName(specifier: string): string | undefined {
+  if (!isBareSpecifier(specifier) || specifier.startsWith("node:")) {
+    return undefined;
+  }
+
+  if (specifier.startsWith("@")) {
+    const segments = specifier.split("/");
+    return segments.length >= 2 ? `${segments[0]}/${segments[1]}` : specifier;
+  }
+
+  const [packageName] = specifier.split("/");
+  return packageName;
+}
+
+function shouldBundlePackage(specifier: string): boolean {
+  const packageName = resolvePackageName(specifier);
+  return packageName !== undefined && BUNDLED_PACKAGE_NAMES.has(packageName);
+}
+
+function isResolvedIdObject(
+  resolved: ResolveIdResult,
+): resolved is Exclude<ResolveIdResult, null | undefined | false | string> {
+  return typeof resolved === "object" && resolved !== null && "id" in resolved;
+}
+
+function shouldExternalizeResolvedId(source: string, resolved: ResolveIdResult): boolean {
+  if (!isBareSpecifier(source) || shouldBundlePackage(source)) {
+    return false;
+  }
+
+  const resolvedId = isResolvedIdObject(resolved) ? resolved : undefined;
+
+  if (!resolvedId) {
+    return false;
+  }
+
+  return (
+    resolvedId.external === true ||
+    resolvedId.external === "absolute" ||
+    NODE_MODULES_SEGMENT_RE.test(resolvedId.id)
+  );
 }

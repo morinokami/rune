@@ -26,13 +26,13 @@ afterEach(() => {
   delete (globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules;
 });
 
-const stubModule = `export default { args: [], options: [], async run() {} };`;
+const stubModule = `export default { options: [], args: [], async run() {} };`;
 
 const trackedStubModule = (name: string) => `globalThis.__runeLoadedModules ??= [];
 globalThis.__runeLoadedModules.push("${name}");
 export default {
-  args: [],
   options: [],
+  args: [],
   async run() {},
 };
 `;
@@ -85,8 +85,8 @@ describe("routed execution", () => {
 
 export default defineCommand({
   description: "Create a project",
-  args: [{ name: "id", type: "string", required: true }],
   options: [{ name: "name", type: "string", required: true }],
+  args: [{ name: "id", type: "string", required: true }],
   async run(ctx) {
     console.log(\`name=\${ctx.options.name}\`);
     console.log(\`id=\${ctx.args.id}\`);
@@ -120,8 +120,8 @@ globalThis.__runeLoadedModules ??= [];
 globalThis.__runeLoadedModules.push("create");
 
 export default defineCommand({
-  args: [],
   options: [],
+  args: [],
   async run() {},
 });
 `,
@@ -173,8 +173,8 @@ globalThis.__runeLoadedModules.push("create");
 
 export default defineCommand({
   description: "Create a project",
-  args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
   options: [{ name: "force", type: "boolean", short: "f", description: "Overwrite existing state" }],
+  args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
   async run() {},
 });
 `,
@@ -188,7 +188,7 @@ export default defineCommand({
     });
 
     expect(captured.exitCode).toBe(0);
-    expect(captured.stdout).toContain("Usage: mycli project create <id> [options]");
+    expect(captured.stdout).toContain("Usage: mycli project create [options] <id>");
     expect(captured.stdout).toContain("-f, --force");
     expect(captured.stderr).toBe("");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
@@ -207,13 +207,13 @@ globalThis.__runeLoadedModules.push("create");
 
 export default defineCommand({
   description: "Create a project",
-  args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
   options: [
     { name: "color", type: "boolean", default: true, description: "Colorize output" },
     { name: "force", type: "boolean", short: "f", description: "Overwrite existing state" },
     { name: "tag", type: "string", multiple: true, description: "Filter tag" },
     { name: "target", type: "enum", values: ["dev", "prod"], default: "dev" },
   ],
+  args: [{ name: "id", type: "string", required: true, description: "Project identifier" }],
   help() {
     return "custom help should not be used for JSON help";
   },
@@ -607,7 +607,7 @@ describe("json mode", () => {
     expect(JSON.parse(captured.stdout)).toEqual({
       error: {
         kind: "rune/invalid-arguments",
-        message: "Missing required option:\n\n  --count <number>",
+        message: "Missing required option:\n  --count <number>",
       },
     });
     expect(captured.stderr).toBe("");
@@ -689,8 +689,8 @@ globalThis.__runeLoadedModules.push("create");
 
 export default defineCommand({
   description: "Create a project",
-  args: [],
   options: [{ name: "name", type: "string", required: true }],
+  args: [],
   async run() {
     console.log("should not run");
   },
@@ -707,7 +707,7 @@ export default defineCommand({
 
     expect(captured.exitCode).toBe(1);
     expect(captured.stdout).toBe("");
-    expect(captured.stderr).toBe("Missing required option:\n\n  --name <string>\n");
+    expect(captured.stderr).toBe("Missing required option:\n  --name <string>\n");
     expect((globalThis as { __runeLoadedModules?: string[] }).__runeLoadedModules).toEqual([
       "create",
     ]);

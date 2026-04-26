@@ -2,6 +2,7 @@ import path from "node:path";
 import { describe, expect, test } from "vite-plus/test";
 
 import {
+  applyProjectCliInfoOverrides,
   assertCommandsDirectoryExists,
   readProjectCliInfo,
   resolveProjectDirectories,
@@ -106,6 +107,30 @@ describe("CLI metadata", () => {
     await expect(readProjectCliInfo(projectRoot)).resolves.toEqual({
       name: path.basename(projectRoot),
       version: undefined,
+    });
+  });
+
+  test("applyProjectCliInfoOverrides prefers config metadata when provided", () => {
+    expect(
+      applyProjectCliInfoOverrides(
+        { name: "package-cli", version: "1.0.0" },
+        { name: "config-cli", version: "2.0.0" },
+      ),
+    ).toEqual({
+      name: "config-cli",
+      version: "2.0.0",
+    });
+  });
+
+  test("applyProjectCliInfoOverrides keeps package metadata for omitted config fields", () => {
+    expect(
+      applyProjectCliInfoOverrides(
+        { name: "package-cli", version: "1.0.0" },
+        { name: "config-cli" },
+      ),
+    ).toEqual({
+      name: "config-cli",
+      version: "1.0.0",
     });
   });
 });

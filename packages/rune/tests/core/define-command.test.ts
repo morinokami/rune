@@ -8,7 +8,7 @@ import type { CommandArgField, CommandOptionField, SingleLetter } from "../../sr
 import { defineCommand, isDefinedCommand } from "../../src/core/define-command";
 
 describe("normalization and pass-through", () => {
-  test("defineCommand normalizes omitted args and options to empty arrays", () => {
+  test("defineCommand normalizes omitted options and args to empty arrays", () => {
     const command = defineCommand({
       async run() {},
     });
@@ -36,11 +36,11 @@ describe("normalization and pass-through", () => {
   test("defineCommand preserves description and field counts", () => {
     const command = defineCommand({
       description: "Create a project",
-      args: [{ name: "id", type: "string", required: true }],
       options: [
         { name: "name", type: "string", required: true },
         { name: "force", type: "boolean", short: "f" },
       ],
+      args: [{ name: "id", type: "string", required: true }],
       async run() {},
     });
 
@@ -83,12 +83,12 @@ describe("normalization and pass-through", () => {
     expect(command.examples).toEqual(["my-cli create"]);
   });
 
-  test("defineCommand copies args and options arrays", () => {
-    const args: CommandArgField[] = [{ name: "id", type: "string", required: true }];
+  test("defineCommand copies options and args arrays", () => {
     const options: CommandOptionField[] = [{ name: "force", type: "boolean" }];
+    const args: CommandArgField[] = [{ name: "id", type: "string", required: true }];
     const command = defineCommand({
-      args,
       options,
+      args,
       async run() {},
     });
 
@@ -117,13 +117,13 @@ describe("normalization and pass-through", () => {
     const modeSchema = z.string().optional();
     const tokenSchema = z.string();
     const command = defineCommand({
-      args: [
-        { name: "id", type: "string", required: true },
-        { name: "mode", schema: modeSchema },
-      ],
       options: [
         { name: "count", type: "number", default: 1 },
         { name: "token", schema: tokenSchema },
+      ],
+      args: [
+        { name: "id", type: "string", required: true },
+        { name: "mode", schema: modeSchema },
       ],
       async run() {},
     });

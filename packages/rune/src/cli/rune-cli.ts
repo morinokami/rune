@@ -14,20 +14,6 @@ export interface RunRuneCliOptions {
   readonly cwd?: string | undefined;
 }
 
-async function writeEarlyExit(exit: EarlyExit): Promise<number> {
-  if (exit.stream === "stdout") {
-    await writeStdout(exit.output);
-  } else {
-    await writeStderrLine(exit.output);
-  }
-
-  return exit.exitCode;
-}
-
-function getRuneVersion(): string {
-  return runePackageJson.version;
-}
-
 // Parses Rune's own CLI arguments and dispatches to subcommands such as `rune run`.
 export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   const manifest = createRuneCliManifest();
@@ -81,4 +67,18 @@ export async function runRuneCli(options: RunRuneCliOptions): Promise<number> {
   }
 
   return 1;
+}
+
+async function writeEarlyExit(exit: EarlyExit): Promise<number> {
+  if (exit.stream === "stdout") {
+    await writeStdout(exit.output);
+  } else {
+    await writeStderrLine(exit.output);
+  }
+
+  return exit.exitCode;
+}
+
+function getRuneVersion(): string {
+  return runePackageJson.version;
 }

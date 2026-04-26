@@ -1,5 +1,3 @@
-const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 export function validateCommandAliases(aliases: readonly string[]): void {
   const seen = new Set<string>();
 
@@ -17,3 +15,5 @@ export function validateCommandAliases(aliases: readonly string[]): void {
     seen.add(alias);
   }
 }
+
+const COMMAND_ALIAS_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
