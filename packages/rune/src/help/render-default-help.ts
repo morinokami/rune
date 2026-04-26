@@ -181,7 +181,7 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
   const optionUsageSuffix = data.options.length > 0 ? "[options]" : "";
   const subcommandUsageSuffix = data.subcommands.length > 0 ? "[command]" : "";
   const commandName = formatCommandName(data.cliName, data.pathSegments);
-  const usageParts = [commandName, subcommandUsageSuffix, usageArguments, optionUsageSuffix]
+  const usageParts = [commandName, optionUsageSuffix, subcommandUsageSuffix, usageArguments]
     .filter((part) => part.length > 0)
     .join(" ");
 

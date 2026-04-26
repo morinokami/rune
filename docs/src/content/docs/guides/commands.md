@@ -41,7 +41,7 @@ Running this command produces the following output:
 $ my-cli --help
 Greet someone
 
-Usage: my-cli <name> [options]
+Usage: my-cli [options] <name>
 
 Arguments:
   name <string>

@@ -75,11 +75,11 @@ describe("renderDefaultHelp", () => {
     const help = renderDefaultHelp(data);
     const lines = help.split("\n");
 
-    expect(help).toContain("Usage: mycli create <id> [options]");
+    expect(help).toContain("Usage: mycli create [options] <id>");
     expect(help).toContain("Create a project");
     expect(help).not.toContain("Description:");
     expect(lines[0]).toBe("Create a project");
-    expect(lines[2]).toBe("Usage: mycli create <id> [options]");
+    expect(lines[2]).toBe("Usage: mycli create [options] <id>");
     expect(help).toContain("id <string>  Project identifier");
     expect(help).toContain('--name <string>  Project name (default: "my-project")');
     expect(help).toContain("-f, --force  Force overwrite");
@@ -143,7 +143,7 @@ describe("renderDefaultHelp", () => {
 
     const help = renderDefaultHelp(data);
 
-    expect(help).toContain("Usage: mycli run <target> [options]");
+    expect(help).toContain("Usage: mycli run [options] <target>");
     expect(help).toContain("  target  Build target");
     expect(help).toContain("  --mode  Build mode");
   });
