@@ -10,9 +10,9 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Create a new project",
-  args: [{ name: "name", type: "string", required: true }],
   options: [{ name: "force", type: "boolean", short: "f" }],
-  run({ args, options }) {
+  args: [{ name: "name", type: "string", required: true }],
+  run({ options, args }) {
     // ...
   },
 });

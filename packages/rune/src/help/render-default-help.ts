@@ -181,7 +181,7 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
   const optionUsageSuffix = data.options.length > 0 ? "[options]" : "";
   const subcommandUsageSuffix = data.subcommands.length > 0 ? "[command]" : "";
   const commandName = formatCommandName(data.cliName, data.pathSegments);
-  const usageParts = [commandName, subcommandUsageSuffix, usageArguments, optionUsageSuffix]
+  const usageParts = [commandName, optionUsageSuffix, subcommandUsageSuffix, usageArguments]
     .filter((part) => part.length > 0)
     .join(" ");
 
@@ -204,17 +204,6 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
     );
   }
 
-  if (data.arguments.length > 0) {
-    parts.push(
-      `Arguments:\n${formatSectionEntries(
-        data.arguments.map((entry) => ({
-          label: formatArgumentLabel(entry),
-          description: joinDescription(entry.description, formatArgumentDefaultSuffix(entry)),
-        })),
-      )}`,
-    );
-  }
-
   const optionEntries = [
     ...data.options.map((entry) => ({
       label: formatUserOptionLabel(entry),
@@ -227,6 +216,17 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
   ];
 
   parts.push(`Options:\n${formatSectionEntries(optionEntries)}`);
+
+  if (data.arguments.length > 0) {
+    parts.push(
+      `Arguments:\n${formatSectionEntries(
+        data.arguments.map((entry) => ({
+          label: formatArgumentLabel(entry),
+          description: joinDescription(entry.description, formatArgumentDefaultSuffix(entry)),
+        })),
+      )}`,
+    );
+  }
 
   if (data.examples.length > 0) {
     parts.push(formatExamplesSection(data.examples));

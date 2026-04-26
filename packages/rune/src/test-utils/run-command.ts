@@ -6,7 +6,7 @@ import { runCommandPipeline } from "../core/run-command-pipeline";
 
 type RunnableCommand = Pick<
   DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
-  "json" | "args" | "options"
+  "json" | "options" | "args"
 > & {
   readonly run: (ctx: any) => unknown;
 };

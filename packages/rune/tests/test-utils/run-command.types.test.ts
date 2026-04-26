@@ -3,14 +3,14 @@ import { expectTypeOf, test } from "vite-plus/test";
 import { defineCommand } from "../../src/core/define-command";
 import { runCommand } from "../../src/test-utils/run-command";
 
-test("runCommand accepts commands with args and options", async () => {
+test("runCommand accepts commands with options and args", async () => {
   const command = defineCommand({
-    args: [{ name: "user-id", type: "string", required: true }],
     options: [
       { name: "display-name", type: "string", required: true },
       { name: "notify", type: "boolean", default: true },
       { name: "role", type: "string" },
     ],
+    args: [{ name: "user-id", type: "string", required: true }],
     async run(ctx) {
       ctx.output.log(
         `${ctx.args.userId}:${ctx.options.displayName}:${ctx.options.notify}:${ctx.options.role ?? "viewer"}`,

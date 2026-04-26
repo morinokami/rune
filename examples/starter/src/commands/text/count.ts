@@ -2,13 +2,6 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Count words or characters in the input",
-  args: [
-    {
-      name: "input",
-      type: "string",
-      required: true,
-    },
-  ],
   options: [
     {
       name: "unit",
@@ -18,7 +11,14 @@ export default defineCommand({
       description: "What to count",
     },
   ],
-  run({ args, options, output }) {
+  args: [
+    {
+      name: "input",
+      type: "string",
+      required: true,
+    },
+  ],
+  run({ options, args, output }) {
     const { input } = args;
     let result: number;
     if (options.unit === "chars") {

@@ -67,8 +67,8 @@ export default defineGroup({
 
 export default defineCommand({
   description: "Create a project",
-  args: [{ name: "id", type: "string", required: true }],
   options: [{ name: "force", type: "boolean", short: "f" }],
+  args: [{ name: "id", type: "string", required: true }],
   async run(ctx) {
     ctx.output.log(\`create \${ctx.args.id} force=\${ctx.options.force}\`);
   },

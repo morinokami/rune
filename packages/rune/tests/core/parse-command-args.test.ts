@@ -7,14 +7,14 @@ import { defineCommand } from "../../src/core/define-command";
 import { parseCommandArgs } from "../../src/core/parse-command-args";
 
 describe("primitive parsing and defaults", () => {
-  test("parseCommandArgs parses args, options, short names, booleans, and defaults", async () => {
+  test("parseCommandArgs parses options, args, short names, booleans, and defaults", async () => {
     const command = defineCommand({
-      args: [{ name: "id", type: "string", required: true }],
       options: [
         { name: "name", type: "string", required: true },
         { name: "force", type: "boolean", short: "f" },
         { name: "count", type: "number", default: 1 },
       ],
+      args: [{ name: "id", type: "string", required: true }],
       async run() {},
     });
 
@@ -767,8 +767,8 @@ describe("parseCommandArgs edge cases", () => {
 
   test("parseCommandArgs adds camelCase aliases for kebab-case fields", async () => {
     const command = defineCommand({
-      args: [{ name: "my-arg", type: "string", required: true }],
       options: [{ name: "dry-run", type: "boolean" }],
+      args: [{ name: "my-arg", type: "string", required: true }],
       async run() {},
     });
 

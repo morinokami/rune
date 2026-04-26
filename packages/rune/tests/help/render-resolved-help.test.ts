@@ -196,8 +196,8 @@ describe("defineCommand.help", () => {
     let receivedData: CommandHelpData | undefined;
     const command = defineCommand({
       description: "Create something",
-      args: [{ name: "name", type: "string", required: true }],
       options: [{ name: "force", type: "boolean", short: "f" }],
+      args: [{ name: "name", type: "string", required: true }],
       help(data) {
         receivedData = data;
         return renderDefaultHelp(data);
@@ -312,14 +312,6 @@ describe("help priority chain", () => {
     const route = resolveCommandRoute(manifest, ["project", "create", "--help"]);
     const command = defineCommand({
       description: "Create a project",
-      args: [
-        {
-          name: "id",
-          type: "string",
-          required: true,
-          description: "Project identifier",
-        },
-      ],
       options: [
         {
           name: "name",
@@ -332,6 +324,14 @@ describe("help priority chain", () => {
           type: "boolean",
           short: "f",
           description: "Force overwrite",
+        },
+      ],
+      args: [
+        {
+          name: "id",
+          type: "string",
+          required: true,
+          description: "Project identifier",
         },
       ],
       async run() {},

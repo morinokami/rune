@@ -3,7 +3,7 @@ title: ヘルプのカスタマイズ
 description: Rune のヘルプ出力をカスタマイズする方法について学ぶ。
 ---
 
-Rune は、コマンドの `description`、`args`、`options`、`examples` からヘルプを自動的に生成します。生成されるヘルプ出力をより細かく制御したい場合は、`defineCommand({ help })` を使ってコマンド単位でカスタマイズするか、`rune.config.ts` によりプロジェクト全体でカスタマイズすることができます。
+Rune は、コマンドの `description`、`options`、`args`、`examples` からヘルプを自動的に生成します。生成されるヘルプ出力をより細かく制御したい場合は、`defineCommand({ help })` を使ってコマンド単位でカスタマイズするか、`rune.config.ts` によりプロジェクト全体でカスタマイズすることができます。
 
 ## コマンド単位のカスタマイズ
 
@@ -40,7 +40,7 @@ Options:
   -h, --help  Show help
 ```
 
-`CommandHelpData` には、コマンド名やパスセグメント、引数・オプション・サブコマンドの定義情報が含まれています。これらを使って、ヘルプをゼロから組み立てることもできます。詳細は [`defineCommand()` のリファレンス](/ja/reference/define-command/#help)を参照してください。
+`CommandHelpData` には、コマンド名やパスセグメント、オプション・引数・サブコマンドの定義情報が含まれています。これらを使って、ヘルプをゼロから組み立てることもできます。詳細は [`defineCommand()` のリファレンス](/ja/reference/define-command/#help)を参照してください。
 
 ## プロジェクトレベルのカスタマイズ
 
@@ -125,4 +125,4 @@ $ my-cli deploy --help --json
 {"schemaVersion":1,"kind":"command","cli":{"name":"my-cli"},"command":{"path":["deploy"],"name":"deploy","aliases":[],"examples":[]},"args":[],"options":[{"name":"help","short":"h","source":"framework","type":"boolean","description":"Show help","required":false,"multiple":false,"negatable":false}],"commands":[]}
 ```
 
-JSON ヘルプは、コマンドやグループの説明だけでなく、コマンドが見つからない場合の候補表示にも対応しています。これはコマンドの実行結果ではなく、CLI のコマンド構成や引数・オプションを説明するものなので、コマンド側で `json: true` を設定している必要はありません。`defineCommand({ help })` や `rune.config.ts` のカスタムヘルプレンダラーはテキスト専用であり、`--help --json` には適用されません。
+JSON ヘルプは、コマンドやグループの説明だけでなく、コマンドが見つからない場合の候補表示にも対応しています。これはコマンドの実行結果ではなく、CLI のコマンド構成やオプション・引数を説明するものなので、コマンド側で `json: true` を設定している必要はありません。`defineCommand({ help })` や `rune.config.ts` のカスタムヘルプレンダラーはテキスト専用であり、`--help --json` には適用されません。

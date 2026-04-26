@@ -43,7 +43,7 @@ test("greets by name", async () => {
 });
 ```
 
-Arguments and options are passed as a string array, just like a real CLI invocation:
+Options and arguments are passed as a string array, just like a real CLI invocation:
 
 ```ts
 test("greets loudly with --loud flag", async () => {

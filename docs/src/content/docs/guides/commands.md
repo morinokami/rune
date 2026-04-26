@@ -7,7 +7,7 @@ description: Learn how to define commands in Rune.
 
 As described in the [Routing](/guides/routing/) guide, commands in Rune are defined by `index.ts` or other routable `.ts` files inside `src/commands`. Each command file uses the `defineCommand()` function, which takes an object specifying the command's description, arguments, options, `run` function, and more. The returned command object must be the file's default export so that Rune can recognize it as a command.
 
-Here is an example of a greeting command. It defines a positional argument via `args` and a flag via `options`, then implements the command logic in the `run` function:
+Here is an example of a greeting command. It defines a flag via `options` and a positional argument via `args`, then implements the command logic in the `run` function:
 
 ```ts
 // src/commands/index.ts
@@ -15,6 +15,12 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Greet someone",
+  options: [
+    {
+      name: "loud",
+      type: "boolean",
+    },
+  ],
   args: [
     {
       name: "name",
@@ -22,13 +28,7 @@ export default defineCommand({
       required: true,
     },
   ],
-  options: [
-    {
-      name: "loud",
-      type: "boolean",
-    },
-  ],
-  run({ args, options, output }) {
+  run({ options, args, output }) {
     const greeting = `Hello, ${args.name}!`;
     output.log(options.loud ? greeting.toUpperCase() : greeting);
   },
@@ -41,14 +41,14 @@ Running this command produces the following output:
 $ my-cli --help
 Greet someone
 
-Usage: my-cli <name> [options]
-
-Arguments:
-  name <string>
+Usage: my-cli [options] <name>
 
 Options:
   --loud
   -h, --help  Show help
+
+Arguments:
+  name <string>
 
 $ my-cli foo
 Hello, foo!
@@ -188,12 +188,6 @@ import { defineCommand } from "@rune-cli/rune";
 
 export default defineCommand({
   description: "Build the project",
-  args: [{
-    name: "target",
-    type: "enum",
-    values: ["web", "node"],
-    required: true,
-  }],
   options: [
     {
       name: "mode",
@@ -203,8 +197,14 @@ export default defineCommand({
       description: "Build mode",
     },
   ],
-  run({ args, options, output }) {
-    // args.target is "web" | "node"; options.mode is "dev" | "prod"
+  args: [{
+    name: "target",
+    type: "enum",
+    values: ["web", "node"],
+    required: true,
+  }],
+  run({ options, args, output }) {
+    // options.mode is "dev" | "prod"; args.target is "web" | "node"
     output.log(`Building ${args.target} in ${options.mode} mode`);
   },
 });
