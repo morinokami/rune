@@ -252,6 +252,8 @@ my-cli --json  # {"items":[1,2,3]}
 
 Under AI agents (Claude Code, Cursor, Codex, etc.), `json: true` commands auto-enable JSON mode even without `--json`, so a single command serves both humans and agents seamlessly. Detection only triggers on known agent environment variables — CI jobs and shell pipes continue to produce human-readable output unless `--json` is passed explicitly.
 
+Set `RUNE_DISABLE_AUTO_JSON=1` to opt out of auto-activation while keeping `--json` working as usual. This is mainly intended for AI agents that are themselves developing a Rune-based CLI and need to inspect the human-facing output.
+
 ## Structured Errors
 
 `CommandError` carries `kind`, `message`, `hint`, and `details`. Rune formats it for humans in normal mode and emits it as structured JSON under `--json`.

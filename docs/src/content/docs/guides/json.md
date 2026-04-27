@@ -69,6 +69,18 @@ Only output written through the framework's `output` API is suppressed in JSON m
 
 For commands declared with `json: true`, Rune automatically enables JSON mode when it detects that the CLI is being invoked by an AI agent (e.g. Claude Code, Cursor, Codex), even without an explicit `--json` flag. This lets a single command serve humans with rich text output and agents with structured JSON, without requiring agents to discover and pass `--json` themselves.
 
+### Opting out: `RUNE_DISABLE_AUTO_JSON`
+
+Set `RUNE_DISABLE_AUTO_JSON=1` (or `true`) to suppress this auto-activation. With it set, JSON mode is enabled only when `--json` is explicitly passed, just as if the CLI were run by a human.
+
+```bash
+RUNE_DISABLE_AUTO_JSON=1 your-cli projects list
+```
+
+This is primarily intended for AI agents that are themselves *developing* a Rune-based CLI: without this escape hatch, every invocation under the agent returns JSON, hiding the human-facing `output.log()` rendering that the agent is trying to verify. Setting the variable only affects Rune's JSON mode auto-activation; it does not change other agent-aware behavior elsewhere in the toolchain.
+
+The variable has no effect inside the `runCommand()` test harness, which already disables agent detection by default for deterministic tests.
+
 ## Why `output.log()` matters
 
 Rune's output helpers are not just a style preference:

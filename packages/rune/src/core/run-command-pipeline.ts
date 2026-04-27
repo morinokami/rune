@@ -4,6 +4,7 @@ import type { OutputSink } from "./command-output";
 import type { DefinedCommand, InferCommandData } from "./command-types";
 import type { CommandArgField, CommandOptionField } from "./field-types";
 
+import { resolveAgentDetected } from "./agent-detection";
 import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
 import { CommandError, type CommandFailure } from "./command-error";
 import { createOutput } from "./command-output";
@@ -35,7 +36,9 @@ export interface RunCommandPipelineInput {
    * - `true`: behave as if running under an agent (auto-enable JSON mode).
    * - `false`: behave as if not running under an agent (only `--json` enables
    *   JSON mode).
-   * - omitted: detect from the environment via std-env (`isAgent`).
+   * - omitted: detect from the environment via std-env (`isAgent`), unless
+   *   `RUNE_DISABLE_AUTO_JSON=1` is set, in which case auto-enable is
+   *   suppressed regardless of detection.
    */
   readonly simulateAgent?: boolean | undefined;
 }
@@ -78,7 +81,11 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
   const { jsonMode: explicitJsonMode, parseArgv } = commandDefinition.json
     ? extractJsonFlag(argv)
     : { jsonMode: false, parseArgv: argv };
-  const agentDetected = simulateAgent ?? isAgent;
+  const agentDetected = resolveAgentDetected({
+    simulateAgent,
+    detectedAgent: isAgent,
+    env: process.env,
+  });
   const jsonMode = commandDefinition.json && (explicitJsonMode || agentDetected);
 
   const output = createOutput(sink, { silentStdout: jsonMode });
