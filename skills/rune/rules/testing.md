@@ -122,7 +122,7 @@ test("data is populated even without --json", async () => {
 
 `result.data` is populated regardless of `--json`. The flag controls only whether `output.log()` is suppressed.
 
-At real CLI invocation, Rune auto-enables JSON mode under AI agents even without `--json`. `runCommand()` disables this auto-detection by default (`simulateAgent: false`) so test outcomes do not depend on the host environment. Pass `{ simulateAgent: true }` as the third argument when you specifically want to exercise the agent auto-enable path:
+At real CLI invocation, Rune auto-enables JSON mode under AI agents even without `--json`. `runCommand()` disables this auto-detection by default (`simulateAgent: false`) so test outcomes do not depend on the host environment. The `RUNE_DISABLE_AUTO_JSON` environment variable that opts out of auto-activation in real CLI runs has no effect here either — `simulateAgent` is the only signal `runCommand()` uses. Pass `{ simulateAgent: true }` as the third argument when you specifically want to exercise the agent auto-enable path:
 
 ```ts
 const result = await runCommand(command, [], { simulateAgent: true });
