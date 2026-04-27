@@ -77,7 +77,7 @@ export default defineConfig({
 - **型:** `CommandOptionField[]`
 - **省略可能**
 
-すべての実行可能コマンドで利用できるグローバルオプションです。[`defineCommand({ options })`](/ja/reference/define-command/) と同じ field 形式を使えます。
+すべての実行可能コマンドで利用できるグローバルオプションです。[`defineCommand({ options })`](/ja/reference/define-command/) と同じフィールド形式を使えます。
 
 ```ts
 import { defineConfig } from "@rune-cli/rune";
