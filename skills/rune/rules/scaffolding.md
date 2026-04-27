@@ -34,13 +34,20 @@ Activates when `--yes` is passed, when there is no TTY, or when running in CI / 
 
 ```bash
 # Defaults: install deps + init git
-create-rune-app my-cli --yes
+pnpm create rune-app my-cli --yes
 
 # Scaffold into the current directory
-create-rune-app . --yes
+pnpm create rune-app . --yes
 
 # Skip install and git
-create-rune-app my-cli --yes --no-install --no-git
+pnpm create rune-app my-cli --yes --no-install --no-git
+```
+
+When invoking via `npm create` (or `npm init`), npm consumes flags itself, so the `--` separator is required to forward flags to `create-rune-app`. `pnpm create`, `yarn create`, and `bun create` forward flags directly.
+
+```bash
+# npm requires `--` before forwarding flags
+npm create rune-app@latest my-cli -- --yes --no-install --no-git
 ```
 
 In non-interactive mode:

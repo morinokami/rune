@@ -150,12 +150,44 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 `--yes`（`-y`）フラグを渡すか、CI、エージェント環境、または TTY のない環境で実行すると、対話プロンプトをスキップしてデフォルト値で実行されます。
 
-```sh
-npx create-rune-app my-cli --yes
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  pnpm create rune-app my-cli --yes
 
-# 現在のディレクトリにプロジェクトを作成する場合
-npx create-rune-app . --yes
-```
+  # 現在のディレクトリにプロジェクトを作成する場合
+  pnpm create rune-app . --yes
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  npm create rune-app@latest my-cli -- --yes
+
+  # 現在のディレクトリにプロジェクトを作成する場合
+  npm create rune-app@latest . -- --yes
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  yarn create rune-app my-cli --yes
+
+  # 現在のディレクトリにプロジェクトを作成する場合
+  yarn create rune-app . --yes
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  bun create rune-app my-cli --yes
+
+  # 現在のディレクトリにプロジェクトを作成する場合
+  bun create rune-app . --yes
+  ```
+  </TabItem>
+</Tabs>
+
+<Aside type="tip" title="npm">
+  `npm create`（および `npm init`）はフラグを npm 自体が消費してしまうため、`--` セパレータでパッケージ引数とフラグを区切る必要があります。他のパッケージマネージャはフラグをそのまま転送するため、`--` セパレータは不要です。
+</Aside>
 
 個別の動作はオプションで制御できます。
 
@@ -165,12 +197,43 @@ npx create-rune-app . --yes
 | `--install` / `--no-install` | `true` | 依存関係のインストール |
 | `--git` / `--no-git` | `true` | git リポジトリの初期化 |
 
-```sh
-# 依存関係のインストールをスキップ
-npx create-rune-app my-cli --yes --no-install
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  # 依存関係のインストールをスキップ
+  pnpm create rune-app my-cli --yes --no-install
 
-# git の初期化をスキップ
-npx create-rune-app my-cli --yes --no-git
-```
+  # git の初期化をスキップ
+  pnpm create rune-app my-cli --yes --no-git
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  # 依存関係のインストールをスキップ
+  npm create rune-app@latest my-cli -- --yes --no-install
+
+  # git の初期化をスキップ
+  npm create rune-app@latest my-cli -- --yes --no-git
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  # 依存関係のインストールをスキップ
+  yarn create rune-app my-cli --yes --no-install
+
+  # git の初期化をスキップ
+  yarn create rune-app my-cli --yes --no-git
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  # 依存関係のインストールをスキップ
+  bun create rune-app my-cli --yes --no-install
+
+  # git の初期化をスキップ
+  bun create rune-app my-cli --yes --no-git
+  ```
+  </TabItem>
+</Tabs>
 
 対話モードでもこれらのオプションを渡すと、該当するプロンプトが省略されます。

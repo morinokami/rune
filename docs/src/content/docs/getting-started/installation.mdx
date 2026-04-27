@@ -150,12 +150,44 @@ Run the `create rune-app` command and answer a few prompts to quickly scaffold a
 
 Pass the `--yes` (`-y`) flag to skip all interactive prompts and use default values. This also happens automatically in CI pipelines, agent-driven workflows, and other environments without a TTY.
 
-```sh
-npx create-rune-app my-cli --yes
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  pnpm create rune-app my-cli --yes
 
-# Or scaffold into the current directory
-npx create-rune-app . --yes
-```
+  # Or scaffold into the current directory
+  pnpm create rune-app . --yes
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  npm create rune-app@latest my-cli -- --yes
+
+  # Or scaffold into the current directory
+  npm create rune-app@latest . -- --yes
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  yarn create rune-app my-cli --yes
+
+  # Or scaffold into the current directory
+  yarn create rune-app . --yes
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  bun create rune-app my-cli --yes
+
+  # Or scaffold into the current directory
+  bun create rune-app . --yes
+  ```
+  </TabItem>
+</Tabs>
+
+<Aside type="tip" title="npm">
+  `npm create` (and `npm init`) consumes flags itself, so you must separate flags from the package arguments with `--`. Other package managers forward flags directly and do not need the `--` separator.
+</Aside>
 
 You can fine-tune the behavior with additional options:
 
@@ -165,12 +197,43 @@ You can fine-tune the behavior with additional options:
 | `--install` / `--no-install` | `true` | Install dependencies |
 | `--git` / `--no-git` | `true` | Initialize a git repository |
 
-```sh
-# Skip dependency installation
-npx create-rune-app my-cli --yes --no-install
+<Tabs syncKey="pkg">
+  <TabItem label="pnpm">
+  ```sh
+  # Skip dependency installation
+  pnpm create rune-app my-cli --yes --no-install
 
-# Skip git initialization
-npx create-rune-app my-cli --yes --no-git
-```
+  # Skip git initialization
+  pnpm create rune-app my-cli --yes --no-git
+  ```
+  </TabItem>
+  <TabItem label="npm">
+  ```sh
+  # Skip dependency installation
+  npm create rune-app@latest my-cli -- --yes --no-install
+
+  # Skip git initialization
+  npm create rune-app@latest my-cli -- --yes --no-git
+  ```
+  </TabItem>
+  <TabItem label="yarn">
+  ```sh
+  # Skip dependency installation
+  yarn create rune-app my-cli --yes --no-install
+
+  # Skip git initialization
+  yarn create rune-app my-cli --yes --no-git
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```sh
+  # Skip dependency installation
+  bun create rune-app my-cli --yes --no-install
+
+  # Skip git initialization
+  bun create rune-app my-cli --yes --no-git
+  ```
+  </TabItem>
+</Tabs>
 
 These options also work in interactive mode — any explicitly provided flag will skip its corresponding prompt.
