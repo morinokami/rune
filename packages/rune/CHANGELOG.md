@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.43
+
+### Patch Changes
+
+- [#160](https://github.com/morinokami/rune/pull/160) [`77d8d0b`](https://github.com/morinokami/rune/commit/77d8d0b63874ddb8dc48309d1d162f0ce52553b8) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): support opting out of JSON mode auto-activation under agents
+
 ## 0.0.42
 
 ### Patch Changes
