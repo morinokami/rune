@@ -1,5 +1,6 @@
 import type { CommandFailure } from "../core/command-error";
 import type { DefinedCommand, InferCommandData } from "../core/command-types";
+import type { RuneConfig } from "../core/define-config";
 import type { CommandArgField, CommandOptionField } from "../core/field-types";
 
 import { runCommandPipeline } from "../core/run-command-pipeline";
@@ -22,6 +23,7 @@ export interface RunCommandContext {
    * detected as `isAgent`).
    */
   readonly simulateAgent?: boolean;
+  readonly globalOptions?: readonly CommandOptionField[];
 }
 
 export interface CommandExecutionResult<TCommandData = unknown> {
@@ -112,6 +114,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
   const result = await runCommandPipeline({
     command,
     argv,
+    globalOptions: context.globalOptions,
     cwd: context.cwd,
     simulateAgent: context.simulateAgent ?? false,
     sink: {
@@ -134,6 +137,19 @@ export async function runCommand<TCommand extends RunnableCommand>(
     stderr: stderrChunks.join(""),
     error: result.error,
     data: result.data as InferCommandData<TCommand>,
+  };
+}
+
+export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
+  return function runCommandWithConfig<TCommand extends RunnableCommand>(
+    command: TCommand,
+    argv: string[] = [],
+    context: RunCommandContext = {},
+  ): Promise<CommandExecutionResult<InferCommandData<TCommand>>> {
+    return runCommand(command, argv, {
+      ...context,
+      globalOptions: config.options,
+    });
   };
 }
 

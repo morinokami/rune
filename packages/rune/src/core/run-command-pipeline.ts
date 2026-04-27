@@ -24,6 +24,7 @@ type RunnableCommand = Pick<
 export interface RunCommandPipelineInput {
   readonly command: RunnableCommand;
   readonly argv: readonly string[];
+  readonly globalOptions?: readonly CommandOptionField[] | undefined;
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
   /**
@@ -63,11 +64,16 @@ export interface RunCommandPipelineResult<TCommandData = unknown> {
 export async function runCommandPipeline<TCommand extends RunnableCommand>(
   input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
 ): Promise<RunCommandPipelineResult<InferCommandData<TCommand>>> {
-  const { command, argv, cwd, sink = defaultSink, simulateAgent } = input;
+  const { command, argv, globalOptions = [], cwd, sink = defaultSink, simulateAgent } = input;
   const commandDefinition = command as unknown as DefinedCommand<
     readonly CommandArgField[],
     readonly CommandOptionField[]
   >;
+  const effectiveOptions = [...globalOptions, ...commandDefinition.options];
+  const effectiveCommandDefinition = {
+    ...commandDefinition,
+    options: effectiveOptions,
+  };
 
   const { jsonMode: explicitJsonMode, parseArgv } = commandDefinition.json
     ? extractJsonFlag(argv)
@@ -77,7 +83,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
 
   const output = createOutput(sink, { silentStdout: jsonMode });
 
-  const parsed = await parseCommandArgs(commandDefinition, parseArgv);
+  const parsed = await parseCommandArgs(effectiveCommandDefinition, parseArgv);
 
   if (!parsed.ok) {
     return {
@@ -96,7 +102,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       } as Record<string, unknown>),
     );
     const options = addCamelCaseAliases(
-      normalizeOptions(commandDefinition.options, parsed.value.options as Record<string, unknown>),
+      normalizeOptions(effectiveOptions, parsed.value.options as Record<string, unknown>),
     );
 
     // The `command.run` signature is generic, but at this layer we operate on

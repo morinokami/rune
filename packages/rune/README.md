@@ -9,6 +9,7 @@ Key features:
 
 - File-based command routing — directory structure maps directly to the CLI command tree
 - Type-safe command definitions with full inference from `defineCommand()`
+- Global options via `defineConfig({ options })`
 - [Standard Schema](https://standardschema.dev/) support for options and args (Zod, Valibot, ArkType, ...)
 - Built-in `--json` mode that turns the same command into a machine-readable API, auto-enabled under AI agents
 - In-process test utility with no child-process overhead
@@ -121,6 +122,22 @@ export default defineGroup({
 ## Options and Arguments
 
 `options` are `--name` flags; `args` are positional. Required `args` must come before optional ones.
+
+Global options can be defined once in `rune.config.ts` and are available to every executable command:
+
+```ts
+import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+});
+```
+
+Use them after the resolved command path:
+
+```sh
+my-cli deploy --profile dev
+```
 
 ### Primitive Fields
 

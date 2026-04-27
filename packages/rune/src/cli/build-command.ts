@@ -36,6 +36,7 @@ import {
 } from "./rolldown-build";
 import { createExternalDependenciesContext } from "./rolldown-shared";
 import { getRuntimeDependencyWarnings } from "./runtime-dependency-warnings";
+import { validateGlobalOptions } from "./sync-global-options";
 import { writeStderrLine, writeStdout } from "./write-result";
 
 export interface RunBuildCommandOptions {
@@ -57,6 +58,12 @@ export async function runBuildCommand(options: RunBuildCommandOptions): Promise<
 
     await assertCommandsDirectoryExists(commandsDirectory);
     const sourceManifest = await generateCommandManifest({ commandsDirectory });
+    await validateGlobalOptions({
+      projectRoot,
+      directories: context.directories,
+      configPath: context.configPath,
+      manifest: sourceManifest,
+    });
     const builtManifest = createBuiltManifest(sourceManifest, sourceDirectory);
 
     await rm(distDirectory, { recursive: true, force: true });

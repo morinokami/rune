@@ -2,7 +2,9 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { CommandError } from "../../src/core/command-error";
 import { defineCommand } from "../../src/core/define-command";
+import { defineConfig } from "../../src/core/define-config";
 import { runCommand } from "../../src/test-utils/run-command";
+import { createRunCommand } from "../../src/test-utils/run-command";
 
 // These tests cover the helper-specific contract of runCommand:
 //   - in-process capture of stdout/stderr and exitCode
@@ -30,6 +32,25 @@ describe("execution capture", () => {
       data: undefined,
       error: undefined,
     });
+  });
+
+  test("createRunCommand injects global options for command tests", async () => {
+    const config = defineConfig({
+      options: [{ name: "profile", type: "string", default: "prod" }],
+    });
+    const runCommand = createRunCommand(config);
+    const command = defineCommand({
+      async run(ctx) {
+        const options = ctx.options as { readonly profile: string };
+        ctx.output.log(`profile=${options.profile}`);
+      },
+    });
+
+    const defaultResult = await runCommand(command);
+    const providedResult = await runCommand(command, ["--profile", "dev"]);
+
+    expect(defaultResult.stdout).toBe("profile=prod\n");
+    expect(providedResult.stdout).toBe("profile=dev\n");
   });
 
   test("runCommand captures unexpected errors without spawning a process", async () => {

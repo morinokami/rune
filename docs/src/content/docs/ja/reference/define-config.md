@@ -11,6 +11,7 @@ import { defineConfig, renderDefaultHelp } from "@rune-cli/rune";
 export default defineConfig({
   name: "my-cli",
   version: "1.0.0",
+  options: [{ name: "profile", type: "string", default: "prod" }],
   help(data) {
     return `${data.cliName}\n\n${renderDefaultHelp(data)}`;
   },
@@ -70,6 +71,35 @@ export default defineConfig({
   },
 });
 ```
+
+### `options`
+
+- **型:** `CommandOptionField[]`
+- **省略可能**
+
+すべての実行可能コマンドで利用できるグローバルオプションです。[`defineCommand({ options })`](/ja/reference/define-command/) と同じ field 形式を使えます。
+
+```ts
+import { defineConfig } from "@rune-cli/rune";
+import { z } from "zod";
+
+export default defineConfig({
+  options: [
+    { name: "profile", type: "string", default: "prod" },
+    { name: "region", schema: z.enum(["ap-northeast-1", "us-east-1"]).optional() },
+  ],
+});
+```
+
+グローバルオプションは、Rune が実行可能コマンドを解決したあとにパースされます:
+
+```sh
+my-cli deploy --profile dev
+```
+
+実行可能コマンドのヘルプには表示されますが、サブコマンドへの振り分けだけをおこなうグループのヘルプには表示されません。グローバルオプションは省略可能でなければならず、`required: true` や `undefined` を拒否するスキーマはサポートされません。
+
+`rune.config.ts` を変更したら、`rune sync` を実行してエディタの型推論用 `.rune/global-options.d.ts` を更新できます。`rune run` は実行前に同ファイルの再生成を、`rune build` はビルド前に再生成と衝突検証を自動実行します。
 
 ## 挙動
 

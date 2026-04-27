@@ -25,6 +25,29 @@ rune run --project ./my-app hello
 rune run greet world --loud
 ```
 
+`rune run` regenerates `.rune/global-options.d.ts` before execution so editor type inference stays up to date.
+
+## `rune sync`
+
+Generates Rune project type metadata and validates global options against command options.
+
+```bash
+rune sync [options]
+```
+
+### Options
+
+| Option | Type | Description |
+|---|---|---|
+| `--project <path>` | `string` | Path to the Rune project root. Defaults to the current directory. |
+
+### Examples
+
+```bash
+rune sync
+rune sync --project ./my-app
+```
+
 ## `rune build`
 
 Builds a Rune project into a distributable CLI.
@@ -45,3 +68,5 @@ rune build [options]
 rune build
 rune build --project ./my-app
 ```
+
+`rune build` regenerates `.rune/global-options.d.ts` and validates global options against command options before building.

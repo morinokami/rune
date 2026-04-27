@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vite-plus/test";
@@ -38,6 +38,88 @@ export default defineCommand({
     expect(captured.exitCode).toBe(0);
     expect(captured.stdout).toBe("hello rune\n");
     expect(captured.stderr).toBe("");
+  });
+
+  test("runRuneCli parses defineConfig options for the matched command", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+});
+`,
+        "src/commands/deploy/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  async run(ctx) {
+    console.log(\`profile=\${ctx.options.profile}\`);
+  },
+});
+`,
+      },
+    });
+
+    const defaultResult = await captureRuneCliResult(["run", "deploy"], projectRoot);
+    const providedResult = await captureRuneCliResult(
+      ["run", "deploy", "--profile", "dev"],
+      projectRoot,
+    );
+    const generatedTypes = await readFile(
+      path.join(projectRoot, ".rune", "global-options.d.ts"),
+      "utf8",
+    );
+
+    expect(defaultResult.exitCode).toBe(0);
+    expect(defaultResult.stdout).toBe("profile=prod\n");
+    expect(defaultResult.stderr).toBe("");
+    expect(providedResult.exitCode).toBe(0);
+    expect(providedResult.stdout).toBe("profile=dev\n");
+    expect(providedResult.stderr).toBe("");
+    expect(generatedTypes).toContain('import type config from "../rune.config";');
+    expect(generatedTypes).toContain("interface RuneConfigOptions");
+  });
+
+  test("runRuneCli shows global options in command help but not group help", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod", description: "Deployment profile" }],
+});
+`,
+        "src/commands/deploy/_group.ts": `import { defineGroup } from ${JSON.stringify(
+          fileURLToPath(new URL("../../src/core/define-group.ts", import.meta.url)),
+        )};
+
+export default defineGroup({
+  description: "Deploy commands",
+});
+`,
+        "src/commands/deploy/service.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  description: "Deploy a service",
+  async run() {},
+});
+`,
+      },
+    });
+
+    const groupHelp = await captureRuneCliResult(["run", "deploy", "--help"], projectRoot);
+    const commandHelp = await captureRuneCliResult(
+      ["run", "deploy", "service", "--help"],
+      projectRoot,
+    );
+
+    expect(groupHelp.exitCode).toBe(0);
+    expect(groupHelp.stdout).not.toContain("--profile");
+    expect(commandHelp.exitCode).toBe(0);
+    expect(commandHelp.stdout).toContain("--profile <string>");
+    expect(commandHelp.stdout).toContain("Deployment profile");
   });
 
   test("runRuneCli reflects command description changes across successive runs", async () => {
@@ -119,6 +201,37 @@ describe("top-level CLI behavior", () => {
     expect(captured.exitCode).toBe(0);
     expect(captured.stdout).toContain("Usage: rune build");
     expect(captured.stderr).toBe("");
+  });
+
+  test("rune sync generates global option types", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+});
+`,
+        "src/commands/hello/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  async run() {},
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["sync"], projectRoot);
+    const generatedTypes = await readFile(
+      path.join(projectRoot, ".rune", "global-options.d.ts"),
+      "utf8",
+    );
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("Synced Rune project\n");
+    expect(captured.stderr).toBe("");
+    expect(generatedTypes).toContain('import type config from "../rune.config";');
   });
 
   test("rune build foo --help reports an error instead of showing help", async () => {

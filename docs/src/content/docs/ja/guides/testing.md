@@ -137,4 +137,26 @@ test("injects custom cwd", async () => {
 });
 ```
 
+## グローバルオプションを使うテスト
+
+プロジェクトで `defineConfig({ options })` を定義している場合は、プロジェクト設定を組み込んだヘルパーを一度作成し、`runCommand()` と同じように使います:
+
+```ts
+import { expect, test } from "vitest";
+import { createRunCommand } from "@rune-cli/rune/test";
+
+import config from "../rune.config";
+import deploy from "../src/commands/deploy";
+
+const runCommand = createRunCommand(config);
+
+test("uses the configured profile", async () => {
+  const result = await runCommand(deploy, ["--profile", "dev"]);
+
+  expect(result.exitCode).toBe(0);
+});
+```
+
+これにより、各テストでグローバルオプションを繰り返し指定せずに、実際の CLI と同じパース・バリデーション経路でコマンドをテストできます。
+
 API の詳細については[テストユーティリティのリファレンス](/ja/reference/test-utils/)を参照してください。

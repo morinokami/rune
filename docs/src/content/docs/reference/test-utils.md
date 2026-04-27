@@ -3,7 +3,7 @@ title: Test Utilities
 description: API reference for Rune's testing utilities.
 ---
 
-Rune provides `runCommand()` for testing commands in-process without spawning a child process. Import it from `@rune-cli/rune/test`.
+Rune provides helpers for testing commands in-process without spawning a child process, exported from `@rune-cli/rune/test`. `runCommand()` is the base helper for running a single command, and `createRunCommand()` builds a runner that bakes in your project config.
 
 ```ts
 import { runCommand } from "@rune-cli/rune/test";
@@ -64,6 +64,26 @@ Optional execution context.
 - **Optional**
 
 Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`.
+
+#### `globalOptions`
+
+- **Type:** `CommandOptionField[]`
+- **Optional**
+
+Low-level injection point for global options. Prefer `createRunCommand(config)` for normal tests.
+
+## `createRunCommand()`
+
+Creates a `runCommand()` helper that bakes in your project config. Use this when your project defines `defineConfig({ options })`.
+
+```ts
+import { createRunCommand } from "@rune-cli/rune/test";
+import config from "../rune.config";
+
+const runCommand = createRunCommand(config);
+```
+
+The returned function has the same call shape as `runCommand(command, argv, context)` and injects `config.options` into each command execution.
 
 ### CommandExecutionResult
 

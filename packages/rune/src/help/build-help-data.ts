@@ -41,6 +41,7 @@ export interface BuildCommandHelpDataOptions {
   readonly cliName: string;
   readonly version?: string;
   readonly subcommands?: readonly SubcommandHelpEntry[];
+  readonly globalOptions?: readonly CommandOptionField[] | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -80,10 +81,12 @@ export function buildGroupHelpData(options: BuildGroupHelpDataOptions): GroupHel
 export async function buildCommandHelpData(
   options: BuildCommandHelpDataOptions,
 ): Promise<CommandHelpData> {
-  const { command, pathSegments, cliName, version, subcommands } = options;
+  const { command, pathSegments, cliName, version, subcommands, globalOptions = [] } = options;
 
   const argumentEntries = await Promise.all(command.args.map(buildArgumentHelpEntry));
-  const optionEntries = await Promise.all(command.options.map(buildOptionHelpEntry));
+  const optionEntries = await Promise.all(
+    [...globalOptions, ...command.options].map(buildOptionHelpEntry),
+  );
 
   const frameworkOptions: FrameworkOptionHelpEntry[] = [
     ...(command.json ? [{ name: "json", description: "Output structured results as JSON" }] : []),

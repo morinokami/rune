@@ -90,12 +90,16 @@ async function renderJsonHelp(
   route: HelpRoute,
   loadCommand: LoadCommandFn,
 ): Promise<number> {
+  const config =
+    options.config ??
+    (options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined);
   const resolved = await resolveHelpData({
     manifest: options.manifest,
     route,
     cliName: options.cliName,
     version: options.version,
     loadCommand,
+    globalOptions: config?.options ?? [],
   });
 
   if (!writeJsonToStdout(toHelpJson(resolved))) {
@@ -120,6 +124,7 @@ async function renderHumanHelp(
     version: options.version,
     loadCommand,
     helpRenderer: config?.help,
+    globalOptions: config?.options ?? [],
   });
 
   if (route.kind === "unknown") {
@@ -137,9 +142,14 @@ async function runResolvedCommand(
   loadCommand: LoadCommandFn,
 ): Promise<number> {
   const command = await loadCommand(route.node);
+  const config =
+    options.config ??
+    (options.configPath ? await loadRuneConfigSafe(options.configPath) : undefined);
+  const globalOptions = config?.options ?? [];
   const result = await runCommandPipeline({
     command,
     argv: route.remainingArgs,
+    globalOptions,
     cwd: options.cwd,
     simulateAgent: options.simulateAgent,
   });

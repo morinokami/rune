@@ -66,6 +66,16 @@ export default defineConfig({
 
 `defineConfig({ name, version })` controls the CLI display metadata used by help output, `--version`, and JSON help. If omitted, Rune derives these values from `package.json`. `defineConfig({ version })` does not update `package.json`; keep them synchronized in the release workflow when both are used.
 
+`defineConfig({ options })` defines global options that are available to every executable command:
+
+```ts
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+});
+```
+
+Use global options after the resolved command path, e.g. `my-cli deploy --profile dev`. They appear in executable command help, but not in the help for groups that only route to subcommands. Global options must be optional: do not use `required: true` or schemas that reject `undefined`.
+
 Priority order:
 
 1. `defineCommand({ help })`
