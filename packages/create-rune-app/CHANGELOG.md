@@ -1,5 +1,11 @@
 # create-rune-app
 
+## 0.0.16
+
+### Patch Changes
+
+- [#157](https://github.com/morinokami/rune/pull/157) [`4573643`](https://github.com/morinokami/rune/commit/4573643164e70fa9f5d1e05962211f0ac8a1f1bc) Thanks [@morinokami](https://github.com/morinokami)! - feat: add global options via defineConfig({ options })
+
 ## 0.0.15
 
 ### Patch Changes
