@@ -170,6 +170,25 @@ The option name `"help"` is reserved by the framework and cannot be used. When `
 
 Single-character shorthand (e.g. `"f"` for `--force` -> `-f`). Must be unique across all options. The short name `"h"` is reserved for the built-in `--help` flag and cannot be used.
 
+#### `env`
+
+- **Type:** `string`
+- **Optional** (scalar options only)
+
+Environment variable name used as a fallback when the option is not provided on the command line.
+
+```ts
+options: [{ name: "port", type: "number", env: "PORT", default: 3000 }];
+```
+
+Resolution order is **CLI > env > default**. For example, `--port 4000` wins over `PORT=5000`; if `--port` is omitted, `PORT=5000` is parsed as the option value; if neither is present, `default` is used. `env` does not affect type inference or required/optional typing.
+
+Env values are parsed through the same validation path as CLI values. Invalid env values fail the command instead of falling back to defaults. Empty strings are treated as provided values, not as unset.
+
+Primitive boolean options accept only `"true"` and `"false"` from env. Schema `flag: true` options also accept only `"true"` and `"false"` from env, then pass the boolean value to the schema. `multiple: true` options cannot use `env`.
+
+The env name must match `/^[A-Za-z_][A-Za-z0-9_]*$/`. When shown in default help, env metadata is rendered with defaults when present, for example `(default: 3000, env: PORT)` or `(env: PORT)`.
+
 #### `multiple`
 
 - **Type:** `true`

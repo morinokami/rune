@@ -137,6 +137,23 @@ test("injects custom cwd", async () => {
 });
 ```
 
+You can also inject env values for options that declare `env`. The provided env map replaces `process.env` for the command under test; it is not merged automatically.
+
+```ts
+const command = defineCommand({
+  options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+  run({ options, output }) {
+    output.log(String(options.port));
+  },
+});
+
+test("uses injected env", async () => {
+  const result = await runCommand(command, [], { env: { PORT: "4000" } });
+
+  expect(result.stdout).toBe("4000\n");
+});
+```
+
 ## Testing with global options
 
 When your project defines `defineConfig({ options })`, create a helper that bakes in your project config once and use it like `runCommand()`:

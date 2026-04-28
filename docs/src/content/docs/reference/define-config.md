@@ -85,7 +85,7 @@ import { z } from "zod";
 
 export default defineConfig({
   options: [
-    { name: "profile", type: "string", default: "prod" },
+    { name: "profile", type: "string", env: "APP_PROFILE", default: "prod" },
     { name: "region", schema: z.enum(["ap-northeast-1", "us-east-1"]).optional() },
   ],
 });
@@ -98,6 +98,8 @@ my-cli deploy --profile dev
 ```
 
 They are shown in executable command help, but not in the help for groups that only route to subcommands. Global options must be optional: `required: true` and schemas that reject `undefined` are not supported.
+
+Global options support the same `env` fallback as command options. CLI values still win over env values, and env values win over defaults.
 
 Run `rune sync` after changing `rune.config.ts` to refresh `.rune/global-options.d.ts` for editor type inference. `rune run` regenerates the same file before execution, and `rune build` regenerates it and validates global options against command options before building.
 
