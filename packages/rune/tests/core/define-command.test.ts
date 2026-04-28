@@ -138,6 +138,15 @@ describe("normalization and pass-through", () => {
     ]);
   });
 
+  test("defineCommand preserves option env metadata", () => {
+    const command = defineCommand({
+      options: [{ name: "port", type: "number", env: "PORT" }],
+      async run() {},
+    });
+
+    expect(command.options).toEqual([{ name: "port", type: "number", env: "PORT" }]);
+  });
+
   test("defineCommand preserves explicit flag hints for schema-backed options", () => {
     const forceSchema = z.boolean();
     const command = defineCommand({
@@ -306,6 +315,19 @@ describe("field name validation", () => {
     expect(() =>
       defineCommand({
         options: [{ name, type }],
+        async run() {},
+      }),
+    ).toThrow(message);
+  });
+
+  test.each([
+    { env: "", message: 'Invalid env name "" for option "port"' },
+    { env: "1PORT", message: 'Invalid env name "1PORT" for option "port"' },
+    { env: "PORT-NUMBER", message: 'Invalid env name "PORT-NUMBER" for option "port"' },
+  ])('defineCommand rejects invalid env name "$env"', ({ env, message }) => {
+    expect(() =>
+      defineCommand({
+        options: [{ name: "port", type: "number", env }],
         async run() {},
       }),
     ).toThrow(message);
@@ -634,6 +656,21 @@ describe("runtime validation for widened inputs", () => {
         return defineCommand({ options: fields, run() {} });
       },
       message: /Schema flag option "force" cannot use multiple: true/,
+    },
+    {
+      label: "multiple options with env",
+      define: () => {
+        const fields: readonly CommandOptionField[] = [
+          {
+            name: "tag",
+            type: "string",
+            multiple: true,
+            env: "TAG",
+          } as unknown as CommandOptionField,
+        ];
+        return defineCommand({ options: fields, run() {} });
+      },
+      message: /Option "tag" cannot use env with multiple: true/,
     },
   ])("rejects $label at runtime", ({ define, message }) => {
     expect(() => define()).toThrow(message);

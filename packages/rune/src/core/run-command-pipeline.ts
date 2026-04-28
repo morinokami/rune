@@ -26,6 +26,7 @@ export interface RunCommandPipelineInput {
   readonly command: RunnableCommand;
   readonly argv: readonly string[];
   readonly globalOptions?: readonly CommandOptionField[] | undefined;
+  readonly env?: Readonly<Record<string, string | undefined>> | undefined;
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
   /**
@@ -67,7 +68,15 @@ export interface RunCommandPipelineResult<TCommandData = unknown> {
 export async function runCommandPipeline<TCommand extends RunnableCommand>(
   input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
 ): Promise<RunCommandPipelineResult<InferCommandData<TCommand>>> {
-  const { command, argv, globalOptions = [], cwd, sink = defaultSink, simulateAgent } = input;
+  const {
+    command,
+    argv,
+    globalOptions = [],
+    env = {},
+    cwd,
+    sink = defaultSink,
+    simulateAgent,
+  } = input;
   const commandDefinition = command as unknown as DefinedCommand<
     readonly CommandArgField[],
     readonly CommandOptionField[]
@@ -90,7 +99,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
 
   const output = createOutput(sink, { silentStdout: jsonMode });
 
-  const parsed = await parseCommandArgs(effectiveCommandDefinition, parseArgv);
+  const parsed = await parseCommandArgs(effectiveCommandDefinition, parseArgv, { env });
 
   if (!parsed.ok) {
     return {

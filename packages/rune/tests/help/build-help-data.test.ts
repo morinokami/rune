@@ -8,6 +8,7 @@ import {
   buildGroupHelpData,
   buildUnknownCommandHelpData,
 } from "../../src/help/build-help-data";
+import { toHelpJson } from "../../src/help/help-json";
 import { resolveCommandRoute } from "../../src/routing/resolve-command-route";
 import { commandNode, groupNode, manifest as buildManifest } from "../helpers";
 
@@ -121,6 +122,7 @@ describe("help data builders", () => {
         {
           name: "name",
           type: "string",
+          env: "PROJECT_NAME",
           required: true,
           description: "Project name",
         },
@@ -166,6 +168,7 @@ describe("help data builders", () => {
     expect(data.options[0]).toMatchObject({
       name: "name",
       type: "string",
+      env: "PROJECT_NAME",
       required: true,
       negatable: false,
     });
@@ -185,6 +188,14 @@ describe("help data builders", () => {
       name: "help",
       short: "h",
       description: "Show help",
+    });
+
+    const json = toHelpJson({ data, aliases: [] });
+    if (json.kind !== "command") throw new Error("Expected command help JSON");
+
+    expect(json.options[0]).toMatchObject({
+      name: "name",
+      env: "PROJECT_NAME",
     });
   });
 

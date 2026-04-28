@@ -177,6 +177,7 @@ async function buildOptionHelpEntry(field: CommandOptionField): Promise<UserOpti
     return {
       name: field.name,
       short: field.short,
+      ...(field.env !== undefined ? { env: field.env } : {}),
       type: undefined,
       description: field.description,
       required,
@@ -191,6 +192,7 @@ async function buildOptionHelpEntry(field: CommandOptionField): Promise<UserOpti
     return {
       name: field.name,
       short: field.short,
+      ...(field.env !== undefined ? { env: field.env } : {}),
       type: "enum",
       values: [...field.values],
       description: field.description,
@@ -204,6 +206,7 @@ async function buildOptionHelpEntry(field: CommandOptionField): Promise<UserOpti
   return {
     name: field.name,
     short: field.short,
+    ...(field.env !== undefined ? { env: field.env } : {}),
     type: field.type,
     description: field.description,
     required,

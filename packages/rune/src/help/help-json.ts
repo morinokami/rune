@@ -35,6 +35,7 @@ export type HelpJsonOptionSource = "user" | "framework";
 export interface HelpJsonOptionBase {
   readonly name: string;
   readonly short?: string | undefined;
+  readonly env?: string | undefined;
   readonly source: HelpJsonOptionSource;
   readonly type: "string" | "number" | "boolean" | "enum" | "schema";
   readonly description?: string | undefined;
@@ -231,6 +232,7 @@ function mapUserOption(entry: UserOptionHelpEntry): HelpJsonOption {
   const base = {
     name: entry.name,
     ...(entry.short !== undefined ? { short: entry.short } : {}),
+    ...(entry.env !== undefined ? { env: entry.env } : {}),
     source: "user" as const,
     ...(entry.description !== undefined ? { description: entry.description } : {}),
     required: entry.required,

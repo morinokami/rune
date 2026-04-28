@@ -131,6 +131,8 @@ interface PrimitiveOptionBase<
 > extends PrimitiveFieldBase<TName, TType> {
   /** Single-character shorthand (e.g. `"v"` for `--verbose` → `-v`). */
   readonly short?: SingleLetter | undefined;
+  /** Environment variable used as a fallback when this option is not provided via CLI. */
+  readonly env?: string | undefined;
   readonly flag?: never;
 }
 
@@ -144,7 +146,7 @@ export interface ScalarPrimitiveOptionField<
 export interface MultiplePrimitiveOptionField<
   TName extends string = string,
   TType extends RepeatablePrimitiveFieldType = RepeatablePrimitiveFieldType,
-> extends Omit<PrimitiveOptionBase<TName, TType>, "default"> {
+> extends Omit<PrimitiveOptionBase<TName, TType>, "default" | "env"> {
   /**
    * Allows this option to be provided more than once. Parsed values are exposed
    * as an array in declaration order.
@@ -152,6 +154,7 @@ export interface MultiplePrimitiveOptionField<
   readonly multiple: true;
   /** Array used when the user does not provide this option. */
   readonly default?: readonly PrimitiveFieldValue<TType>[] | undefined;
+  readonly env?: never;
 }
 
 // An option flag backed by Rune's primitive field types.
@@ -172,11 +175,26 @@ interface SchemaOptionBase<
   readonly short?: SingleLetter | undefined;
 }
 
-export interface SchemaValueOptionField<
+interface SchemaValueOptionBase<
   TName extends string = string,
   TSchema extends StandardSchemaV1 = StandardSchemaV1,
 > extends SchemaOptionBase<TName, TSchema> {
   readonly flag?: never;
+}
+
+export interface ScalarSchemaValueOptionField<
+  TName extends string = string,
+  TSchema extends StandardSchemaV1 = StandardSchemaV1,
+> extends SchemaValueOptionBase<TName, TSchema> {
+  readonly multiple?: never;
+  /** Environment variable used as a fallback when this option is not provided via CLI. */
+  readonly env?: string | undefined;
+}
+
+export interface MultipleSchemaValueOptionField<
+  TName extends string = string,
+  TSchema extends StandardSchemaV1 = StandardSchemaV1,
+> extends SchemaValueOptionBase<TName, TSchema> {
   /**
    * Allows this option to be provided more than once. The schema receives the
    * collected raw string values as an array.
@@ -184,8 +202,14 @@ export interface SchemaValueOptionField<
    * Unlike primitive and enum fields, schema-backed fields use the schema for
    * output/default typing, so there is no separate multiple-specific variant.
    */
-  readonly multiple?: true | undefined;
+  readonly multiple: true;
+  readonly env?: never;
 }
+
+export type SchemaValueOptionField<
+  TName extends string = string,
+  TSchema extends StandardSchemaV1 = StandardSchemaV1,
+> = ScalarSchemaValueOptionField<TName, TSchema> | MultipleSchemaValueOptionField<TName, TSchema>;
 
 export interface SchemaFlagOptionField<
   TName extends string = string,
@@ -197,6 +221,8 @@ export interface SchemaFlagOptionField<
    */
   readonly flag: true;
   readonly multiple?: never;
+  /** Environment variable used as a fallback when this option is not provided via CLI. */
+  readonly env?: string | undefined;
 }
 
 // An option backed by a Standard Schema object.
@@ -222,6 +248,8 @@ export interface ScalarEnumOptionField<
   /** Value used when the user does not provide this field. Must be one of `values`. */
   readonly default?: TValues[number] | undefined;
   readonly multiple?: never;
+  /** Environment variable used as a fallback when this option is not provided via CLI. */
+  readonly env?: string | undefined;
 }
 
 export interface MultipleEnumOptionField<
@@ -235,6 +263,7 @@ export interface MultipleEnumOptionField<
   readonly multiple: true;
   /** Array used when the user does not provide this option. */
   readonly default?: readonly TValues[number][] | undefined;
+  readonly env?: never;
 }
 
 // An option that accepts one of a fixed set of values.

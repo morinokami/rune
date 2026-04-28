@@ -14,6 +14,7 @@ import { validateCommandAliases } from "./validate-command-aliases";
 import {
   OPTION_NAME_RE,
   validateEnumFields,
+  validateOptionEnvVars,
   validateOptionMultipleFlags,
   validateOptionNameFormats,
   validateOptionNegationCollisions,
@@ -114,6 +115,7 @@ export function defineCommand<
     validateReservedNames(input.options, jsonEnabled);
     validateOptionShortFormats(input.options);
     validateOptionMultipleFlags(input.options);
+    validateOptionEnvVars(input.options);
     validateEnumFields(input.options, "option");
     validateUniqueFieldAndAliasNames(input.options, "option");
     validateUniqueOptionShortNames(input.options);

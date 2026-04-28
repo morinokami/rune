@@ -121,16 +121,38 @@ function formatUserOptionLabel(
   return entry.short ? `-${entry.short}, ${longLabel}` : longLabel;
 }
 
-function formatUserOptionDefaultSuffix(
+function formatUserOptionDefaultHint(
   entry: PrimitiveOptionHelpEntry | EnumOptionHelpEntry | SchemaOptionHelpEntry,
 ): string {
   if (entry.type === undefined) {
-    return entry.defaultLabel ? `(default: ${entry.defaultLabel})` : "";
+    return entry.defaultLabel ? `default: ${entry.defaultLabel}` : "";
   }
   if (!("default" in entry) || entry.default === undefined) return "";
   if (entry.type === "boolean") return "";
 
-  return `(default: ${formatDefaultValue(entry.default)})`;
+  return `default: ${formatDefaultValue(entry.default)}`;
+}
+
+function formatUserOptionEnvHint(
+  entry: PrimitiveOptionHelpEntry | EnumOptionHelpEntry | SchemaOptionHelpEntry,
+): string {
+  return entry.env !== undefined ? `env: ${entry.env}` : "";
+}
+
+function formatUserOptionMetadataSuffix(
+  entry: PrimitiveOptionHelpEntry | EnumOptionHelpEntry | SchemaOptionHelpEntry,
+): string {
+  const hints = [formatUserOptionDefaultHint(entry), formatUserOptionEnvHint(entry)].filter(
+    (hint) => hint.length > 0,
+  );
+
+  return hints.length > 0 ? `(${hints.join(", ")})` : "";
+}
+
+function formatUserOptionDescription(
+  entry: PrimitiveOptionHelpEntry | EnumOptionHelpEntry | SchemaOptionHelpEntry,
+): string | undefined {
+  return joinDescription(entry.description, formatUserOptionMetadataSuffix(entry));
 }
 
 function formatFrameworkOptionLabel(entry: FrameworkOptionHelpEntry): string {
@@ -207,7 +229,7 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
   const optionEntries = [
     ...data.options.map((entry) => ({
       label: formatUserOptionLabel(entry),
-      description: joinDescription(entry.description, formatUserOptionDefaultSuffix(entry)),
+      description: formatUserOptionDescription(entry),
     })),
     ...data.frameworkOptions.map((entry) => ({
       label: formatFrameworkOptionLabel(entry),

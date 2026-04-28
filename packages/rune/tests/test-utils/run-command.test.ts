@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vite-plus/test";
+import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 
 import { CommandError } from "../../src/core/command-error";
 import { defineCommand } from "../../src/core/define-command";
@@ -13,6 +13,10 @@ import { createRunCommand } from "../../src/test-utils/run-command";
 // End-to-end command semantics (argv parsing, defaults, coercion, json mode,
 // rawArgs, cwd, sink forwarding) are covered by parse-command-args and
 // run-command-pipeline tests.
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("execution capture", () => {
   test("runCommand returns a successful command result", async () => {
@@ -51,6 +55,42 @@ describe("execution capture", () => {
 
     expect(defaultResult.stdout).toBe("profile=prod\n");
     expect(providedResult.stdout).toBe("profile=dev\n");
+  });
+
+  test("runCommand injects env as a complete replacement for option env fallbacks", async () => {
+    vi.stubEnv("RUNE_RUN_COMMAND_PROFILE", "host");
+
+    const command = defineCommand({
+      options: [{ name: "profile", type: "string", env: "RUNE_RUN_COMMAND_PROFILE" }],
+      async run(ctx) {
+        ctx.output.log(`profile=${ctx.options.profile ?? "unset"}`);
+      },
+    });
+
+    const defaultResult = await runCommand(command);
+    const injectedResult = await runCommand(command, [], {
+      env: { RUNE_RUN_COMMAND_PROFILE: "test" },
+    });
+
+    expect(defaultResult.stdout).toBe("profile=unset\n");
+    expect(injectedResult.stdout).toBe("profile=test\n");
+  });
+
+  test("createRunCommand supports env fallback for global options", async () => {
+    const config = defineConfig({
+      options: [{ name: "profile", type: "string", env: "RUNE_PROFILE", default: "prod" }],
+    });
+    const runCommand = createRunCommand(config);
+    const command = defineCommand({
+      async run(ctx) {
+        const options = ctx.options as { readonly profile: string };
+        ctx.output.log(`profile=${options.profile}`);
+      },
+    });
+
+    const result = await runCommand(command, [], { env: { RUNE_PROFILE: "dev" } });
+
+    expect(result.stdout).toBe("profile=dev\n");
   });
 
   test("runCommand captures unexpected errors without spawning a process", async () => {
