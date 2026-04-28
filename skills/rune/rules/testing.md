@@ -3,7 +3,7 @@
 ## Import
 
 ```ts
-import { runCommand } from "@rune-cli/rune/test";
+import { createRunCommand, runCommand } from "@rune-cli/rune/test";
 ```
 
 `runCommand()` works with any test runner (Vitest, Jest, Node.js built-in test runner).
@@ -166,3 +166,24 @@ test("uses injected cwd", async () => {
   expect(result.stdout).toBe("/tmp/test-project\n");
 });
 ```
+
+### Global options
+
+When a project defines global options with `defineConfig({ options })`, create a project-aware helper with `createRunCommand(config)` and use it like `runCommand()`:
+
+```ts
+import { createRunCommand } from "@rune-cli/rune/test";
+
+import config from "../rune.config";
+import deploy from "../src/commands/deploy";
+
+const runCommand = createRunCommand(config);
+
+test("uses the configured profile", async () => {
+  const result = await runCommand(deploy, ["--profile", "dev"]);
+
+  expect(result.exitCode).toBe(0);
+});
+```
+
+This injects `config.options` into each command test so parsing and validation match the real CLI. `RunCommandContext.globalOptions` exists as a low-level escape hatch, but normal project tests should prefer `createRunCommand(config)`.

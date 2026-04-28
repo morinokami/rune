@@ -76,6 +76,8 @@ export default defineConfig({
 
 Use global options after the resolved command path, e.g. `my-cli deploy --profile dev`. They appear in executable command help, but not in the help for groups that only route to subcommands. Global options must be optional: do not use `required: true` or schemas that reject `undefined`.
 
+After changing global options in `rune.config.ts`, run `rune sync` to refresh `.rune/global-options.d.ts` for editor type inference. `rune run` refreshes it before execution, and `rune build` refreshes it and validates global options against command options.
+
 Priority order:
 
 1. `defineCommand({ help })`

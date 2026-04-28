@@ -99,9 +99,12 @@ The `src/commands/` directory is where file-based routing begins. Routable `.ts`
 
 ```bash
 rune run <command> [args...]   # Run from source without building
+rune sync                      # Refresh Rune project type metadata
 rune build                     # Build into dist/
 ```
 
 Both accept `--project <path>` to specify the project root.
+
+When `rune.config.ts` defines global options, `rune sync` refreshes `.rune/global-options.d.ts` for editor type inference and validates global options against command options. `rune run` refreshes the same file before execution; `rune build` refreshes it and runs the validation before building.
 
 After building, the entry point in `dist/cli.mjs` (configured via `package.json` `bin` field) can be executed directly or via `npx`.
