@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.44
+
+### Patch Changes
+
+- [#161](https://github.com/morinokami/rune/pull/161) [`7e9b969`](https://github.com/morinokami/rune/commit/7e9b969787c3734fa8a792285fcc1daca913f138) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add env fallback for options
+
 ## 0.0.43
 
 ### Patch Changes
