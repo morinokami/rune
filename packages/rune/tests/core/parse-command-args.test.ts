@@ -176,6 +176,108 @@ describe("primitive parsing and defaults", () => {
   });
 });
 
+describe("option env fallback", () => {
+  test("uses CLI values before env values and env values before defaults", async () => {
+    const command = defineCommand({
+      options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+      async run() {},
+    });
+
+    const cliResult = await parseCommandArgs(command, ["--port", "4000"], {
+      env: { PORT: "5000" },
+    });
+    const envResult = await parseCommandArgs(command, [], { env: { PORT: "5000" } });
+    const defaultResult = await parseCommandArgs(command, [], { env: {} });
+
+    expect(cliResult).toMatchObject({ ok: true, value: { options: { port: 4000 } } });
+    expect(envResult).toMatchObject({ ok: true, value: { options: { port: 5000 } } });
+    expect(defaultResult).toMatchObject({ ok: true, value: { options: { port: 3000 } } });
+  });
+
+  test("allows env values to satisfy required options", async () => {
+    const command = defineCommand({
+      options: [{ name: "token", type: "string", env: "TOKEN", required: true }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, [], { env: { TOKEN: "secret" } });
+
+    expect(result).toMatchObject({ ok: true, value: { options: { token: "secret" } } });
+  });
+
+  test("does not fall back to defaults when env values are invalid", async () => {
+    const command = defineCommand({
+      options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, [], { env: { PORT: "bad" } });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        message:
+          'Invalid value for option --port <number> from environment variable PORT:\n  Expected number, received "bad"',
+      },
+    });
+  });
+
+  test("parses boolean, enum, schema, and schema flag env values", async () => {
+    const command = defineCommand({
+      options: [
+        { name: "force", type: "boolean", env: "FORCE" },
+        { name: "mode", type: "enum", values: ["dev", "prod"], env: "MODE" },
+        { name: "count", schema: z.coerce.number(), env: "COUNT" },
+        { name: "verbose", schema: z.boolean().optional(), flag: true, env: "VERBOSE" },
+      ],
+      async run() {},
+    });
+
+    const result = await parseCommandArgs(command, [], {
+      env: {
+        FORCE: "true",
+        MODE: "prod",
+        COUNT: "2",
+        VERBOSE: "false",
+      },
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        options: {
+          force: true,
+          mode: "prod",
+          count: 2,
+          verbose: false,
+        },
+      },
+    });
+  });
+
+  test("treats empty env strings as provided values", async () => {
+    const command = defineCommand({
+      options: [
+        { name: "name", type: "string", env: "NAME", default: "default" },
+        { name: "enabled", type: "boolean", env: "ENABLED" },
+      ],
+      async run() {},
+    });
+
+    const stringResult = await parseCommandArgs(command, [], { env: { NAME: "" } });
+    const booleanResult = await parseCommandArgs(command, [], { env: { ENABLED: "" } });
+
+    expect(stringResult).toMatchObject({ ok: true, value: { options: { name: "" } } });
+    expect(booleanResult).toEqual({
+      ok: false,
+      error: {
+        message:
+          'Invalid value for option --enabled from environment variable ENABLED:\n  Expected boolean, received ""',
+      },
+    });
+  });
+});
+
 describe("schema-backed fields", () => {
   test("parseCommandArgs parses a schema-backed arg", async () => {
     const command = defineCommand({

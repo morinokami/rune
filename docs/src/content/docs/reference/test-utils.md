@@ -65,6 +65,28 @@ Optional execution context.
 
 Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`.
 
+#### `env`
+
+- **Type:** `Record<string, string | undefined>`
+- **Optional**
+
+Environment variables used for option `env` fallbacks. This replaces `process.env` for the command under test; it is not merged automatically. When omitted, `runCommand()` uses an empty env map.
+
+```ts
+const command = defineCommand({
+  options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+  run({ options, output }) {
+    output.log(String(options.port));
+  },
+});
+
+test("uses PORT from env", async () => {
+  const result = await runCommand(command, [], { env: { PORT: "4000" } });
+
+  expect(result.stdout).toBe("4000\n");
+});
+```
+
 #### `globalOptions`
 
 - **Type:** `CommandOptionField[]`

@@ -61,15 +61,23 @@ type ParseArgsOptionConfig = {
   readonly multiple?: boolean | undefined;
 };
 
+type CommandEnv = Readonly<Record<string, string | undefined>>;
+
+export interface ParseCommandArgsOptions {
+  readonly env?: CommandEnv | undefined;
+}
+
 export async function parseCommandArgs<
   TArgsFields extends readonly CommandArgField[],
   TOptionsFields extends readonly CommandOptionField[],
 >(
   command: DefinedCommand<TArgsFields, TOptionsFields>,
   rawArgs: readonly string[],
+  options: ParseCommandArgsOptions = {},
 ): Promise<
   ParseCommandArgsResult<InferNamedFields<TOptionsFields, true>, InferNamedFields<TArgsFields>>
 > {
+  const env = options.env ?? {};
   const parsed = invokeNodeParseArgs(command.options, rawArgs);
   if (!parsed.ok) {
     return parsed;
@@ -85,7 +93,7 @@ export async function parseCommandArgs<
     return parsedArgs;
   }
 
-  const parsedOptions = await parseOptionFields(command.options, parsed.value.values);
+  const parsedOptions = await parseOptionFields(command.options, parsed.value.values, env);
   if (!parsedOptions.ok) {
     return parsedOptions;
   }
@@ -163,11 +171,12 @@ async function parseArgumentFields(
 async function parseOptionFields(
   fields: readonly CommandOptionField[],
   values: NodeParseArgsValues,
+  env: CommandEnv,
 ): Promise<FieldRecordResult> {
   const parsedOptions: Record<string, unknown> = {};
 
   for (const field of fields) {
-    const result = await resolveOptionField(field, values);
+    const result = await resolveOptionField(field, values, env);
 
     if (!result.ok) {
       return result;
@@ -187,6 +196,7 @@ async function parseOptionFields(
 async function resolveOptionField(
   field: CommandOptionField,
   values: NodeParseArgsValues,
+  env: CommandEnv,
 ): Promise<ResolveFieldResult> {
   const rawValue = values[field.name];
   const negated = isNegatableOption(field) ? values[negatedOptionName(field.name)] : undefined;
@@ -210,6 +220,14 @@ async function resolveOptionField(
     }
 
     return parseProvidedOptionField(field, rawValue);
+  }
+
+  if (field.env !== undefined) {
+    const envValue = env[field.env];
+
+    if (envValue !== undefined) {
+      return parseProvidedEnvOptionField(field, field.env, envValue);
+    }
   }
 
   const result = await resolveMissingField(field, () => createMissingOptionError(field));
@@ -292,6 +310,19 @@ function createInvalidOptionError(
     ok: false,
     error: {
       message: `Invalid value for option ${formatOptionLabel(field)}:\n  ${messages.join("\n  ")}`,
+    },
+  };
+}
+
+function createInvalidEnvOptionError(
+  field: CommandOptionField,
+  envName: string,
+  messages: readonly string[],
+): ParseFailure {
+  return {
+    ok: false,
+    error: {
+      message: `Invalid value for option ${formatOptionLabel(field)} from environment variable ${envName}:\n  ${messages.join("\n  ")}`,
     },
   };
 }
@@ -575,6 +606,59 @@ async function parseProvidedOptionField(
     ok: true,
     present: true,
     value: result.value,
+  };
+}
+
+async function parseProvidedEnvOptionField(
+  field: CommandOptionField,
+  envName: string,
+  rawValue: string,
+): Promise<ResolveFieldResult> {
+  const value =
+    isSchemaField(field) && field.flag === true
+      ? parseEnvBooleanValue(rawValue)
+      : ({
+          ok: true,
+          value: rawValue,
+        } satisfies ParsedFieldValue);
+
+  if (!value.ok) {
+    return createInvalidEnvOptionError(field, envName, [value.error.message]);
+  }
+
+  const result = await parseProvidedField(field, value.value);
+
+  if (!result.ok) {
+    return createInvalidEnvOptionError(field, envName, result.error.message.split("\n"));
+  }
+
+  return {
+    ok: true,
+    present: true,
+    value: result.value,
+  };
+}
+
+function parseEnvBooleanValue(rawValue: string): ParsedFieldValue {
+  if (rawValue === "true") {
+    return {
+      ok: true,
+      value: true,
+    };
+  }
+
+  if (rawValue === "false") {
+    return {
+      ok: true,
+      value: false,
+    };
+  }
+
+  return {
+    ok: false,
+    error: {
+      message: `Expected boolean, received ${JSON.stringify(rawValue)}`,
+    },
   };
 }
 

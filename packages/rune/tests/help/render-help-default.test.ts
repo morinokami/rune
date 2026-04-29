@@ -54,6 +54,7 @@ describe("renderDefaultHelp", () => {
         {
           name: "name",
           type: "string",
+          env: "PROJECT_NAME",
           description: "Project name",
           default: "my-project",
           required: false,
@@ -82,7 +83,9 @@ describe("renderDefaultHelp", () => {
     expect(lines[2]).toBe("Usage: mycli create [options] <id>");
     expect(lines.indexOf("Options:")).toBeLessThan(lines.indexOf("Arguments:"));
     expect(help).toContain("id <string>  Project identifier");
-    expect(help).toContain('--name <string>  Project name (default: "my-project")');
+    expect(help).toContain(
+      '--name <string>  Project name (default: "my-project", env: PROJECT_NAME)',
+    );
     expect(help).toContain("-f, --force  Force overwrite");
     expect(help).toContain("-h, --help  Show help");
     expect(help).toContain("  $ mycli create my-app");
@@ -147,6 +150,31 @@ describe("renderDefaultHelp", () => {
     expect(help).toContain("Usage: mycli run [options] <target>");
     expect(help).toContain("  target  Build target");
     expect(help).toContain("  --mode  Build mode");
+  });
+
+  test("renders env suffix even when option description is omitted", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["serve"],
+      subcommands: [],
+      arguments: [],
+      options: [
+        {
+          name: "port",
+          type: "number",
+          env: "PORT",
+          required: false,
+          negatable: false,
+        },
+      ],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("  --port <number>  (env: PORT)");
   });
 
   test("renders enum fields with the allowed values type hint", () => {

@@ -85,7 +85,7 @@ import { z } from "zod";
 
 export default defineConfig({
   options: [
-    { name: "profile", type: "string", default: "prod" },
+    { name: "profile", type: "string", env: "APP_PROFILE", default: "prod" },
     { name: "region", schema: z.enum(["ap-northeast-1", "us-east-1"]).optional() },
   ],
 });
@@ -98,6 +98,8 @@ my-cli deploy --profile dev
 ```
 
 実行可能コマンドのヘルプには表示されますが、サブコマンドへの振り分けだけをおこなうグループのヘルプには表示されません。グローバルオプションは省略可能でなければならず、`required: true` や `undefined` を拒否するスキーマはサポートされません。
+
+グローバルオプションでも、コマンドオプションと同じ `env` フォールバックを使用できます。CLI で指定された値が環境変数の値より優先され、環境変数の値はデフォルト値より優先されます。
 
 `rune.config.ts` を変更したら、`rune sync` を実行してエディタの型推論用 `.rune/global-options.d.ts` を更新できます。`rune run` は実行前に同ファイルの再生成を、`rune build` はビルド前に再生成と衝突検証を自動実行します。
 

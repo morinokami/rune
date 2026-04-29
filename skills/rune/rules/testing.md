@@ -24,7 +24,7 @@ async function runCommand(
 
 `TCommandData` is inferred from the passed command: it matches the `run()` return type for `json: true` commands and is `undefined` otherwise.
 
-The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, required/default handling, duplicate detection, and `multiple: true` repeated-option collection all run exactly as in a real invocation.
+The `argv` parameter accepts the same CLI tokens a user would type. Option parsing, type coercion, schema validation, env fallback resolution, required/default handling, duplicate detection, and `multiple: true` repeated-option collection all run exactly as in a real invocation.
 
 Top-level CLI behavior (command routing, help rendering) is **not** included. `runCommand()` tests only the resolved command itself.
 
@@ -164,6 +164,23 @@ test("uses injected cwd", async () => {
   const result = await runCommand(command, [], { cwd: "/tmp/test-project" });
 
   expect(result.stdout).toBe("/tmp/test-project\n");
+});
+```
+
+Inject env values for options that declare `env`. The provided env map replaces `process.env` for that command test; it is not merged automatically and defaults to an empty map.
+
+```ts
+const command = defineCommand({
+  options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+  run({ options, output }) {
+    output.log(String(options.port));
+  },
+});
+
+test("uses injected env", async () => {
+  const result = await runCommand(command, [], { env: { PORT: "4000" } });
+
+  expect(result.stdout).toBe("4000\n");
 });
 ```
 

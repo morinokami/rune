@@ -40,7 +40,7 @@ describe("defineConfig", () => {
   test("defineConfig preserves option identity for config option inference", () => {
     const config = defineConfig({
       options: [
-        { name: "profile", type: "string", default: "prod" },
+        { name: "profile", type: "string", env: "RUNE_PROFILE", default: "prod" },
         { name: "region", schema: z.enum(["ap-northeast-1", "us-east-1"]).optional() },
         { name: "verbose", type: "boolean" },
       ],
@@ -59,5 +59,13 @@ describe("defineConfig", () => {
         options: [{ name: "json", type: "boolean" }],
       }),
     ).toThrow('Option name "json" is reserved by the framework.');
+  });
+
+  test("defineConfig rejects invalid option env names", () => {
+    expect(() =>
+      defineConfig({
+        options: [{ name: "profile", type: "string", env: "RUNE-PROFILE" }],
+      }),
+    ).toThrow('Invalid env name "RUNE-PROFILE" for option "profile".');
   });
 });

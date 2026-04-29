@@ -32,6 +32,8 @@ export interface RunManifestCommandOptions {
   readonly config?: RuneConfig | undefined;
   // Forwarded to `runCommandPipeline`. See `RunCommandPipelineInput.simulateAgent`.
   readonly simulateAgent?: boolean | undefined;
+  // Environment variables used for option env fallbacks. Defaults to process.env.
+  readonly env?: Readonly<Record<string, string | undefined>> | undefined;
 }
 
 // Resolves argv, loads only the matched leaf module, and executes it in-process.
@@ -150,6 +152,7 @@ async function runResolvedCommand(
     command,
     argv: route.remainingArgs,
     globalOptions,
+    env: options.env ?? process.env,
     cwd: options.cwd,
     simulateAgent: options.simulateAgent,
   });

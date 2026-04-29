@@ -239,6 +239,33 @@ Both `--tag alpha --tag beta` and mixed long/short forms are accepted when the o
 
 Repeatable options are supported for primitive string/number options, enum options, and schema-backed value options. Primitive boolean options and schema `flag: true` options cannot be repeatable. For schema-backed repeatable options, the schema receives the collected raw string values as an array, so use an array-shaped schema such as `z.array(z.string()).default([])`.
 
+## Environment variable fallback
+
+Scalar options can declare an `env` fallback. Rune uses it only when the option was not provided on the command line:
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  options: [
+    {
+      name: "port",
+      type: "number",
+      env: "PORT",
+      default: 3000,
+      description: "Port to listen on",
+    },
+  ],
+  run({ options, output }) {
+    output.log(String(options.port));
+  },
+});
+```
+
+The priority is **CLI > env > default**. `--port 4000` wins over `PORT=5000`; if `--port` is omitted, `PORT=5000` is parsed as the option value; if neither exists, Rune uses `default`.
+
+Env values use the same parser and validation rules as CLI values. Invalid env values fail the command instead of falling back to defaults. `env` does not affect type inference, and repeatable options cannot use it.
+
 ## Kebab-case field names
 
 When an argument or option name contains hyphens (e.g. `dry-run`), it can be accessed on `ctx.args` or `ctx.options` using either the original name or its camelCase form:

@@ -140,6 +140,8 @@ $ my-cli --force value   # "value" is treated as the next positional argument
 
 Unlike primitive boolean options, schema options with `flag: true` do not get an automatic `--no-<name>` counterpart. If you need a negated form, declare it as a separate option explicitly.
 
+Schema flag options can still use option `env` fallbacks. Env values must be `"true"` or `"false"`; Rune converts that string to a boolean before passing it to the schema.
+
 ## Help display with `typeLabel` and `defaultLabel`
 
 Standard Schema exposes no API for reading a schema's type or default value from the outside, so `--help` cannot display them automatically for schema fields. To convey that information to the reader, set the display-only `typeLabel` and `defaultLabel` properties on the schema field.

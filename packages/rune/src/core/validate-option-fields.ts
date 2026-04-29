@@ -8,6 +8,7 @@ import { isSchemaField } from "./schema-field";
 // helper mirrors `OPTION_NAME_RE`; keep them in sync.
 export const OPTION_NAME_RE = /^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$/;
 export const OPTION_SHORT_RE = /^[a-zA-Z]$/;
+export const OPTION_ENV_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export function validateOptionNameFormats(options: readonly CommandOptionField[]): void {
   for (const field of options) {
@@ -49,6 +50,25 @@ export function validateOptionMultipleFlags(options: readonly CommandOptionField
 
     if (isSchemaField(field) && field.flag === true) {
       throw new Error(`Schema flag option "${field.name}" cannot use multiple: true.`);
+    }
+  }
+}
+
+export function validateOptionEnvVars(options: readonly CommandOptionField[]): void {
+  for (const field of options) {
+    if (field.env === undefined) {
+      continue;
+    }
+
+    if (!OPTION_ENV_RE.test(field.env)) {
+      throw new Error(
+        `Invalid env name "${field.env}" for option "${field.name}". Env names must match ${OPTION_ENV_RE.toString()}.`,
+      );
+    }
+
+    // Type-level field variants disallow this, but widened inputs still need runtime validation.
+    if (hasMultipleFlag(field)) {
+      throw new Error(`Option "${field.name}" cannot use env with multiple: true.`);
     }
   }
 }

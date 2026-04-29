@@ -22,7 +22,7 @@ test("defineCommand infers primitive arg and option shapes", () => {
   const basicCommand = defineCommand({
     description: "Create a project",
     options: [
-      { name: "name", type: "string", required: true },
+      { name: "name", type: "string", required: true, env: "NAME" },
       { name: "force", type: "boolean", short: "f" },
     ],
     args: [{ name: "id", type: "string", required: true }],
@@ -236,6 +236,37 @@ test("defineCommand rejects invalid field shapes at compile time", () => {
     run: () => void;
   }) => {
     // @ts-expect-error repeatable primitive options must use array defaults
+    defineCommand(input);
+  });
+
+  void ((input: {
+    options: [{ name: "broken"; type: "string"; multiple: true; env: "BROKEN" }];
+    run: () => void;
+  }) => {
+    // @ts-expect-error repeatable primitive options cannot use env
+    defineCommand(input);
+  });
+
+  void ((input: {
+    options: [
+      {
+        name: "broken";
+        schema: StandardSchemaV1<string[], string[]>;
+        multiple: true;
+        env: "BROKEN";
+      },
+    ];
+    run: () => void;
+  }) => {
+    // @ts-expect-error repeatable schema options cannot use env
+    defineCommand(input);
+  });
+
+  void ((input: {
+    options: [{ name: "broken"; type: "enum"; values: ["a", "b"]; multiple: true; env: "BROKEN" }];
+    run: () => void;
+  }) => {
+    // @ts-expect-error repeatable enum options cannot use env
     defineCommand(input);
   });
 

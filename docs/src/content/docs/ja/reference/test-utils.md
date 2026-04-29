@@ -65,6 +65,28 @@ function runCommand(
 
 `ctx.cwd` に注入されるワーキングディレクトリの値。`process.cwd()` は変更しません。
 
+#### `env`
+
+- **型:** `Record<string, string | undefined>`
+- **省略可能**
+
+オプションの `env` フォールバックで使う環境変数です。テスト対象コマンドでは `process.env` の代わりにこの値が使われ、自動的にはマージされません。省略した場合、`runCommand()` は空の環境変数マップで実行します。
+
+```ts
+const command = defineCommand({
+  options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+  run({ options, output }) {
+    output.log(String(options.port));
+  },
+});
+
+test("uses PORT from env", async () => {
+  const result = await runCommand(command, [], { env: { PORT: "4000" } });
+
+  expect(result.stdout).toBe("4000\n");
+});
+```
+
 #### `globalOptions`
 
 - **型:** `CommandOptionField[]`

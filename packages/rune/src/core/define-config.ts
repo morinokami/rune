@@ -3,6 +3,7 @@ import type { HelpData } from "./help-types";
 
 import {
   validateEnumFields,
+  validateOptionEnvVars,
   validateOptionMultipleFlags,
   validateOptionNameFormats,
   validateOptionNegationCollisions,
@@ -130,6 +131,7 @@ function validateConfigOptions(options: readonly CommandOptionField[]): void {
   validateConfigReservedNames(options);
   validateOptionShortFormats(options);
   validateOptionMultipleFlags(options);
+  validateOptionEnvVars(options);
   validateEnumFields(options, "option");
   validateUniqueFieldAndAliasNames(options, "option");
   validateUniqueOptionShortNames(options);

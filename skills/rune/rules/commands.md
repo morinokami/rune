@@ -70,7 +70,7 @@ export default defineConfig({
 
 ```ts
 export default defineConfig({
-  options: [{ name: "profile", type: "string", default: "prod" }],
+  options: [{ name: "profile", type: "string", env: "APP_PROFILE", default: "prod" }],
 });
 ```
 
@@ -123,6 +123,7 @@ A field uses exactly one of: a primitive `type` (`"string" | "number" | "boolean
 // Options (same base properties, plus `short`)
 { name: "output", type: "string", short: "o" }
 { name: "tag", type: "string", multiple: true, default: [] }
+{ name: "port", type: "number", env: "PORT", default: 3000 }
 { name: "force", type: "boolean", short: "f" }
 ```
 
@@ -133,6 +134,7 @@ Primitive types: `"string"` | `"number"` | `"boolean"`
 - Primitive defaults are shown in `--help`, except for boolean options
 - Primitive boolean options default to `false` even without an explicit `default`
 - `short` (options only): single ASCII letter for shorthand (e.g. `-f`). The short name `"h"` is reserved for `--help`
+- `env` (scalar options only): environment variable fallback used when the CLI flag is omitted. Priority is `CLI > env > default`; invalid env values fail instead of falling back to defaults. `env` does not affect type inference.
 - `multiple: true` (options only): allowed for primitive `"string"` and `"number"` options; parsed values are arrays in declaration order. Use an array `default` such as `[]` to make the option always present. Primitive `"boolean"` options cannot be repeatable.
 
 ### Enum fields
@@ -156,6 +158,7 @@ Restrict a field to a fixed set of string or number choices without introducing 
 - String values must match `/^[A-Za-z0-9_.-]+$/` (letters, digits, `_`, `.`, `-`); spaces or other special characters are rejected at definition time
 - Empty strings, `NaN`, `Infinity`, and duplicates (after string conversion) are rejected at definition time
 - `--help` displays the allowed values inline, e.g. `--mode <dev|prod>`
+- Scalar enum options can use `env`; repeatable enum options cannot.
 - For choices that also need format validation or transformation, use a schema field (`z.enum([...]).transform(...)`, etc.)
 
 ### Schema fields
@@ -185,6 +188,7 @@ export default defineCommand({
 
 - `flag: true` (schema options only): parsed as a boolean flag with no value. The schema receives `true` when the flag is present, `undefined` when absent.
 - `multiple: true` (schema options only, not with `flag: true`): the schema receives the collected raw string values as an array, so use an array-shaped schema such as `z.array(z.string()).default([])`.
+- Scalar schema options can use `env`. Schema `flag: true` options accept only `"true"` / `"false"` from env and pass the resulting boolean to the schema. Repeatable schema options cannot use `env`.
 - Required/optional/default semantics come from the schema itself.
 - Validation uses the Standard Schema contract (`schema["~standard"].validate(value)`). Do not call library-specific APIs such as Zod `.parse()`.
 - `typeLabel` / `defaultLabel` (schema fields only, display-only): shown in `--help` as `<typeLabel>` and `(default: defaultLabel)`. No effect on validation or type inference. Use when the schema's shape or default is not otherwise discoverable from the help output.

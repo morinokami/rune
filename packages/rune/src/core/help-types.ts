@@ -50,6 +50,7 @@ export type ArgumentHelpEntry =
 export interface PrimitiveOptionHelpEntry {
   readonly name: string;
   readonly short?: string;
+  readonly env?: string;
   readonly type: "string" | "number" | "boolean";
   readonly description?: string;
   /** Array defaults only appear for repeatable string/number options; boolean repeatable options are unsupported. */
@@ -62,6 +63,7 @@ export interface PrimitiveOptionHelpEntry {
 export interface EnumOptionHelpEntry {
   readonly name: string;
   readonly short?: string;
+  readonly env?: string;
   readonly type: "enum";
   readonly values: readonly (string | number)[];
   readonly description?: string;
@@ -75,6 +77,7 @@ export interface EnumOptionHelpEntry {
 export interface SchemaOptionHelpEntry {
   readonly name: string;
   readonly short?: string;
+  readonly env?: string;
   readonly type: undefined;
   readonly typeLabel?: string;
   readonly defaultLabel?: string;

@@ -16,6 +16,12 @@ export interface RunCommandContext {
   /** Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`. */
   readonly cwd?: string;
   /**
+   * Environment variables used for option env fallbacks. This replaces
+   * `process.env` for the command under test; it is not merged automatically.
+   * When omitted, the command runs with an empty env map.
+   */
+  readonly env?: Readonly<Record<string, string | undefined>>;
+  /**
    * When `true`, simulates an AI agent environment so `json: true` commands
    * auto-enable JSON mode even without an explicit `--json` flag. Defaults
    * to `false` so tests behave the same regardless of whether the test
@@ -23,6 +29,7 @@ export interface RunCommandContext {
    * detected as `isAgent`).
    */
   readonly simulateAgent?: boolean;
+  /** Global options to inject as if they were defined by `defineConfig({ options })`. */
   readonly globalOptions?: readonly CommandOptionField[];
 }
 
@@ -115,6 +122,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
     command,
     argv,
     globalOptions: context.globalOptions,
+    env: context.env ?? {},
     cwd: context.cwd,
     simulateAgent: context.simulateAgent ?? false,
     sink: {

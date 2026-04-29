@@ -137,6 +137,23 @@ test("injects custom cwd", async () => {
 });
 ```
 
+`env` を宣言したオプションをテストするために、環境変数の値を注入することもできます。渡した環境変数のマップはテスト対象コマンドにおける `process.env` の代わりに使われ、自動的にはマージされません。
+
+```ts
+const command = defineCommand({
+  options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+  run({ options, output }) {
+    output.log(String(options.port));
+  },
+});
+
+test("uses injected env", async () => {
+  const result = await runCommand(command, [], { env: { PORT: "4000" } });
+
+  expect(result.stdout).toBe("4000\n");
+});
+```
+
 ## グローバルオプションを使うテスト
 
 プロジェクトで `defineConfig({ options })` を定義している場合は、プロジェクト設定を組み込んだヘルパーを一度作成し、`runCommand()` と同じように使います:

@@ -129,7 +129,7 @@ Global options can be defined once in `rune.config.ts` and are available to ever
 import { defineConfig } from "@rune-cli/rune";
 
 export default defineConfig({
-  options: [{ name: "profile", type: "string", default: "prod" }],
+  options: [{ name: "profile", type: "string", env: "APP_PROFILE", default: "prod" }],
 });
 ```
 
@@ -149,6 +149,7 @@ my-cli deploy --profile dev
 | `default`     | Default value; shown in `--help` output                  |
 | `description` | Help text                                                |
 | `short`       | Single-letter alias (options only, e.g. `"f"` → `-f`)    |
+| `env`         | Environment variable fallback for scalar options         |
 | `multiple`    | Allow an option to be repeated and parsed as an array    |
 
 ```ts
@@ -163,6 +164,22 @@ defineCommand({
   },
 });
 ```
+
+### Environment Variable Fallback
+
+Scalar options can read an environment variable when the CLI flag is omitted. Priority is `CLI > env > default`, and env values use the same parser and validation path as CLI values.
+
+```ts
+defineCommand({
+  options: [{ name: "port", type: "number", env: "PORT", default: 3000 }],
+  run({ options }) {
+    // --port 4000 wins over PORT=5000; PORT wins over default
+    // options.port: number
+  },
+});
+```
+
+`env` does not affect type inference. Repeatable options cannot use it.
 
 ### Enum Fields
 
@@ -299,7 +316,7 @@ my-cli deploy --help --json
 
 ## Testing
 
-Import `runCommand()` from `@rune-cli/rune/test` to exercise commands in-process — argv parsing, type coercion, schema validation, and defaults all run exactly as they do at real invocation.
+Import `runCommand()` from `@rune-cli/rune/test` to exercise commands in-process — argv parsing, type coercion, schema validation, env fallbacks, and defaults all run exactly as they do at real invocation.
 
 ```ts
 import { runCommand } from "@rune-cli/rune/test";
@@ -314,6 +331,8 @@ test("greets by name", async () => {
   expect(result.stdout).toBe("Hello, world!\n");
 });
 ```
+
+Pass `{ env }` as the third argument to test option env fallbacks. The env map replaces `process.env` for that command test.
 
 The returned `CommandExecutionResult` exposes `exitCode`, `stdout`, `stderr`, `error`, and `data` (the `run()` return value, for `json: true` commands).
 
