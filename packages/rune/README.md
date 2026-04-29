@@ -332,7 +332,15 @@ test("greets by name", async () => {
 });
 ```
 
-Pass `{ env }` as the third argument to test option env fallbacks. The env map replaces `process.env` for that command test.
+Pass `{ env }` as the third argument to test option env fallbacks. The env map replaces `process.env` for that command test, and omitted `env` defaults to an empty map so tests stay isolated from the host environment.
+
+If you intentionally want to inherit the current process environment, merge it explicitly:
+
+```ts
+const result = await runCommand(command, [], {
+  env: { ...process.env, TASKS_FILE: file },
+});
+```
 
 The returned `CommandExecutionResult` exposes `exitCode`, `stdout`, `stderr`, `error`, and `data` (the `run()` return value, for `json: true` commands).
 

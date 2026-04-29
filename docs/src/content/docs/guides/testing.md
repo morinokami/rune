@@ -137,7 +137,7 @@ test("injects custom cwd", async () => {
 });
 ```
 
-You can also inject env values for options that declare `env`. The provided env map replaces `process.env` for the command under test; it is not merged automatically.
+You can also inject env values for options that declare `env`. The provided env map replaces `process.env` for the command under test; it is not merged automatically and defaults to an empty map so tests stay isolated from the host environment.
 
 ```ts
 const command = defineCommand({
@@ -149,6 +149,18 @@ const command = defineCommand({
 
 test("uses injected env", async () => {
   const result = await runCommand(command, [], { env: { PORT: "4000" } });
+
+  expect(result.stdout).toBe("4000\n");
+});
+```
+
+If you want to keep the current process environment and add one value for the test, spread `process.env` explicitly:
+
+```ts
+test("inherits host env explicitly", async () => {
+  const result = await runCommand(command, [], {
+    env: { ...process.env, PORT: "4000" },
+  });
 
   expect(result.stdout).toBe("4000\n");
 });

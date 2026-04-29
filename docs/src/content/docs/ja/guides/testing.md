@@ -137,7 +137,7 @@ test("injects custom cwd", async () => {
 });
 ```
 
-`env` を宣言したオプションをテストするために、環境変数の値を注入することもできます。渡した環境変数のマップはテスト対象コマンドにおける `process.env` の代わりに使われ、自動的にはマージされません。
+`env` を宣言したオプションをテストするために、環境変数の値を注入することもできます。渡した環境変数のマップはテスト対象コマンドにおける `process.env` の代わりに使われ、自動的にはマージされません。デフォルトでは空の環境変数マップが使われるため、テストはホスト環境から切り離されます。
 
 ```ts
 const command = defineCommand({
@@ -149,6 +149,18 @@ const command = defineCommand({
 
 test("uses injected env", async () => {
   const result = await runCommand(command, [], { env: { PORT: "4000" } });
+
+  expect(result.stdout).toBe("4000\n");
+});
+```
+
+現在のプロセス環境を保ったまま 1 つの値だけ追加したい場合は、`process.env` を明示的に展開してください:
+
+```ts
+test("inherits host env explicitly", async () => {
+  const result = await runCommand(command, [], {
+    env: { ...process.env, PORT: "4000" },
+  });
 
   expect(result.stdout).toBe("4000\n");
 });

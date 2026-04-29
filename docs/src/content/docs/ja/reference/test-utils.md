@@ -70,7 +70,7 @@ function runCommand(
 - **型:** `Record<string, string | undefined>`
 - **省略可能**
 
-オプションの `env` フォールバックで使う環境変数です。テスト対象コマンドでは `process.env` の代わりにこの値が使われ、自動的にはマージされません。省略した場合、`runCommand()` は空の環境変数マップで実行します。
+オプションの `env` フォールバックで使う環境変数です。テスト対象コマンドでは `process.env` の代わりにこの値が使われ、自動的にはマージされません。省略した場合、`runCommand()` はホスト環境からテストを切り離すため、空の環境変数マップで実行します。
 
 ```ts
 const command = defineCommand({
@@ -84,6 +84,14 @@ test("uses PORT from env", async () => {
   const result = await runCommand(command, [], { env: { PORT: "4000" } });
 
   expect(result.stdout).toBe("4000\n");
+});
+```
+
+現在のプロセス環境を意図的に引き継ぎたい場合は、明示的にマージしてください:
+
+```ts
+const result = await runCommand(command, [], {
+  env: { ...process.env, PORT: "4000" },
 });
 ```
 

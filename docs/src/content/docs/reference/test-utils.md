@@ -70,7 +70,7 @@ Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`
 - **Type:** `Record<string, string | undefined>`
 - **Optional**
 
-Environment variables used for option `env` fallbacks. This replaces `process.env` for the command under test; it is not merged automatically. When omitted, `runCommand()` uses an empty env map.
+Environment variables used for option `env` fallbacks. This replaces `process.env` for the command under test; it is not merged automatically. When omitted, `runCommand()` uses an empty env map so tests stay isolated from the host environment.
 
 ```ts
 const command = defineCommand({
@@ -84,6 +84,14 @@ test("uses PORT from env", async () => {
   const result = await runCommand(command, [], { env: { PORT: "4000" } });
 
   expect(result.stdout).toBe("4000\n");
+});
+```
+
+If you intentionally want to inherit the current process environment, merge it explicitly:
+
+```ts
+const result = await runCommand(command, [], {
+  env: { ...process.env, PORT: "4000" },
 });
 ```
 
