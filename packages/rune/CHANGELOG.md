@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.45
+
+### Patch Changes
+
+- [#163](https://github.com/morinokami/rune/pull/163) [`7aad963`](https://github.com/morinokami/rune/commit/7aad9631dfdc4d04ca1fe0a59d943382378c7d3e) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): expose effective JSON mode via options.json
+
 ## 0.0.44
 
 ### Patch Changes
