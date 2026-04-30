@@ -27,6 +27,8 @@ export default defineCommand({
 
 Without `json`, `run()` is typed as returning `void`. When `json: true` is set, `run()` can return a value, and that return type is preserved by helpers such as `runCommand().data`. The return value must be serializable by `JSON.stringify()`. If a non-serializable value such as `BigInt` is returned, Rune treats it as an error.
 
+Commands with `json: true` also receive `options.json` in `run()`. The value reflects the effective JSON mode for the current invocation: it is `true` when the user passed `--json` or when Rune auto-enabled JSON mode under an AI agent, and `false` otherwise. To check whether the user explicitly passed the flag, inspect `rawArgs`.
+
 ## Output behavior
 
 When a user runs the command with the `--json` flag, the return value of `run()` is printed to stdout as a single-line JSON document (no indentation):
@@ -46,15 +48,17 @@ import { defineCommand } from "@rune-cli/rune";
 export default defineCommand({
   description: "List all projects",
   json: true,
-  run({ output }) {
+  run({ options, output }) {
     const projects = [
       { id: 1, name: "alpha" },
       { id: 2, name: "beta" },
     ];
 
     // Only displayed without --json
-    for (const p of projects) {
-      output.log(`${p.id}: ${p.name}`);
+    if (!options.json) {
+      for (const p of projects) {
+        output.log(`${p.id}: ${p.name}`);
+      }
     }
 
     // Output as JSON with --json

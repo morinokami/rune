@@ -117,8 +117,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
         ...parsed.value.args,
       } as Record<string, unknown>),
     );
+    const rawOptions = normalizeOptions(
+      effectiveOptions,
+      parsed.value.options as Record<string, unknown>,
+    );
     const options = addCamelCaseAliases(
-      normalizeOptions(effectiveOptions, parsed.value.options as Record<string, unknown>),
+      commandDefinition.json ? { ...rawOptions, json: jsonMode } : rawOptions,
     );
 
     // The `command.run` signature is generic, but at this layer we operate on

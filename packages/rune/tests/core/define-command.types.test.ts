@@ -105,11 +105,15 @@ test("defineCommand infers multiple option types", () => {
 test("defineCommand preserves json payload types", () => {
   const jsonCommand = defineCommand({
     json: true,
-    run() {
+    run(ctx) {
+      expectTypeOf(ctx.options.json).toEqualTypeOf<boolean>();
       return { items: [1, 2, 3] as const };
     },
   });
 
+  expectTypeOf<InferCommandOptions<typeof jsonCommand>>().toEqualTypeOf<{
+    readonly json: boolean;
+  }>();
   expectTypeOf<InferCommandData<typeof jsonCommand>>().toEqualTypeOf<{
     items: readonly [1, 2, 3];
   }>();

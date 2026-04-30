@@ -27,6 +27,8 @@ export default defineCommand({
 
 `json` を設定しないコマンドの `run()` は `void` を返す関数として型付けされますが、`json: true` を設定すると `run()` は値を返せるようになり、その戻り値型は `runCommand().data` などに保持されます。戻り値は `JSON.stringify()` でシリアライズ可能な値である必要があります。`BigInt` などシリアライズできない値を返した場合、Rune はエラーとして処理します。
 
+`json: true` のコマンドでは、`run()` 内で `options.json` も受け取れます。この値は現在の実行における実効的な JSON モードを表します。ユーザーが `--json` を渡した場合と、AI エージェント実行時に Rune が自動的に JSON モードを有効化した場合に `true` になり、それ以外では `false` です。ユーザーが明示的にフラグを渡したかどうかを確認したい場合は `rawArgs` を参照してください。
+
 ## 出力の振る舞い
 
 ユーザーが `--json` フラグを付けてコマンドを実行すると、`run()` の戻り値がインデントなしの 1 行の JSON ドキュメントとして stdout に出力されます:
@@ -46,15 +48,17 @@ import { defineCommand } from "@rune-cli/rune";
 export default defineCommand({
   description: "List all projects",
   json: true,
-  run({ output }) {
+  run({ options, output }) {
     const projects = [
       { id: 1, name: "alpha" },
       { id: 2, name: "beta" },
     ];
 
     // --json なしの場合のみ表示される
-    for (const p of projects) {
-      output.log(`${p.id}: ${p.name}`);
+    if (!options.json) {
+      for (const p of projects) {
+        output.log(`${p.id}: ${p.name}`);
+      }
     }
 
     // --json の場合に JSON として出力される

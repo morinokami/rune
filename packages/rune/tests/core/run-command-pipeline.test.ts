@@ -178,11 +178,13 @@ describe("output and json mode", () => {
   test("returns command data and suppresses stdout in json mode", async () => {
     const { sink, stdout, stderr } = createCapturingSink();
     let observedRawArgs: readonly string[] = [];
+    let observedJson = false;
 
     const command = defineCommand({
       json: true,
       run(ctx) {
         observedRawArgs = ctx.rawArgs;
+        observedJson = ctx.options.json;
         ctx.output.log("hidden");
         ctx.output.error("warning");
         return { ok: true };
@@ -196,6 +198,7 @@ describe("output and json mode", () => {
     });
 
     expect(observedRawArgs).toEqual(["--json"]);
+    expect(observedJson).toBe(true);
     expect(result).toEqual({
       parseOk: true,
       exitCode: 0,
@@ -235,10 +238,12 @@ describe("output and json mode", () => {
 
   test("auto-enables JSON mode when simulateAgent is true for json: true commands", async () => {
     const { sink, stdout } = createCapturingSink();
+    let observedJson = false;
 
     const command = defineCommand({
       json: true,
-      run() {
+      run(ctx) {
+        observedJson = ctx.options.json;
         return { auto: true };
       },
     });
@@ -256,13 +261,17 @@ describe("output and json mode", () => {
       data: { auto: true },
       jsonMode: true,
     });
+    expect(observedJson).toBe(true);
     expect(stdout).toEqual([]);
   });
 
   test("does not auto-enable JSON mode when simulateAgent is false", async () => {
+    let observedJson = true;
+
     const command = defineCommand({
       json: true,
-      run() {
+      run(ctx) {
+        observedJson = ctx.options.json;
         return { auto: false };
       },
     });
@@ -278,6 +287,7 @@ describe("output and json mode", () => {
       exitCode: 0,
       jsonMode: false,
     });
+    expect(observedJson).toBe(false);
   });
 
   test("does not auto-enable JSON mode for commands without json: true", async () => {

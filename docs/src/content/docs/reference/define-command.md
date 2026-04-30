@@ -241,6 +241,8 @@ Usage examples shown in the `Examples:` section of `--help` output. Each entry i
 
 When set, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed. Omit to keep JSON mode disabled.
 
+Commands with `json: true` receive a framework-managed `options.json: boolean` value in `run()`. It is `true` whenever JSON mode is active, including automatic activation under AI agents.
+
 ### `help`
 
 - **Type:** `(data: CommandHelpData) => string`
@@ -288,6 +290,8 @@ Parsed positional argument values, keyed by field name.
 - **Type:** `object`
 
 Parsed option values, keyed by field name.
+
+For commands with `json: true`, this object also includes the framework-managed `json` boolean. It reflects the effective JSON mode for the invocation. Use `rawArgs` if you need to distinguish an explicit `--json` flag from automatic JSON activation.
 
 ### `cwd`
 

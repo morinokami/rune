@@ -47,9 +47,14 @@ export type InferConfigOptions<TConfig> = TConfig extends {
   ? InferNamedFields<TOptionsFields, true>
   : {};
 
-type CommandContextOptions<TOptionsFields extends readonly CommandOptionField[]> = Simplify<
-  InferNamedFields<TOptionsFields, true> & RuneConfigOptions
->;
+type JsonModeOption<TJson extends boolean | undefined> = TJson extends true
+  ? { readonly json: boolean }
+  : {};
+
+type CommandContextOptions<
+  TOptionsFields extends readonly CommandOptionField[],
+  TJson extends boolean | undefined,
+> = Simplify<InferNamedFields<TOptionsFields, true> & RuneConfigOptions & JsonModeOption<TJson>>;
 
 /** Runtime data passed into a command's `run` function. */
 export interface CommandContext<TOptions, TArgs> {
@@ -128,7 +133,7 @@ export interface DefineCommandInput<
    */
   readonly run: (
     ctx: CommandContext<
-      CommandContextOptions<NormalizeFields<TOptionsFields, CommandOptionField>>,
+      CommandContextOptions<NormalizeFields<TOptionsFields, CommandOptionField>, TJson>,
       InferNamedFields<NormalizeFields<TArgsFields, CommandArgField>>
     >,
   ) => TJson extends true ? TRunResult : void | Promise<void>;
@@ -149,14 +154,17 @@ export interface DefinedCommand<
   readonly options: TOptionsFields;
   readonly help?: ((data: CommandHelpData) => string) | undefined;
   readonly run: (
-    ctx: CommandContext<CommandContextOptions<TOptionsFields>, InferNamedFields<TArgsFields>>,
+    ctx: CommandContext<
+      CommandContextOptions<TOptionsFields, TJson>,
+      InferNamedFields<TArgsFields>
+    >,
   ) => TJson extends true ? TCommandData | Promise<TCommandData> : void | Promise<void>;
 }
 
 // Extracts the inferred options object from a defined command.
 export type InferCommandOptions<TCommand> =
-  TCommand extends DefinedCommand<any, infer TOptionsFields>
-    ? InferNamedFields<TOptionsFields, true>
+  TCommand extends DefinedCommand<any, infer TOptionsFields, infer TJson>
+    ? CommandContextOptions<TOptionsFields, TJson>
     : never;
 
 // Extracts the inferred args object from a defined command.
