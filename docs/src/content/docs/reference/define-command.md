@@ -311,6 +311,26 @@ Unparsed argv tokens before Rune splits them into `args` and `options`. Useful f
 
 Framework output API. Use `output.log()` for stdout and `output.error()` for stderr.
 
+### `stdin`
+
+- **Type:** `CommandStdin`
+
+Framework input API for reading stdin. `stdin.isTTY` tells whether stdin is a TTY,
+and `stdin.isPiped` is true when piped input is available. Reading is explicit:
+call `await stdin.text()` for UTF-8 text or `await stdin.bytes()` for bytes.
+
+```ts
+export default defineCommand({
+  async run({ stdin, output }) {
+    const input = stdin.isPiped ? await stdin.text() : "";
+    output.log(input.trim());
+  },
+});
+```
+
+stdin can be consumed only once. Calling `text()` and then `bytes()`, or calling
+either method twice, fails with `kind: "rune/stdin-consumed"`.
+
 ## Kebab-case field names
 
 Fields with hyphenated names (e.g. `dry-run`) are accessible by both the original name and its camelCase equivalent (`dryRun`) on the `ctx.args` and `ctx.options` objects. This is enforced at the type level.

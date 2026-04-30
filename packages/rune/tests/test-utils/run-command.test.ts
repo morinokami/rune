@@ -93,6 +93,73 @@ describe("execution capture", () => {
     expect(result.stdout).toBe("profile=dev\n");
   });
 
+  test("runCommand injects string stdin into ctx.stdin", async () => {
+    const command = defineCommand({
+      async run(ctx) {
+        ctx.output.log(
+          JSON.stringify({
+            text: await ctx.stdin.text(),
+            isTTY: ctx.stdin.isTTY,
+            isPiped: ctx.stdin.isPiped,
+          }),
+        );
+      },
+    });
+
+    const result = await runCommand(command, [], { stdin: "hello\n" });
+
+    expect(result.stdout).toBe('{"text":"hello\\n","isTTY":false,"isPiped":true}\n');
+  });
+
+  test("runCommand injects byte stdin into ctx.stdin", async () => {
+    const command = defineCommand({
+      async run(ctx) {
+        ctx.output.log(Array.from(await ctx.stdin.bytes()).join(","));
+      },
+    });
+
+    const result = await runCommand(command, [], {
+      stdin: Buffer.from([0, 1, 255]),
+    });
+
+    expect(result.stdout).toBe("0,1,255\n");
+  });
+
+  test("runCommand uses isolated empty stdin when stdin is omitted", async () => {
+    const command = defineCommand({
+      async run(ctx) {
+        ctx.output.log(
+          JSON.stringify({
+            text: await ctx.stdin.text(),
+            isTTY: ctx.stdin.isTTY,
+            isPiped: ctx.stdin.isPiped,
+          }),
+        );
+      },
+    });
+
+    const result = await runCommand(command);
+
+    expect(result.stdout).toBe('{"text":"","isTTY":true,"isPiped":false}\n');
+  });
+
+  test("createRunCommand preserves stdin injection", async () => {
+    const config = defineConfig({
+      options: [{ name: "profile", type: "string", default: "prod" }],
+    });
+    const runCommand = createRunCommand(config);
+    const command = defineCommand({
+      async run(ctx) {
+        const options = ctx.options as { readonly profile: string };
+        ctx.output.log(`${options.profile}:${await ctx.stdin.text()}`);
+      },
+    });
+
+    const result = await runCommand(command, [], { stdin: "payload" });
+
+    expect(result.stdout).toBe("prod:payload\n");
+  });
+
   test("runCommand captures unexpected errors without spawning a process", async () => {
     const command = defineCommand({
       async run() {

@@ -103,11 +103,17 @@ This works for commands, groups, and unknown-command suggestions. It does not re
 | `cwd`     | `string`            | Working directory                                      |
 | `rawArgs` | `readonly string[]` | Original unparsed argv tokens                          |
 | `output`  | `CommandOutput`     | `output.log()` for stdout, `output.error()` for stderr |
+| `stdin`   | `CommandStdin`      | Explicit stdin reader (`text()`, `bytes()`)            |
 
 Always use `output.log()` instead of `console.log()`. This allows:
 
 - Capture in tests via `runCommand()`
 - Automatic suppression in `--json` mode so stdout stays machine-readable
+
+Use `ctx.stdin` instead of reading `process.stdin` directly. Reading is explicit:
+check `stdin.isPiped` when needed, then call `await stdin.text()` for UTF-8 text
+or `await stdin.bytes()` for bytes. stdin can be consumed only once; repeated
+reads fail with `kind: "rune/stdin-consumed"`.
 
 ## Field types
 

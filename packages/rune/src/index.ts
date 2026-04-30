@@ -2,6 +2,7 @@ export { CommandError } from "./core/command-error";
 export { defineCommand } from "./core/define-command";
 export { defineConfig } from "./core/define-config";
 export { defineGroup } from "./core/define-group";
+export type { CommandStdin } from "./core/command-stdin";
 export type {
   CommandContext,
   DefinedCommand,

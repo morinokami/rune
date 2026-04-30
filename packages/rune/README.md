@@ -346,6 +346,14 @@ const result = await runCommand(command, [], {
 });
 ```
 
+Pass `{ stdin }` to test commands that read `ctx.stdin` without mocking `process.stdin`:
+
+```ts
+const result = await runCommand(command, [], {
+  stdin: "hello\n",
+});
+```
+
 The returned `CommandExecutionResult` exposes `exitCode`, `stdout`, `stderr`, `error`, and `data` (the `run()` return value, for `json: true` commands).
 
 ## CLI

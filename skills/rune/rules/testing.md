@@ -192,6 +192,13 @@ const result = await runCommand(command, [], {
 });
 ```
 
+Inject stdin with the `stdin` context field. This feeds `ctx.stdin` without
+touching `process.stdin`; omitted stdin is an isolated empty TTY-like input.
+
+```ts
+const result = await runCommand(command, [], { stdin: "hello\n" });
+```
+
 ### Global options
 
 When a project defines global options with `defineConfig({ options })`, create a project-aware helper with `createRunCommand(config)` and use it like `runCommand()`:

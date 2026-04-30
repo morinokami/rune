@@ -166,6 +166,24 @@ test("inherits host env explicitly", async () => {
 });
 ```
 
+You can also inject stdin. This lets commands that read `ctx.stdin` stay
+in-process and isolated in tests:
+
+```ts
+const command = defineCommand({
+  async run({ stdin, output }) {
+    const input = stdin.isPiped ? await stdin.text() : "";
+    output.log(input.trim());
+  },
+});
+
+test("reads injected stdin", async () => {
+  const result = await runCommand(command, [], { stdin: "hello\n" });
+
+  expect(result.stdout).toBe("hello\n");
+});
+```
+
 ## Testing with global options
 
 When your project defines `defineConfig({ options })`, create a helper that bakes in your project config once and use it like `runCommand()`:
