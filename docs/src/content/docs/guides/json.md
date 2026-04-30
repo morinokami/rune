@@ -48,17 +48,15 @@ import { defineCommand } from "@rune-cli/rune";
 export default defineCommand({
   description: "List all projects",
   json: true,
-  run({ options, output }) {
+  run({ output }) {
     const projects = [
       { id: 1, name: "alpha" },
       { id: 2, name: "beta" },
     ];
 
     // Only displayed without --json
-    if (!options.json) {
-      for (const p of projects) {
-        output.log(`${p.id}: ${p.name}`);
-      }
+    for (const p of projects) {
+      output.log(`${p.id}: ${p.name}`);
     }
 
     // Output as JSON with --json
