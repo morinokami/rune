@@ -251,12 +251,16 @@ Hyphenated field names (e.g. `dry-run`) are accessible as both `ctx.options["dry
 
 ## JSON Output
 
-Set `json: true` to opt into a built-in `--json` flag. The `run()` return value becomes the structured output, while `output.log()` is suppressed so the stdout stream remains machine-parseable. `output.error()` still writes to stderr.
+Set `json: true` to opt into a built-in `--json` flag. The `run()` return value becomes the structured output, while `output.log()` is suppressed so the stdout stream remains machine-parseable. `output.error()` still writes to stderr. Inside `run()`, `options.json` is `true` whenever JSON mode is active.
 
 ```ts
 export default defineCommand({
   json: true,
-  run() {
+  run({ options }) {
+    if (!options.json) {
+      // Render human-readable output here.
+    }
+
     return { items: [1, 2, 3] };
   },
 });
@@ -267,7 +271,7 @@ my-cli         # human-readable text CLI
 my-cli --json  # {"items":[1,2,3]}
 ```
 
-Under AI agents (Claude Code, Cursor, Codex, etc.), `json: true` commands auto-enable JSON mode even without `--json`, so a single command serves both humans and agents seamlessly. Detection only triggers on known agent environment variables — CI jobs and shell pipes continue to produce human-readable output unless `--json` is passed explicitly.
+Under AI agents (Claude Code, Cursor, Codex, etc.), `json: true` commands auto-enable JSON mode even without `--json`, so a single command serves both humans and agents seamlessly. Detection only triggers on known agent environment variables — CI jobs and shell pipes continue to produce human-readable output unless `--json` is passed explicitly. Auto-enabled JSON mode also sets `options.json` to `true`.
 
 Set `RUNE_DISABLE_AUTO_JSON=1` to opt out of auto-activation while keeping `--json` working as usual. This is mainly intended for AI agents that are themselves developing a Rune-based CLI and need to inspect the human-facing output.
 

@@ -135,7 +135,7 @@ export function defineCommand<
     args: copyNormalizedFields<TArgsFields, CommandArgField>(input.args),
     options: copyNormalizedFields<TOptionsFields, CommandOptionField>(input.options),
     help: input.help,
-    run: input.run as DefinedCommand<
+    run: input.run as unknown as DefinedCommand<
       NormalizeFields<TArgsFields, CommandArgField>,
       NormalizeFields<TOptionsFields, CommandOptionField>,
       TJson extends true ? true : false,

@@ -241,6 +241,8 @@ options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true
 
 設定すると、フレームワークは組み込みの `--json` フラグを受け付けます。JSON モードでは、`run()` の戻り値が構造化された JSON 出力となり、`output.log()` の呼び出しは抑制されます。省略した場合は JSON モード無効のままです。
 
+`json: true` のコマンドでは、`run()` 内でフレームワーク管理の `options.json: boolean` も受け取れます。この値は JSON モードが有効なときに `true` になり、AI エージェント実行時の自動有効化も含みます。
+
 ### `help`
 
 - **型:** `(data: CommandHelpData) => string`
@@ -288,6 +290,8 @@ export default defineCommand({
 - **型:** `object`
 
 フィールド名をキーとする、パース済みのオプションの値。
+
+`json: true` のコマンドでは、このオブジェクトにフレームワーク管理の `json` boolean も含まれます。この値は現在の実行において JSON モードが有効かどうかを表わします。明示的な `--json` フラグと自動的な JSON 有効化を区別したい場合は `rawArgs` を使用してください。
 
 ### `cwd`
 
