@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
 import { CommandError } from "../../src/core/command-error";
+import { createBytesStdinSource, createProcessStdinSource } from "../../src/core/command-stdin";
 import { defineCommand } from "../../src/core/define-command";
 import { runCommandPipeline } from "../../src/core/run-command-pipeline";
 
@@ -56,6 +57,133 @@ describe("context and execution", () => {
     await runCommandPipeline({ command, argv: [] });
 
     expect(observedCwd).toBe(process.cwd());
+  });
+
+  test("injects stdin into the command context", async () => {
+    const observed = {
+      text: "",
+      isTTY: true,
+      isPiped: false,
+    };
+
+    const command = defineCommand({
+      async run(ctx) {
+        observed.text = await ctx.stdin.text();
+        observed.isTTY = ctx.stdin.isTTY;
+        observed.isPiped = ctx.stdin.isPiped;
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      stdin: createBytesStdinSource("hello\n"),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(observed).toEqual({
+      text: "hello\n",
+      isTTY: false,
+      isPiped: true,
+    });
+  });
+
+  test("reads mixed chunks from a process-like stdin source", async () => {
+    async function* stream() {
+      yield "a";
+      yield new Uint8Array([0x62]);
+    }
+
+    const command = defineCommand({
+      async run(ctx) {
+        ctx.output.log(await ctx.stdin.text());
+      },
+    });
+
+    const stdout: string[] = [];
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink: {
+        stdout(message) {
+          stdout.push(message);
+        },
+        stderr() {},
+      },
+      stdin: createProcessStdinSource(Object.assign(stream(), { isTTY: false })),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(stdout).toEqual(["ab\n"]);
+  });
+
+  test("returns a structured failure when stdin is consumed by different methods", async () => {
+    const command = defineCommand({
+      async run(ctx) {
+        await ctx.stdin.text();
+        await ctx.stdin.bytes();
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      stdin: createBytesStdinSource("hello\n"),
+    });
+
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 1,
+      error: {
+        kind: "rune/stdin-consumed",
+        message: "stdin has already been consumed",
+        exitCode: 1,
+      },
+      data: undefined,
+      jsonMode: false,
+    });
+  });
+
+  test("returns a structured failure when stdin text is consumed twice", async () => {
+    const command = defineCommand({
+      async run(ctx) {
+        await ctx.stdin.text();
+        await ctx.stdin.text();
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      stdin: createBytesStdinSource("hello\n"),
+    });
+
+    expect(result.error).toEqual({
+      kind: "rune/stdin-consumed",
+      message: "stdin has already been consumed",
+      exitCode: 1,
+    });
+  });
+
+  test("returns a structured failure when stdin bytes are consumed twice", async () => {
+    const command = defineCommand({
+      async run(ctx) {
+        await ctx.stdin.bytes();
+        await ctx.stdin.bytes();
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      stdin: createBytesStdinSource("hello\n"),
+    });
+
+    expect(result.error).toEqual({
+      kind: "rune/stdin-consumed",
+      message: "stdin has already been consumed",
+      exitCode: 1,
+    });
   });
 
   test("defaults omitted boolean options to false", async () => {

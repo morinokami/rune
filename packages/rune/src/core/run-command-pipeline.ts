@@ -1,6 +1,7 @@
 import { isAgent } from "std-env";
 
 import type { OutputSink } from "./command-output";
+import type { CommandStdinSource } from "./command-stdin";
 import type { DefinedCommand, InferCommandData } from "./command-types";
 import type { CommandArgField, CommandOptionField } from "./field-types";
 
@@ -8,6 +9,7 @@ import { resolveAgentDetected } from "./agent-detection";
 import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
 import { CommandError, type CommandFailure } from "./command-error";
 import { createOutput } from "./command-output";
+import { createCommandStdin, createProcessStdinSource } from "./command-stdin";
 import { parseCommandArgs } from "./parse-command-args";
 import { isSchemaField } from "./schema-field";
 
@@ -29,6 +31,7 @@ export interface RunCommandPipelineInput {
   readonly env?: Readonly<Record<string, string | undefined>> | undefined;
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
+  readonly stdin?: CommandStdinSource | undefined;
   /**
    * Overrides agent-environment detection for `json: true` commands. When the
    * environment looks like an AI agent, JSON mode is auto-enabled even
@@ -75,6 +78,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     env = {},
     cwd,
     sink = defaultSink,
+    stdin: stdinSource = createProcessStdinSource(),
     simulateAgent,
   } = input;
   const commandDefinition = command as unknown as DefinedCommand<
@@ -98,6 +102,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
   const jsonMode = commandDefinition.json && (explicitJsonMode || agentDetected);
 
   const output = createOutput(sink, { silentStdout: jsonMode });
+  const stdin = createCommandStdin(stdinSource);
 
   const parsed = await parseCommandArgs(effectiveCommandDefinition, parseArgv, { env });
 
@@ -135,6 +140,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       cwd: cwd ?? process.cwd(),
       rawArgs: argv,
       output,
+      stdin,
     });
 
     return {

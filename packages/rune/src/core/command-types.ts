@@ -1,4 +1,5 @@
 import type { CommandOutput } from "./command-output";
+import type { CommandStdin } from "./command-stdin";
 import type {
   CommandArgField,
   CommandOptionField,
@@ -71,6 +72,8 @@ export interface CommandContext<TOptions, TArgs> {
   readonly rawArgs: readonly string[];
   /** Framework-owned output API for producing CLI output. */
   readonly output: CommandOutput;
+  /** Framework-owned stdin API for reading piped input. */
+  readonly stdin: CommandStdin;
 }
 
 /** The command definition object accepted by {@link defineCommand}. */

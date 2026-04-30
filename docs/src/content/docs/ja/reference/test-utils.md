@@ -95,6 +95,28 @@ const result = await runCommand(command, [], {
 });
 ```
 
+#### `stdin`
+
+- **型:** `string | Buffer | Uint8Array`
+- **省略可能**
+
+`ctx.stdin` に注入される stdin です。指定した場合、`ctx.stdin.isPiped` は `true`、`ctx.stdin.isTTY` は `false` になります。省略した場合、`runCommand()` は `isPiped: false`、`isTTY: true` の空の stdin を使います。`process.stdin` は継承しません。
+
+```ts
+const command = defineCommand({
+  async run({ stdin, output }) {
+    const input = stdin.isPiped ? await stdin.text() : "";
+    output.log(input.trim());
+  },
+});
+
+test("reads stdin", async () => {
+  const result = await runCommand(command, [], { stdin: "hello\n" });
+
+  expect(result.stdout).toBe("hello\n");
+});
+```
+
 #### `globalOptions`
 
 - **型:** `CommandOptionField[]`

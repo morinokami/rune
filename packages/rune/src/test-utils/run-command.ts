@@ -3,6 +3,7 @@ import type { DefinedCommand, InferCommandData } from "../core/command-types";
 import type { RuneConfig } from "../core/define-config";
 import type { CommandArgField, CommandOptionField } from "../core/field-types";
 
+import { createBytesStdinSource } from "../core/command-stdin";
 import { runCommandPipeline } from "../core/run-command-pipeline";
 
 type RunnableCommand = Pick<
@@ -11,6 +12,8 @@ type RunnableCommand = Pick<
 > & {
   readonly run: (ctx: any) => unknown;
 };
+
+export type RunCommandStdinInput = string | Buffer | Uint8Array;
 
 export interface RunCommandContext {
   /** Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`. */
@@ -31,6 +34,11 @@ export interface RunCommandContext {
   readonly simulateAgent?: boolean;
   /** Global options to inject as if they were defined by `defineConfig({ options })`. */
   readonly globalOptions?: readonly CommandOptionField[];
+  /**
+   * Stdin bytes injected into `ctx.stdin`. When omitted, tests receive an
+   * isolated empty TTY-like stdin instead of inheriting `process.stdin`.
+   */
+  readonly stdin?: RunCommandStdinInput;
 }
 
 export interface CommandExecutionResult<TCommandData = unknown> {
@@ -125,6 +133,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
     env: context.env ?? {},
     cwd: context.cwd,
     simulateAgent: context.simulateAgent ?? false,
+    stdin: createRunCommandStdinSource(context.stdin),
     sink: {
       stdout: (message) => stdoutChunks.push(message),
       stderr: (message) => stderrChunks.push(message),
@@ -159,6 +168,14 @@ export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
       globalOptions: config.options,
     });
   };
+}
+
+function createRunCommandStdinSource(input: RunCommandStdinInput | undefined) {
+  if (input === undefined) {
+    return createBytesStdinSource(new Uint8Array(), { isTTY: true, isPiped: false });
+  }
+
+  return createBytesStdinSource(input);
 }
 
 function renderHumanError(error: CommandFailure): string {

@@ -95,6 +95,31 @@ const result = await runCommand(command, [], {
 });
 ```
 
+#### `stdin`
+
+- **Type:** `string | Buffer | Uint8Array`
+- **Optional**
+
+Stdin injected into `ctx.stdin`. When provided, `ctx.stdin.isPiped` is `true`
+and `ctx.stdin.isTTY` is `false`. When omitted, `runCommand()` uses an isolated
+empty stdin with `isPiped: false` and `isTTY: true`; it does not inherit
+`process.stdin`.
+
+```ts
+const command = defineCommand({
+  async run({ stdin, output }) {
+    const input = stdin.isPiped ? await stdin.text() : "";
+    output.log(input.trim());
+  },
+});
+
+test("reads stdin", async () => {
+  const result = await runCommand(command, [], { stdin: "hello\n" });
+
+  expect(result.stdout).toBe("hello\n");
+});
+```
+
 #### `globalOptions`
 
 - **Type:** `CommandOptionField[]`

@@ -47,3 +47,18 @@ test("runCommand exposes undefined data for non-json commands", async () => {
 
   expectTypeOf(result.data).toEqualTypeOf<undefined>();
 });
+
+test("runCommand accepts stdin context and exposes ctx.stdin", async () => {
+  const command = defineCommand({
+    async run(ctx) {
+      expectTypeOf(ctx.stdin.isTTY).toEqualTypeOf<boolean>();
+      expectTypeOf(ctx.stdin.isPiped).toEqualTypeOf<boolean>();
+      expectTypeOf(await ctx.stdin.text()).toEqualTypeOf<string>();
+      expectTypeOf(await ctx.stdin.bytes()).toEqualTypeOf<Uint8Array>();
+    },
+  });
+
+  await runCommand(command, [], { stdin: "hello" });
+  await runCommand(command, [], { stdin: Buffer.from("hello") });
+  await runCommand(command, [], { stdin: new Uint8Array([1, 2, 3]) });
+});

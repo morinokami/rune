@@ -166,6 +166,23 @@ test("inherits host env explicitly", async () => {
 });
 ```
 
+stdin も注入可能です。`ctx.stdin` を読むコマンドも、子プロセスを起動せずに隔離された状態でテストできます:
+
+```ts
+const command = defineCommand({
+  async run({ stdin, output }) {
+    const input = stdin.isPiped ? await stdin.text() : "";
+    output.log(input.trim());
+  },
+});
+
+test("reads injected stdin", async () => {
+  const result = await runCommand(command, [], { stdin: "hello\n" });
+
+  expect(result.stdout).toBe("hello\n");
+});
+```
+
 ## グローバルオプションを使うテスト
 
 プロジェクトで `defineConfig({ options })` を定義している場合は、プロジェクト設定を組み込んだヘルパーを一度作成し、`runCommand()` と同じように使います:
