@@ -20,6 +20,16 @@ function createCommandContext(
     options: { yes: false, install: true, git: true },
     rawArgs: [],
     output,
+    stdin: {
+      isTTY: true,
+      isPiped: false,
+      async text() {
+        return "";
+      },
+      async bytes() {
+        return new Uint8Array();
+      },
+    },
     ...overrides,
   };
 }
