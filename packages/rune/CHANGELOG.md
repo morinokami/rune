@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.46
+
+### Patch Changes
+
+- [#165](https://github.com/morinokami/rune/pull/165) [`0c8d883`](https://github.com/morinokami/rune/commit/0c8d883fa4e5649016ebf5b821405dd2c0d989b6) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add stdin support to command context
+
 ## 0.0.45
 
 ### Patch Changes
