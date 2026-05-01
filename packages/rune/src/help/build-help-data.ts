@@ -219,7 +219,7 @@ async function buildOptionHelpEntry(field: CommandOptionField): Promise<UserOpti
 async function resolveFieldRequired(field: CommandArgField | CommandOptionField): Promise<boolean> {
   if (isSchemaField(field)) {
     const omittedValidation = await field.schema["~standard"].validate(undefined);
-    return !("value" in omittedValidation);
+    return Boolean(omittedValidation.issues?.length) || !("value" in omittedValidation);
   }
 
   return field.required === true && field.default === undefined;
