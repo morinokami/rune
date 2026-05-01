@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.47
+
+### Patch Changes
+
+- [#169](https://github.com/morinokami/rune/pull/169) [`e30e538`](https://github.com/morinokami/rune/commit/e30e538a6d8503e94d31318d0407d74e63d2a82a) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): treat schema results with issues as failures even when value is present
+
 ## 0.0.46
 
 ### Patch Changes
