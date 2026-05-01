@@ -462,19 +462,19 @@ async function validateSchemaValue(
 ): Promise<ParsedFieldValue> {
   const result = await schema["~standard"].validate(rawValue);
 
-  if ("value" in result) {
-    return {
-      ok: true,
-      value: result.value,
-    };
-  }
-
   if (result.issues?.length) {
     return {
       ok: false,
       error: {
         message: result.issues.map((issue: { message: string }) => issue.message).join("\n"),
       },
+    };
+  }
+
+  if ("value" in result) {
+    return {
+      ok: true,
+      value: result.value,
     };
   }
 

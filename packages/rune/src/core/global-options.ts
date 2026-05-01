@@ -11,7 +11,7 @@ export async function validateConfigOptionsForSync(
     if (isSchemaField(field)) {
       const omitted = await field.schema["~standard"].validate(undefined);
 
-      if (!("value" in omitted)) {
+      if (omitted.issues?.length || !("value" in omitted)) {
         throw new Error(`Config option "${field.name}" must be optional.`);
       }
     }
