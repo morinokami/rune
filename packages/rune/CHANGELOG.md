@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.0.48
+
+### Patch Changes
+
+- [#171](https://github.com/morinokami/rune/pull/171) [`3fc6a8a`](https://github.com/morinokami/rune/commit/3fc6a8a10ec5e80bf272c6c23b71bbc2dbd29ed7) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): emit generated global-options.d.ts as a module
+
 ## 0.0.47
 
 ### Patch Changes
