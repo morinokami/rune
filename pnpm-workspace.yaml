@@ -20,7 +20,7 @@ catalog:
   oxc-parser: 0.128.0
   pkg-pr-new: 0.0.66
   publint: 0.3.18
-  rolldown: 1.0.0-rc.17
+  rolldown: 1.0.0-rc.18
   sharp: 0.34.5
   sherif: 1.11.1
   starlight-dot-md: 0.2.1
