@@ -4,7 +4,6 @@ export default defineConfig({
   staged: {
     "*": "vp check --fix",
   },
-  lint: { options: { typeAware: true, typeCheck: true } },
   fmt: {
     ignorePatterns: ["docs/**/*.{md,mdx}"],
     sortImports: {
@@ -18,5 +17,9 @@ export default defineConfig({
         "unknown",
       ],
     },
+  },
+  lint: { options: { typeAware: true, typeCheck: true } },
+  run: {
+    cache: true,
   },
 });
