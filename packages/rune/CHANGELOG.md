@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.1.0
+
+### Minor Changes
+
+- [#179](https://github.com/morinokami/rune/pull/179) [`a22a0f2`](https://github.com/morinokami/rune/commit/a22a0f2980fb0aa77f7de4e8259ff686157a75f2) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add JSON Lines output mode
+
 ## 0.0.48
 
 ### Patch Changes
