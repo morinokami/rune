@@ -9,7 +9,7 @@
     "rune": "rune"
   },
   "devDependencies": {
-    "@rune-cli/rune": "^0.0.48",
+    "@rune-cli/rune": "^0.1.0",
     "@types/node": "^22.19.17",
     "arktype": "^2.2.0",
     "typescript": "^6.0.3",
