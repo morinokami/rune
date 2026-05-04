@@ -98,6 +98,11 @@ export type UserOptionHelpEntry =
   | EnumOptionHelpEntry
   | SchemaOptionHelpEntry;
 
+export type CommandStdoutContract =
+  | { readonly kind: "text"; readonly jsonFlag: false }
+  | { readonly kind: "text"; readonly jsonFlag: true }
+  | { readonly kind: "json-lines"; readonly jsonFlag: false };
+
 // ---------------------------------------------------------------------------
 // Public types – CommandHelpData
 // ---------------------------------------------------------------------------
@@ -120,6 +125,8 @@ export interface CommandHelpData {
   readonly options: readonly UserOptionHelpEntry[];
   /** Framework-managed options (e.g. `--help`, `--json`). */
   readonly frameworkOptions: readonly FrameworkOptionHelpEntry[];
+  /** Command stdout contract. */
+  readonly stdout?: CommandStdoutContract;
   /** Usage examples. */
   readonly examples: readonly string[];
 }

@@ -11,8 +11,8 @@ export interface CommandOutput {
 
 /** Pluggable destination for formatted output strings. */
 export interface OutputSink {
-  stdout(message: string): void;
-  stderr(message: string): void;
+  stdout(message: string): void | Promise<void>;
+  stderr(message: string): void | Promise<void>;
 }
 
 export function createOutput(
@@ -24,12 +24,18 @@ export function createOutput(
   return {
     log(...args: unknown[]) {
       if (!silentStdout) {
-        sink.stdout(`${format(...args)}\n`);
+        writeAndIgnoreErrors(sink.stdout(`${format(...args)}\n`));
       }
     },
 
     error(...args: unknown[]) {
-      sink.stderr(`${format(...args)}\n`);
+      writeAndIgnoreErrors(sink.stderr(`${format(...args)}\n`));
     },
   };
+}
+
+function writeAndIgnoreErrors(result: void | Promise<void>): void {
+  if (result && typeof result === "object" && "catch" in result) {
+    result.catch(() => {});
+  }
 }

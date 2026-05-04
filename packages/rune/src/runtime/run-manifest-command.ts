@@ -163,6 +163,14 @@ async function runResolvedCommand(
 function emitCommandResult(result: RunCommandPipelineResult): number {
   let exitCode = result.exitCode;
 
+  if (result.jsonlMode) {
+    if (result.error) {
+      writeJsonToStderr(renderJsonError(result.error));
+    }
+
+    return exitCode;
+  }
+
   if (result.jsonMode) {
     if (result.exitCode === 0) {
       const payload = result.data === undefined ? null : result.data;
@@ -294,6 +302,24 @@ function writeJsonToStdout(
   } catch {
     process.stdout.write(`${JSON.stringify(fallback)}\n`);
     process.stderr.write("Failed to serialize command output\n");
+    return false;
+  }
+}
+
+function writeJsonToStderr(
+  value: unknown,
+  fallback: unknown = {
+    error: {
+      kind: "rune/unexpected",
+      message: "Failed to serialize command error",
+    },
+  },
+): boolean {
+  try {
+    process.stderr.write(`${JSON.stringify(value)}\n`);
+    return true;
+  } catch {
+    process.stderr.write(`${JSON.stringify(fallback)}\n`);
     return false;
   }
 }

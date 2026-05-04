@@ -21,7 +21,7 @@ Rune はコマンドをインプロセスでテストするための `runCommand
 - `stdout`: 標準出力にキャプチャされた文字列
 - `stderr`: 標準エラー出力にキャプチャされた文字列
 - `error`: コマンドが失敗した場合の構造化されたエラー情報
-- `data`: `json: true` のコマンドにおける `run()` の戻り値（コマンドの `run()` の戻り値型から推論されます）
+- `output`: 出力データを表す discriminated union（`text`、`json`、または `jsonl`）
 
 ## 基本的なテスト
 
@@ -90,7 +90,7 @@ test("returns structured error", async () => {
 
 ## JSON モードのテスト
 
-`json: true` が設定されたコマンドでは、`run()` の戻り値が `result.data` に格納されます。`--json` フラグを渡すと `output.log()` による出力が抑制され、`output.error()` は引き続き出力されます:
+`json: true` が設定されたコマンドでは、`run()` の戻り値が `result.output.document` に格納されます。`--json` フラグを渡すと `output.log()` による出力が抑制され、`output.error()` は引き続き出力されます:
 
 ```ts
 import { expect, test } from "vitest";
@@ -105,15 +105,18 @@ const command = defineCommand({
   },
 });
 
-test("returns structured data", async () => {
+test("returns structured document", async () => {
   const result = await runCommand(command, ["--json"]);
 
   expect(result.stdout).toBe("");
-  expect(result.data).toEqual({ items: [1, 2, 3] });
+  expect(result.output).toEqual({
+    kind: "json",
+    document: { items: [1, 2, 3] },
+  });
 });
 ```
 
-`--json` フラグを渡さない場合でも `result.data` は取得できます。`--json` フラグは `output.log()` の出力を制御するものであり、`data` のキャプチャには影響しません。
+`--json` フラグを渡さない場合でも `result.output.document` は取得できます。`--json` フラグは `output.log()` の出力を制御するものであり、document のキャプチャには影響しません。
 
 ## コンテキストの注入
 

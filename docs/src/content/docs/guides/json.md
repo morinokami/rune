@@ -25,7 +25,7 @@ export default defineCommand({
 });
 ```
 
-Without `json`, `run()` is typed as returning `void`. When `json: true` is set, `run()` can return a value, and that return type is preserved by helpers such as `runCommand().data`. The return value must be serializable by `JSON.stringify()`. If a non-serializable value such as `BigInt` is returned, Rune treats it as an error.
+Without `json`, `run()` is typed as returning `void`. When `json: true` is set, `run()` can return a value, and that return type is preserved by helpers such as `runCommand().output.document`. The return value must be serializable by `JSON.stringify()`. If a non-serializable value such as `BigInt` is returned, Rune treats it as an error.
 
 Commands with `json: true` also receive `options.json` in `run()`. The value reflects the effective JSON mode for the current invocation: it is `true` when the user passed `--json` or when Rune auto-enabled JSON mode under an AI agent, and `false` otherwise. To check whether the user explicitly passed the flag, inspect `rawArgs`.
 
@@ -115,6 +115,35 @@ The error payload includes the following fields:
 - `message`: the error message
 - `hint`: a hint for resolution (when specified via [`CommandError`](/reference/command-error/))
 - `details`: additional structured data (only when serializable)
+
+## JSON Lines output
+
+Use `jsonl: true` for commands whose stdout contract is a stream of JSON records, also known as JSON Lines or NDJSON. Unlike `json: true`, this is not activated by a flag: the command always emits JSON Lines.
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Stream events",
+  jsonl: true,
+  async *run() {
+    yield { id: "a", status: "ready" };
+    yield { id: "b", status: "done" };
+  },
+});
+```
+
+Each yielded record is serialized as one compact JSON line:
+
+```bash
+$ your-cli events
+{"id":"a","status":"ready"}
+{"id":"b","status":"done"}
+```
+
+In JSON Lines mode, `output.log()` is always suppressed and `output.error()` still writes to stderr. `jsonl: true` cannot be combined with `json: true`, and Rune does not add a `--jsonl` flag. If a CLI needs both a human-readable view and a JSON Lines stream, prefer separate commands so each command has one predictable stdout contract.
+
+If a JSON Lines command fails after emitting records, already-written stdout records remain valid. Rune reports the final error as a compact JSON error object on stderr; stderr may also contain human-readable `output.error()` diagnostics, so only stdout is guaranteed to be JSON Lines.
 
 ## Testing
 

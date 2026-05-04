@@ -42,6 +42,7 @@ describe("context and execution", () => {
       exitCode: 0,
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 
@@ -141,6 +142,7 @@ describe("context and execution", () => {
       },
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 
@@ -298,6 +300,7 @@ describe("output and json mode", () => {
       exitCode: 0,
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
     });
     expect(stdout).toEqual(["hello world\n"]);
     expect(stderr).toEqual(["bad input\n"]);
@@ -332,6 +335,7 @@ describe("output and json mode", () => {
       exitCode: 0,
       data: { ok: true },
       jsonMode: true,
+      jsonlMode: false,
     });
     expect(stdout).toEqual([]);
     expect(stderr).toEqual(["warning\n"]);
@@ -361,6 +365,7 @@ describe("output and json mode", () => {
       exitCode: 0,
       data: { value: "--json" },
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 
@@ -453,6 +458,265 @@ describe("output and json mode", () => {
       exitCode: 0,
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
+    });
+  });
+
+  test("streams JSON Lines records and suppresses stdout output calls", async () => {
+    const { sink, stdout, stderr } = createCapturingSink();
+    let observedRawArgs: readonly string[] = [];
+    let observedJsonOption: unknown = "unset";
+
+    const command = defineCommand({
+      jsonl: true,
+      async *run(ctx) {
+        observedRawArgs = ctx.rawArgs;
+        observedJsonOption = "json" in ctx.options ? ctx.options.json : undefined;
+        ctx.output.log("hidden");
+        ctx.output.error("diagnostic");
+        yield { id: "a" };
+        yield { id: "b" };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink,
+      simulateAgent: true,
+    });
+
+    expect(observedRawArgs).toEqual([]);
+    expect(observedJsonOption).toBeUndefined();
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: undefined,
+      records: [{ id: "a" }, { id: "b" }],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+    expect(stdout).toEqual(['{"id":"a"}\n', '{"id":"b"}\n']);
+    expect(stderr).toEqual(["diagnostic\n"]);
+  });
+
+  test("streams JSON Lines records from a synchronous iterable", async () => {
+    const { sink, stdout } = createCapturingSink();
+
+    const command = defineCommand({
+      jsonl: true,
+      run() {
+        return [{ id: "a" }, { id: "b" }];
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink,
+    });
+
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: undefined,
+      records: [{ id: "a" }, { id: "b" }],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+    expect(stdout).toEqual(['{"id":"a"}\n', '{"id":"b"}\n']);
+  });
+
+  test("rejects --json before parsing JSON Lines command args", async () => {
+    let called = false;
+
+    const command = defineCommand({
+      jsonl: true,
+      options: [{ name: "name", type: "string", required: true }],
+      async *run() {
+        called = true;
+        yield { ok: true };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: ["--json"],
+    });
+
+    expect(called).toBe(false);
+    expect(result).toEqual({
+      parseOk: false,
+      exitCode: 1,
+      error: {
+        kind: "rune/invalid-arguments",
+        message: "--json is not supported by JSON Lines commands",
+        exitCode: 1,
+      },
+      data: undefined,
+      records: [],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+  });
+
+  test("does not reject --json after -- for JSON Lines commands", async () => {
+    const { sink, stdout } = createCapturingSink();
+
+    const command = defineCommand({
+      jsonl: true,
+      args: [{ name: "value", type: "string", required: true }],
+      async *run(ctx) {
+        yield { value: ctx.args.value };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: ["--", "--json"],
+      sink,
+    });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: 0,
+      records: [{ value: "--json" }],
+      jsonlMode: true,
+    });
+    expect(stdout).toEqual(['{"value":"--json"}\n']);
+  });
+
+  test("returns emitted records when a JSON Lines stream fails mid-stream", async () => {
+    const { sink, stdout, stderr } = createCapturingSink();
+
+    const command = defineCommand({
+      jsonl: true,
+      async *run(ctx) {
+        yield { id: 1 };
+        ctx.output.error("warning");
+        yield { id: 2 };
+        throw new CommandError({
+          kind: "stream/aborted",
+          message: "Lost connection",
+          exitCode: 7,
+        });
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink,
+    });
+
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 7,
+      error: {
+        kind: "stream/aborted",
+        message: "Lost connection",
+        exitCode: 7,
+      },
+      data: undefined,
+      records: [{ id: 1 }, { id: 2 }],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+    expect(stdout).toEqual(['{"id":1}\n', '{"id":2}\n']);
+    expect(stderr).toEqual(["warning\n"]);
+  });
+
+  test("fails JSON Lines commands when a record cannot be serialized", async () => {
+    const { sink, stdout } = createCapturingSink();
+
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: "ok" };
+        yield undefined;
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink,
+    });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: 1,
+      error: {
+        kind: "rune/serialization-failed",
+        message: "Failed to serialize JSON Lines record",
+        details: { index: 1, reason: "JSON.stringify returned undefined" },
+        exitCode: 1,
+      },
+      records: [{ id: "ok" }],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+    expect(stdout).toEqual(['{"id":"ok"}\n']);
+  });
+
+  test("fails JSON Lines commands when JSON.stringify throws", async () => {
+    const { sink, stdout } = createCapturingSink();
+
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: "ok" };
+        yield { value: BigInt(42) };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink,
+    });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: 1,
+      error: {
+        kind: "rune/serialization-failed",
+        message: "Failed to serialize JSON Lines record",
+        details: { index: 1, reason: expect.stringContaining("BigInt") },
+        exitCode: 1,
+      },
+      records: [{ id: "ok" }],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+    expect(stdout).toEqual(['{"id":"ok"}\n']);
+  });
+
+  test("fails JSON Lines commands that do not return an iterable", async () => {
+    const command = defineCommand({
+      jsonl: true,
+      run() {
+        return undefined as unknown as Iterable<unknown>;
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+    });
+
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 1,
+      error: {
+        kind: "rune/invalid-command-result",
+        message: "JSON Lines commands must return an iterable",
+        exitCode: 1,
+      },
+      data: undefined,
+      records: [],
+      jsonMode: false,
+      jsonlMode: true,
     });
   });
 });
@@ -481,6 +745,7 @@ describe("parse failures", () => {
       },
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 });
@@ -536,6 +801,7 @@ describe("execution failures", () => {
         },
         data: undefined,
         jsonMode: false,
+        jsonlMode: false,
       });
     },
   );
@@ -567,6 +833,7 @@ describe("execution failures", () => {
       },
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 
@@ -597,6 +864,7 @@ describe("execution failures", () => {
       },
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 
@@ -623,6 +891,7 @@ describe("execution failures", () => {
       },
       data: undefined,
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 
@@ -654,6 +923,7 @@ describe("execution failures", () => {
         exitCode: expectedExitCode,
       },
       jsonMode: false,
+      jsonlMode: false,
     });
   });
 });

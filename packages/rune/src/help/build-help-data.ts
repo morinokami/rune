@@ -103,6 +103,9 @@ export async function buildCommandHelpData(
     arguments: argumentEntries,
     options: optionEntries,
     frameworkOptions,
+    stdout: command.jsonl
+      ? { kind: "json-lines", jsonFlag: false }
+      : { kind: "text", jsonFlag: command.json },
     examples: [...command.examples],
   };
 }

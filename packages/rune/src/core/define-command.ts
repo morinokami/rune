@@ -5,6 +5,7 @@ import type {
   ValidateDuplicateShortNames,
   ValidateFieldNames,
   ValidateNegationCollision,
+  ValidateOutputModes,
   ValidateReservedNames,
   ValidateUniqueNames,
 } from "./validate-types";
@@ -82,22 +83,32 @@ export function defineCommand<
   const TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   const TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
   const TJson extends true | undefined = undefined,
-  TRunResult = TJson extends true ? unknown : void | Promise<void>,
+  const TJsonl extends true | undefined = undefined,
+  TRunResult = TJson extends true ? unknown : TJsonl extends true ? unknown : void | Promise<void>,
+  TJsonlRecord = unknown,
 >(
-  input: DefineCommandInput<TArgsFields, TOptionsFields, TJson, TRunResult> &
+  input: DefineCommandInput<TArgsFields, TOptionsFields, TJson, TJsonl, TRunResult, TJsonlRecord> &
     ValidateArgOrder<TArgsFields> &
     ValidateFieldNames<TArgsFields, TOptionsFields> &
     ValidateUniqueNames<TArgsFields, TOptionsFields> &
     ValidateDuplicateShortNames<TOptionsFields> &
     ValidateNegationCollision<TOptionsFields> &
-    ValidateReservedNames<TOptionsFields, TJson>,
+    ValidateReservedNames<TOptionsFields, TJson, TJsonl> &
+    ValidateOutputModes<TJson, TJsonl>,
 ): DefinedCommand<
   NormalizeFields<TArgsFields, CommandArgField>,
   NormalizeFields<TOptionsFields, CommandOptionField>,
   TJson extends true ? true : false,
-  TJson extends true ? Awaited<TRunResult> : undefined
+  TJsonl extends true ? true : false,
+  TJson extends true ? Awaited<TRunResult> : undefined,
+  TJsonl extends true ? TJsonlRecord : never
 > {
   const jsonEnabled = input.json === true;
+  const jsonlEnabled = input.jsonl === true;
+
+  if (jsonEnabled && jsonlEnabled) {
+    throw new Error("Command cannot enable both json and jsonl output modes.");
+  }
 
   // Validate command-level metadata first, then per-field format/reserved-name
   // rules, and only then cross-field relationships like duplicates/collisions.
@@ -112,7 +123,7 @@ export function defineCommand<
   }
   if (input.options) {
     validateOptionNameFormats(input.options);
-    validateReservedNames(input.options, jsonEnabled);
+    validateReservedNames(input.options, jsonEnabled || jsonlEnabled);
     validateOptionShortFormats(input.options);
     validateOptionMultipleFlags(input.options);
     validateOptionEnvVars(input.options);
@@ -126,10 +137,13 @@ export function defineCommand<
     NormalizeFields<TArgsFields, CommandArgField>,
     NormalizeFields<TOptionsFields, CommandOptionField>,
     TJson extends true ? true : false,
-    TJson extends true ? Awaited<TRunResult> : undefined
+    TJsonl extends true ? true : false,
+    TJson extends true ? Awaited<TRunResult> : undefined,
+    TJsonl extends true ? TJsonlRecord : never
   > = {
     description: input.description,
     json: jsonEnabled as TJson extends true ? true : false,
+    jsonl: jsonlEnabled as TJsonl extends true ? true : false,
     aliases: [...(input.aliases ?? [])],
     examples: [...(input.examples ?? [])],
     args: copyNormalizedFields<TArgsFields, CommandArgField>(input.args),
@@ -139,7 +153,9 @@ export function defineCommand<
       NormalizeFields<TArgsFields, CommandArgField>,
       NormalizeFields<TOptionsFields, CommandOptionField>,
       TJson extends true ? true : false,
-      TJson extends true ? Awaited<TRunResult> : undefined
+      TJsonl extends true ? true : false,
+      TJson extends true ? Awaited<TRunResult> : undefined,
+      TJsonl extends true ? TJsonlRecord : never
     >["run"],
   };
 

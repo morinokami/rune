@@ -33,8 +33,8 @@ describe("execution capture", () => {
       exitCode: 0,
       stdout: "hello rune\n",
       stderr: "",
-      data: undefined,
       error: undefined,
+      output: { kind: "text" },
     });
   });
 
@@ -178,7 +178,7 @@ describe("execution capture", () => {
         message: "boom",
         exitCode: 1,
       },
-      data: undefined,
+      output: { kind: "text" },
     });
   });
 
@@ -206,7 +206,49 @@ describe("execution capture", () => {
         hint: "Create rune.config.ts",
         exitCode: 7,
       },
-      data: undefined,
+      output: { kind: "text" },
+    });
+  });
+
+  test("runCommand captures JSON documents under output", async () => {
+    const command = defineCommand({
+      json: true,
+      run(ctx) {
+        ctx.output.log("hidden");
+        return { items: [1, 2, 3] };
+      },
+    });
+
+    const result = await runCommand(command, ["--json"]);
+
+    expect(result).toEqual({
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+      error: undefined,
+      output: { kind: "json", document: { items: [1, 2, 3] } },
+    });
+  });
+
+  test("runCommand captures JSON Lines stdout and records", async () => {
+    const command = defineCommand({
+      jsonl: true,
+      async *run(ctx) {
+        ctx.output.log("hidden");
+        ctx.output.error("diagnostic");
+        yield { id: "a" };
+        yield { id: "b" };
+      },
+    });
+
+    const result = await runCommand(command);
+
+    expect(result).toEqual({
+      exitCode: 0,
+      stdout: '{"id":"a"}\n{"id":"b"}\n',
+      stderr: "diagnostic\n",
+      error: undefined,
+      output: { kind: "jsonl", records: [{ id: "a" }, { id: "b" }] },
     });
   });
 });
@@ -274,5 +316,29 @@ describe("human error rendering", () => {
       message: "Missing required argument:\n  id",
       exitCode: 1,
     });
+  });
+
+  test("runCommand writes JSON error envelopes to stderr for JSON Lines failures", async () => {
+    const command = defineCommand({
+      jsonl: true,
+      async *run(ctx) {
+        ctx.output.error("diagnostic");
+        yield { id: "a" };
+        throw new CommandError({
+          kind: "stream/aborted",
+          message: "Lost connection",
+          hint: "Retry later",
+        });
+      },
+    });
+
+    const result = await runCommand(command);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe('{"id":"a"}\n');
+    expect(result.stderr).toBe(
+      'diagnostic\n{"error":{"kind":"stream/aborted","message":"Lost connection","hint":"Retry later"}}\n',
+    );
+    expect(result.output.records).toEqual([{ id: "a" }]);
   });
 });

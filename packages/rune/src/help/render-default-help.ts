@@ -215,6 +215,10 @@ function renderCommandHelpFromData(data: CommandHelpData): string {
 
   parts.push(`Usage: ${usageParts}`);
 
+  if (data.stdout?.kind === "json-lines") {
+    parts.push("Output: JSON Lines");
+  }
+
   if (data.subcommands.length > 0) {
     parts.push(
       `Subcommands:\n${formatSectionEntries(

@@ -9,6 +9,7 @@ import {
   type InferCommandArgs,
   type InferCommandData,
   type InferCommandOptions,
+  type InferCommandRecords,
 } from "../../src/core/command-types";
 import { defineCommand } from "../../src/core/define-command";
 
@@ -117,6 +118,33 @@ test("defineCommand preserves json payload types", () => {
   expectTypeOf<InferCommandData<typeof jsonCommand>>().toEqualTypeOf<{
     items: readonly [1, 2, 3];
   }>();
+});
+
+test("defineCommand preserves jsonl record types", () => {
+  const jsonlCommand = defineCommand({
+    jsonl: true,
+    async *run() {
+      yield { id: "a", status: "ready" as const };
+    },
+  });
+
+  expectTypeOf<InferCommandOptions<typeof jsonlCommand>>().toEqualTypeOf<{}>();
+  expectTypeOf<InferCommandData<typeof jsonlCommand>>().toEqualTypeOf<undefined>();
+  expectTypeOf<InferCommandRecords<typeof jsonlCommand>>().toEqualTypeOf<{
+    id: string;
+    status: "ready";
+  }>();
+});
+
+test("defineCommand infers jsonl record types from returned iterables", () => {
+  const jsonlCommand = defineCommand({
+    jsonl: true,
+    async run() {
+      return [{ id: 1 }];
+    },
+  });
+
+  expectTypeOf<InferCommandRecords<typeof jsonlCommand>>().toEqualTypeOf<{ id: number }>();
 });
 
 test("defineCommand rejects required: false as a marker-style boolean", () => {
@@ -492,6 +520,24 @@ describe("type-level reserved name detection", () => {
       run: () => unknown;
     }) => {
       // @ts-expect-error reserved option name in json mode
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand rejects json option when jsonl mode is enabled at compile time", () => {
+    void ((input: {
+      jsonl: true;
+      options: [{ name: "json"; type: "boolean" }];
+      run: () => AsyncIterable<unknown>;
+    }) => {
+      // @ts-expect-error reserved option name in jsonl mode
+      defineCommand(input);
+    });
+  });
+
+  test("defineCommand rejects combined json and jsonl modes at compile time", () => {
+    void ((input: { json: true; jsonl: true; run: () => AsyncIterable<unknown> }) => {
+      // @ts-expect-error output modes are mutually exclusive
       defineCommand(input);
     });
   });

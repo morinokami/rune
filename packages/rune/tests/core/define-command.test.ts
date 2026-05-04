@@ -110,7 +110,20 @@ describe("normalization and pass-through", () => {
     });
 
     expect(command.json).toBe(true);
+    expect(command.jsonl).toBe(false);
     expect(command.help).toBe(help);
+  });
+
+  test("defineCommand preserves jsonl mode", () => {
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: "a" };
+      },
+    });
+
+    expect(command.json).toBe(false);
+    expect(command.jsonl).toBe(true);
   });
 
   test("defineCommand preserves schema-backed and default-backed field definitions", () => {
@@ -521,6 +534,32 @@ describe("reserved name validation", () => {
         },
       }),
     ).toThrow('Option name "json" is reserved by the framework.');
+  });
+
+  test("defineCommand rejects json option when jsonl mode is enabled", () => {
+    expect(() =>
+      // @ts-expect-error reserved option name in jsonl mode
+      defineCommand({
+        jsonl: true,
+        options: [{ name: "json", type: "boolean" }],
+        async *run() {
+          yield {};
+        },
+      }),
+    ).toThrow('Option name "json" is reserved by the framework.');
+  });
+
+  test("defineCommand rejects combined json and jsonl modes", () => {
+    expect(() =>
+      // @ts-expect-error output modes are mutually exclusive
+      defineCommand({
+        json: true,
+        jsonl: true,
+        async *run() {
+          yield {};
+        },
+      }),
+    ).toThrow("Command cannot enable both json and jsonl output modes.");
   });
 });
 
