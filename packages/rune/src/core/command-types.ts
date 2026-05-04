@@ -52,6 +52,19 @@ type JsonModeOption<TJson extends boolean | undefined> = TJson extends true
   ? { readonly json: boolean }
   : {};
 
+type JsonLineIterable<T> = Iterable<T> | AsyncIterable<T>;
+export type JsonLineRunResult<T> =
+  | JsonLineIterable<T>
+  | Promise<Iterable<T>>
+  | Promise<AsyncIterable<T>>;
+
+type InferJsonLineRecordFromRunResult<TRunResult> =
+  Awaited<TRunResult> extends AsyncIterable<infer TRecord>
+    ? TRecord
+    : Awaited<TRunResult> extends Iterable<infer TRecord>
+      ? TRecord
+      : never;
+
 type CommandContextOptions<
   TOptionsFields extends readonly CommandOptionField[],
   TJson extends boolean | undefined,
@@ -81,7 +94,9 @@ export interface DefineCommandInput<
   TArgsFields extends readonly CommandArgField[] | undefined = undefined,
   TOptionsFields extends readonly CommandOptionField[] | undefined = undefined,
   TJson extends true | undefined = undefined,
+  TJsonl extends true | undefined = undefined,
   TRunResult = unknown,
+  TJsonlRecord = unknown,
 > {
   /** One-line summary shown in `--help` output. */
   readonly description?: string | undefined;
@@ -102,6 +117,11 @@ export interface DefineCommandInput<
    * disable JSON mode.
    */
   readonly json?: TJson;
+  /**
+   * When `true`, the command stdout contract is JSON Lines. The return value of
+   * `run()` must be an iterable whose records are serialized one per line.
+   */
+  readonly jsonl?: TJsonl;
   /**
    * Positional arguments declared in the order they appear on the command line.
    * Required arguments must come before optional ones.
@@ -139,7 +159,11 @@ export interface DefineCommandInput<
       CommandContextOptions<NormalizeFields<TOptionsFields, CommandOptionField>, TJson>,
       InferNamedFields<NormalizeFields<TArgsFields, CommandArgField>>
     >,
-  ) => TJson extends true ? TRunResult : void | Promise<void>;
+  ) => TJsonl extends true
+    ? JsonLineRunResult<TJsonlRecord>
+    : TJson extends true
+      ? TRunResult
+      : void | Promise<void>;
 }
 
 // The normalized command object returned by `defineCommand`.
@@ -147,10 +171,13 @@ export interface DefinedCommand<
   TArgsFields extends readonly CommandArgField[] = readonly [],
   TOptionsFields extends readonly CommandOptionField[] = readonly [],
   TJson extends boolean = boolean,
+  TJsonl extends boolean = boolean,
   TCommandData = TJson extends true ? unknown : undefined,
+  TCommandRecord = TJsonl extends true ? unknown : never,
 > {
   readonly description?: string | undefined;
   readonly json: TJson;
+  readonly jsonl: TJsonl;
   readonly aliases: readonly string[];
   readonly examples: readonly string[];
   readonly args: TArgsFields;
@@ -161,7 +188,11 @@ export interface DefinedCommand<
       CommandContextOptions<TOptionsFields, TJson>,
       InferNamedFields<TArgsFields>
     >,
-  ) => TJson extends true ? TCommandData | Promise<TCommandData> : void | Promise<void>;
+  ) => TJsonl extends true
+    ? JsonLineRunResult<TCommandRecord>
+    : TJson extends true
+      ? TCommandData | Promise<TCommandData>
+      : void | Promise<void>;
 }
 
 // Extracts the inferred options object from a defined command.
@@ -176,10 +207,24 @@ export type InferCommandArgs<TCommand> =
 
 // Extracts the inferred JSON payload type from a defined command.
 export type InferCommandData<TCommand> = TCommand extends {
-  readonly json: true;
-  readonly run: (...args: any[]) => infer TRunResult;
+  readonly jsonl: true;
 }
-  ? Awaited<TRunResult>
-  : TCommand extends { readonly json: boolean }
-    ? undefined
-    : never;
+  ? undefined
+  : TCommand extends {
+        readonly json: true;
+        readonly run: (...args: any[]) => infer TRunResult;
+      }
+    ? Awaited<TRunResult>
+    : TCommand extends { readonly json: boolean }
+      ? undefined
+      : never;
+
+export type InferCommandRecords<TCommand> =
+  TCommand extends DefinedCommand<any, any, any, true, any, infer TCommandRecord>
+    ? TCommandRecord
+    : TCommand extends {
+          readonly jsonl: true;
+          readonly run: (...args: any[]) => infer TRunResult;
+        }
+      ? InferJsonLineRecordFromRunResult<TRunResult>
+      : never;

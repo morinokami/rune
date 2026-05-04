@@ -91,6 +91,26 @@ describe("renderDefaultHelp", () => {
     expect(help).toContain("  $ mycli create my-app");
   });
 
+  test("renders JSON Lines output contracts for command help", () => {
+    const data: CommandHelpData = {
+      kind: "command",
+      cliName: "mycli",
+      pathSegments: ["events"],
+      description: "Stream events",
+      subcommands: [],
+      arguments: [],
+      options: [],
+      frameworkOptions: [{ name: "help", short: "h", description: "Show help" }],
+      stdout: { kind: "json-lines", jsonFlag: false },
+      examples: [],
+    };
+
+    const help = renderDefaultHelp(data);
+
+    expect(help).toContain("Usage: mycli events");
+    expect(help).toContain("Output: JSON Lines");
+  });
+
   test("renders command help with negatable option from HelpData", () => {
     const data: CommandHelpData = {
       kind: "command",

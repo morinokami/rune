@@ -24,16 +24,16 @@ export default defineCommand({
 
 ### Properties
 
-| Property      | Type                                | Required | Description                                                                   |
-| ------------- | ----------------------------------- | -------- | ----------------------------------------------------------------------------- |
-| `description` | `string`                            | No       | One-line summary for `--help`                                                 |
-| `args`        | `CommandArgField[]`                 | No       | Positional arguments, in CLI order                                            |
-| `options`     | `CommandOptionField[]`              | No       | Named option flags                                                            |
-| `aliases`     | `readonly string[]`                 | No       | Alternative command names (kebab-case). Root command cannot have aliases      |
-| `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                                   |
-| `json`        | `true`                              | No       | Enables the built-in `--json` flag (omit to disable; `false` is not accepted) |
-| `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                                |
-| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. In `json: true` mode it may return structured data             |
+| Property      | Type                                | Required | Description                                                                                                           |
+| ------------- | ----------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `description` | `string`                            | No       | One-line summary for `--help`                                                                                         |
+| `args`        | `CommandArgField[]`                 | No       | Positional arguments, in CLI order                                                                                    |
+| `options`     | `CommandOptionField[]`              | No       | Named option flags                                                                                                    |
+| `aliases`     | `readonly string[]`                 | No       | Alternative command names (kebab-case). Root command cannot have aliases                                              |
+| `examples`    | `readonly string[]`                 | No       | Usage examples for `--help`                                                                                           |
+| `json`        | `true`                              | No       | Enables the built-in `--json` flag (omit to disable; `false` is not accepted)                                         |
+| `help`        | `(data: CommandHelpData) => string` | No       | Custom renderer for this command's help output                                                                        |
+| `run`         | `(ctx) => void \| Promise<void>`    | Yes      | Command logic. In `json: true` mode it may return a structured document; in `jsonl: true` mode it returns an iterable |
 
 ### Custom help rendering
 
@@ -289,6 +289,27 @@ Error output in JSON mode:
 }
 ```
 
+## JSON Lines mode
+
+Set `jsonl: true` when a command's stdout contract is JSON Lines (NDJSON):
+
+```ts
+export default defineCommand({
+  jsonl: true,
+  async *run() {
+    yield { id: "a" };
+    yield { id: "b" };
+  },
+});
+```
+
+- `run()` returns an `Iterable` or `AsyncIterable`; each yielded record is serialized as one compact JSON line
+- `output.log()` is always suppressed; `output.error()` still writes to stderr
+- `jsonl: true` cannot be combined with `json: true`
+- Rune does not add a `--jsonl` flag; use a separate command for a human-readable view
+- Runtime `--json` is rejected for JSON Lines commands, but `--help --json` still returns structured help JSON
+- `runCommand()` exposes records as `result.output.records`
+
 ## File-based routing
 
 ```
@@ -388,4 +409,4 @@ Unhandled non-CommandError exceptions are wrapped with `kind: "rune/unexpected"`
 - **Schema validation contract**: use `schema["~standard"].validate(value)`, not library-specific `.parse()` or `.safeParse()`.
 - **Hyphenated arg names**: must follow the same rules as option names — start with a letter, single internal hyphens only.
 - **Field name collisions**: a kebab-case name and its camelCase equivalent cannot coexist (e.g. `dry-run` and `dryRun` in the same command).
-- **Reserved names**: the option name `"help"` and short name `"h"` are reserved by the framework. When `json: true`, the option name `"json"` is also reserved.
+- **Reserved names**: the option name `"help"` and short name `"h"` are reserved by the framework. When `json: true` or `jsonl: true`, the option name `"json"` is also reserved.

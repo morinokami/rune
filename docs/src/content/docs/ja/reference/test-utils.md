@@ -28,10 +28,10 @@ function runCommand(
   command: DefinedCommand,
   argv?: string[],
   context?: RunCommandContext,
-): Promise<CommandExecutionResult<TCommandData>>
+): Promise<CommandExecutionResult<TCommandDocument, TCommandRecord>>
 ```
 
-`TCommandData` は渡した command から推論されます。`json: true` の command では `run()` の戻り値型、通常の command では `undefined` です。
+出力のかたちは渡した command から推論されます。通常の command では `output.kind === "text"` になり、`json: true` の command では `run()` の戻り値型が `output.document` に、`jsonl: true` の command では `yield` されたレコード型が `output.records` に反映されます。
 
 ### パラメータ
 
@@ -163,11 +163,17 @@ const runCommand = createRunCommand(config);
 
 コマンドが失敗した場合の構造化されたエラー情報。
 
-#### `data`
+#### `output`
 
-- **型:** `TCommandData | undefined`
+- **型:** `{ kind: "text" } | { kind: "json"; document: TCommandDocument | undefined } | { kind: "jsonl"; records: TCommandRecord[] }`
 
-コマンドが `json: true` を使用している場合の `run()` の戻り値です。`TCommandData` は渡した command の `run()` の戻り値型から推論されます。`--json` フラグの有無にかかわらず格納されます。`--json` が制御するのは主に `output.log()` の抑制であり、`data` のキャプチャには影響しません。
+コマンドの構造化された出力情報です。
+
+通常の command では `output` は `{ kind: "text" }` です。
+
+`json: true` の command では、`output.document` が `run()` の戻り値です。`--json` フラグの有無にかかわらず格納されます。`--json` が制御するのは主に `output.log()` の抑制であり、document のキャプチャには影響しません。
+
+`jsonl: true` の command では、`output.records` が `run()` から `yield` されたレコードの配列となります。パース失敗や最初のレコードを `yield` する前の失敗では空配列になります。
 
 ## 使用例
 
@@ -209,10 +215,13 @@ const command = defineCommand({
   },
 });
 
-test("returns structured data", async () => {
+test("returns structured document", async () => {
   const result = await runCommand(command, ["--json"]);
 
-  expect(result.data).toEqual({ items: [1, 2, 3] });
+  expect(result.output).toEqual({
+    kind: "json",
+    document: { items: [1, 2, 3] },
+  });
   expect(result.stdout).toBe("");
 });
 ```

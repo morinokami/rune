@@ -28,10 +28,10 @@ function runCommand(
   command: DefinedCommand,
   argv?: string[],
   context?: RunCommandContext,
-): Promise<CommandExecutionResult<TCommandData>>
+): Promise<CommandExecutionResult<TCommandDocument, TCommandRecord>>
 ```
 
-`TCommandData` is inferred from the passed command. For `json: true` commands it matches the `run()` return type; otherwise it is `undefined`.
+The output shape is inferred from the passed command. Text commands return `output.kind === "text"`, `json: true` commands expose the `run()` return type through `output.document`, and `jsonl: true` commands expose `yield`ed records through `output.records`.
 
 ### Parameters
 
@@ -166,11 +166,17 @@ Captured stderr output.
 
 Structured error information, if the command failed.
 
-#### `data`
+#### `output`
 
-- **Type:** `TCommandData | undefined`
+- **Type:** `{ kind: "text" } | { kind: "json"; document: TCommandDocument | undefined } | { kind: "jsonl"; records: TCommandRecord[] }`
 
-Return value from `run()` when the command uses `json: true`. `TCommandData` is inferred from the passed command's `run()` return type. This is populated regardless of whether `--json` is passed; the `--json` flag controls whether `output.log()` is suppressed, not whether `data` is captured.
+Captured structured output for the command.
+
+For text commands, `output` is `{ kind: "text" }`.
+
+For `json: true` commands, `output.document` is the return value from `run()`. It is populated regardless of whether `--json` is passed; the `--json` flag controls whether `output.log()` is suppressed, not whether the document is captured.
+
+For `jsonl: true` commands, `output.records` is the list of `yield`ed records. It is an empty array when parsing fails or the command fails before yielding any records.
 
 ## Examples
 
@@ -212,10 +218,13 @@ const command = defineCommand({
   },
 });
 
-test("returns structured data", async () => {
+test("returns structured document", async () => {
   const result = await runCommand(command, ["--json"]);
 
-  expect(result.data).toEqual({ items: [1, 2, 3] });
+  expect(result.output).toEqual({
+    kind: "json",
+    document: { items: [1, 2, 3] },
+  });
   expect(result.stdout).toBe("");
 });
 ```

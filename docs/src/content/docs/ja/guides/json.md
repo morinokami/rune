@@ -25,7 +25,7 @@ export default defineCommand({
 });
 ```
 
-`json` を設定しないコマンドの `run()` は `void` を返す関数として型付けされますが、`json: true` を設定すると `run()` は値を返せるようになり、その戻り値型は `runCommand().data` などに保持されます。戻り値は `JSON.stringify()` でシリアライズ可能な値である必要があります。`BigInt` などシリアライズできない値を返した場合、Rune はエラーとして処理します。
+`json` を設定しないコマンドの `run()` は `void` を返す関数として型付けされますが、`json: true` を設定すると `run()` は値を返せるようになり、その戻り値型は `runCommand().output.document` などに保持されます。戻り値は `JSON.stringify()` でシリアライズ可能な値である必要があります。`BigInt` などシリアライズできない値を返した場合、Rune はエラーとして処理します。
 
 `json: true` のコマンドでは、`run()` 内で `options.json` も受け取れます。この値は現在の実行において JSON モードが有効かどうかを表わします。ユーザーが `--json` を渡した場合と、AI エージェント実行時に Rune が自動的に JSON モードを有効化した場合に `true` になり、それ以外では `false` です。ユーザーが明示的にフラグを渡したかどうかを確認したい場合は `rawArgs` を参照してください。
 
@@ -115,6 +115,35 @@ $ your-cli projects list --json
 - `message`: エラーメッセージ
 - `hint`: 解決のためのヒント（[`CommandError`](/ja/reference/command-error/) で指定された場合）
 - `details`: 追加の構造化データ（シリアライズ可能な場合のみ）
+
+## JSON Lines 出力
+
+stdout に複数の JSON レコードを 1 行ずつ流すコマンドには `jsonl: true` を使用します。この形式は JSON Lines または NDJSON とも呼ばれます。`json: true` と異なり、フラグで有効化されるモードではなく、そのコマンドは常に JSON Lines を出力します。
+
+```ts
+import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  description: "Stream events",
+  jsonl: true,
+  async *run() {
+    yield { id: "a", status: "ready" };
+    yield { id: "b", status: "done" };
+  },
+});
+```
+
+yield された各レコードは、1 行のコンパクトな JSON として出力されます:
+
+```bash
+$ your-cli events
+{"id":"a","status":"ready"}
+{"id":"b","status":"done"}
+```
+
+JSON Lines モードでは `output.log()` は常に抑制され、`output.error()` は引き続き stderr に出力されます。`jsonl: true` は `json: true` と併用できず、Rune は `--jsonl` フラグを追加しません。人間向けの表示と JSON Lines ストリームの両方が必要な場合は、stdout の契約が明確になるよう別コマンドに分けることを推奨します。
+
+JSON Lines コマンドがレコードを出力した後に失敗した場合、すでに stdout に書かれたレコードはそのまま有効な JSON Lines として残ります。最後のエラーは compact な JSON error オブジェクトとして stderr に出力されます。ただし stderr には `output.error()` による人間向け診断も混在し得るため、JSON Lines として保証されるのは stdout のみです。
 
 ## テスト
 

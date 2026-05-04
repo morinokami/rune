@@ -20,10 +20,10 @@ test("runCommand accepts commands with options and args", async () => {
 
   const result = await runCommand(command, ["u-100", "--display-name", "Ava"]);
 
-  expectTypeOf(result.data).toEqualTypeOf<undefined>();
+  expectTypeOf(result.output).toEqualTypeOf<{ readonly kind: "text" }>();
 });
 
-test("runCommand infers result.data from json-enabled commands", async () => {
+test("runCommand infers result.output.document from json-enabled commands", async () => {
   const command = defineCommand({
     json: true,
     async run() {
@@ -33,10 +33,29 @@ test("runCommand infers result.data from json-enabled commands", async () => {
 
   const result = await runCommand(command, ["--json"]);
 
-  expectTypeOf(result.data).toEqualTypeOf<{ items: number[] } | undefined>();
+  expectTypeOf(result.output).toEqualTypeOf<{
+    readonly kind: "json";
+    readonly document: { items: number[] } | undefined;
+  }>();
 });
 
-test("runCommand exposes undefined data for non-json commands", async () => {
+test("runCommand infers result.output.records from jsonl-enabled commands", async () => {
+  const command = defineCommand({
+    jsonl: true,
+    async *run() {
+      yield { id: "a", status: "ready" as const };
+    },
+  });
+
+  const result = await runCommand(command);
+
+  expectTypeOf(result.output).toEqualTypeOf<{
+    readonly kind: "jsonl";
+    readonly records: { id: string; status: "ready" }[];
+  }>();
+});
+
+test("runCommand exposes text output for non-json commands", async () => {
   const command = defineCommand({
     run({ output }) {
       output.log("ok");
@@ -45,7 +64,7 @@ test("runCommand exposes undefined data for non-json commands", async () => {
 
   const result = await runCommand(command);
 
-  expectTypeOf(result.data).toEqualTypeOf<undefined>();
+  expectTypeOf(result.output).toEqualTypeOf<{ readonly kind: "text" }>();
 });
 
 test("runCommand accepts stdin context and exposes ctx.stdin", async () => {

@@ -21,7 +21,7 @@ Because no child process is spawned, tests run fast. The result is returned as a
 - `stdout`: captured standard output
 - `stderr`: captured standard error output
 - `error`: structured error information if the command failed
-- `data`: return value from `run()` when the command uses `json: true` (typed from the command's `run()` return value)
+- `output`: discriminated output data (`text`, `json`, or `jsonl`)
 
 ## Basic testing
 
@@ -90,7 +90,7 @@ Unexpected exceptions are wrapped with `kind: "rune/unexpected"`.
 
 ## Testing JSON mode
 
-For commands with `json: true`, the return value of `run()` is captured in `result.data`. Passing the `--json` flag suppresses `output.log()`, while `output.error()` continues to output:
+For commands with `json: true`, the return value of `run()` is captured in `result.output.document`. Passing the `--json` flag suppresses `output.log()`, while `output.error()` continues to output:
 
 ```ts
 import { expect, test } from "vitest";
@@ -105,15 +105,18 @@ const command = defineCommand({
   },
 });
 
-test("returns structured data", async () => {
+test("returns structured document", async () => {
   const result = await runCommand(command, ["--json"]);
 
   expect(result.stdout).toBe("");
-  expect(result.data).toEqual({ items: [1, 2, 3] });
+  expect(result.output).toEqual({
+    kind: "json",
+    document: { items: [1, 2, 3] },
+  });
 });
 ```
 
-`result.data` is populated even without the `--json` flag. The `--json` flag controls whether `output.log()` is suppressed, not whether `data` is captured.
+`result.output.document` is populated even without the `--json` flag. The `--json` flag controls whether `output.log()` is suppressed, not whether the document is captured.
 
 ## Injecting context
 

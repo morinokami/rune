@@ -161,7 +161,7 @@ Options declared as `--name` flags.
 
 Each entry is a **primitive field**, an **enum field**, or a **schema field**, with the same base properties as `args` plus the following additional properties. Primitive defaults are shown in `--help`, except for boolean options. Primitive boolean options always default to `false`, even when `required` and `default` are omitted. When a primitive boolean option sets `default: true`, a `--no-<name>` flag is automatically generated so users can override the default. See [Negatable boolean options](#negatable-boolean-options) for details.
 
-The option name `"help"` is reserved by the framework and cannot be used. When `json: true` is set, the name `"json"` is also reserved because the framework manages the built-in `--json` flag.
+The option name `"help"` is reserved by the framework and cannot be used. When `json: true` or `jsonl: true` is set, the name `"json"` is also reserved because Rune manages JSON-related runtime behavior.
 
 #### `short`
 
@@ -243,6 +243,15 @@ When set, the framework accepts a built-in `--json` flag. In JSON mode, the retu
 
 Commands with `json: true` receive a framework-managed `options.json: boolean` value in `run()`. It is `true` whenever JSON mode is active, including automatic activation under AI agents.
 
+### `jsonl`
+
+- **Type:** `true`
+- **Optional**
+
+When set, the command stdout contract is JSON Lines (NDJSON). The `run()` function must return an `Iterable` or `AsyncIterable`; Rune serializes each `yield`ed record as one compact JSON line. `output.log()` is suppressed and `output.error()` continues to write to stderr.
+
+`jsonl: true` cannot be combined with `json: true`. Rune does not add a `--jsonl` flag.
+
 ### `help`
 
 - **Type:** `(data: CommandHelpData) => string`
@@ -270,10 +279,10 @@ If `help()` throws, Rune falls back to the default help renderer and writes a wa
 
 ### `run`
 
-- **Type:** `(ctx: CommandContext) => void | Promise<void>` (when `json` is omitted) or `(ctx: CommandContext) => TCommandData | Promise<TCommandData>` (when `json` is `true`)
+- **Type:** `(ctx: CommandContext) => void | Promise<void>` (default), `(ctx: CommandContext) => TCommandData | Promise<TCommandData>` (when `json` is `true`), or `(ctx: CommandContext) => Iterable<TRecord> | AsyncIterable<TRecord> | Promise<Iterable<TRecord> | AsyncIterable<TRecord>>` (when `jsonl` is `true`)
 - **Required**
 
-The function executed when the command is invoked. When `json` is `true`, the return value becomes part of the command's API, is serialized as JSON output when the user passes `--json`, and is preserved in `runCommand().data`.
+The function executed when the command is invoked. When `json` is `true`, the return value becomes part of the command's API, is serialized as JSON output when the user passes `--json`, and is preserved in `runCommand().output.document`. When `jsonl` is `true`, yielded records are serialized as JSON Lines and preserved in `runCommand().output.records`.
 
 ## CommandContext
 

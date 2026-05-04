@@ -1,5 +1,6 @@
 import type {
   ArgumentHelpEntry,
+  CommandStdoutContract,
   FrameworkOptionHelpEntry,
   HelpData,
   UserOptionHelpEntry,
@@ -90,6 +91,7 @@ export interface CommandHelpJson {
   readonly kind: "command";
   readonly cli: HelpJsonCli;
   readonly command: HelpJsonCommandMetadata;
+  readonly stdout?: CommandStdoutContract | undefined;
   readonly args: readonly HelpJsonArgument[];
   readonly options: readonly HelpJsonOption[];
   readonly commands: readonly HelpJsonCommandSummary[];
@@ -127,6 +129,7 @@ export function toHelpJson(resolved: ResolvedHelpData): HelpJson {
         kind: "command",
         cli: createCli(data),
         command: createCommandMetadata({ ...data, aliases: resolved.aliases }),
+        ...(data.stdout !== undefined ? { stdout: data.stdout } : {}),
         args: data.arguments.map(mapArgument),
         options: mapOptions(data.options, data.frameworkOptions),
         commands: data.subcommands.map((entry) => createCommandSummary(data.pathSegments, entry)),

@@ -161,7 +161,7 @@ Rune が生のトークンをパースする型。
 
 各エントリは**プリミティブフィールド**、**enum フィールド**、**スキーマフィールド**のいずれかで、`args` と同じ基本プロパティに加えて以下の追加プロパティをもちます。プリミティブのデフォルト値は `--help` に表示されますが、boolean オプションは例外です。プリミティブの boolean オプションは、`required` や `default` を省略しても常にデフォルト値 `false` をもちます。プリミティブの boolean オプションに `default: true` を設定すると、`--no-<name>` フラグが自動生成されます。詳細は[否定形の boolean オプション](#否定形の-boolean-オプション)を参照してください。
 
-オプション名 `"help"` はフレームワークの予約語であり、使用できません。`json: true` を設定した場合は、組み込みの `--json` フラグをフレームワークが管理するため、`"json"` も予約されます。
+オプション名 `"help"` はフレームワークの予約語であり、使用できません。`json: true` または `jsonl: true` を設定した場合は、Rune が JSON 関連の実行時挙動を管理するため、`"json"` も予約されます。
 
 #### `short`
 
@@ -243,6 +243,15 @@ options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true
 
 `json: true` のコマンドでは、`run()` 内でフレームワーク管理の `options.json: boolean` も受け取れます。この値は JSON モードが有効なときに `true` になり、AI エージェント実行時の自動有効化も含みます。
 
+### `jsonl`
+
+- **型:** `true`
+- **省略可能**
+
+設定すると、そのコマンドの stdout 契約は JSON Lines（NDJSON）になります。`run()` 関数は `Iterable` または `AsyncIterable` を返す必要があり、Rune は `yield` された各レコードを 1 行のコンパクトな JSON としてシリアライズします。`output.log()` は抑制され、`output.error()` は引き続き stderr に出力されます。
+
+`jsonl: true` は `json: true` と併用できません。Rune は `--jsonl` フラグを追加しません。
+
 ### `help`
 
 - **型:** `(data: CommandHelpData) => string`
@@ -270,10 +279,10 @@ export default defineCommand({
 
 ### `run`
 
-- **型:** `(ctx: CommandContext) => void | Promise<void>`（`json` が省略された場合）または `(ctx: CommandContext) => TCommandData | Promise<TCommandData>`（`json` が `true` の場合）
+- **型:** `(ctx: CommandContext) => void | Promise<void>`（通常）、`(ctx: CommandContext) => TCommandData | Promise<TCommandData>`（`json` が `true` の場合）、または `(ctx: CommandContext) => Iterable<TRecord> | AsyncIterable<TRecord> | Promise<Iterable<TRecord> | AsyncIterable<TRecord>>`（`jsonl` が `true` の場合）
 - **必須**
 
-コマンドが実行されたときに呼び出される関数です。`json` が `true` の場合、戻り値はコマンドの API の一部となり、ユーザーが `--json` を渡した際に JSON 出力としてシリアライズされ、`runCommand().data` にも保持されます。
+コマンドが実行されたときに呼び出される関数です。`json` が `true` の場合、戻り値はコマンドの API の一部となり、ユーザーが `--json` を渡した際に JSON 出力としてシリアライズされ、`runCommand().output.document` にも保持されます。`jsonl` が `true` の場合、yield されたレコードは JSON Lines としてシリアライズされ、`runCommand().output.records` に保持されます。
 
 ## CommandContext
 

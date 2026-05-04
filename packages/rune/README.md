@@ -275,6 +275,27 @@ Under AI agents (Claude Code, Cursor, Codex, etc.), `json: true` commands auto-e
 
 Set `RUNE_DISABLE_AUTO_JSON=1` to opt out of auto-activation while keeping `--json` working as usual. This is mainly intended for AI agents that are themselves developing a Rune-based CLI and need to inspect the human-facing output.
 
+## JSON Lines Output
+
+Set `jsonl: true` when a command's stdout contract is a stream of newline-delimited JSON records. The `run()` function returns an `Iterable` or `AsyncIterable`; Rune serializes each record as one compact JSON line, suppresses `output.log()`, and keeps `output.error()` on stderr.
+
+```ts
+export default defineCommand({
+  jsonl: true,
+  async *run() {
+    yield { id: "a" };
+    yield { id: "b" };
+  },
+});
+```
+
+```sh
+my-cli  # {"id":"a"}
+        # {"id":"b"}
+```
+
+JSON Lines mode is fixed for the command; Rune does not add a `--jsonl` flag and `json: true` cannot be combined with `jsonl: true`. If you need both a human view and a JSON Lines stream, prefer separate commands. In tests, `runCommand()` exposes yielded records as `result.output.records`.
+
 ## Structured Errors
 
 `CommandError` carries `kind`, `message`, `hint`, and `details`. Rune formats it for humans in normal mode and emits it as structured JSON under `--json`.
@@ -354,7 +375,7 @@ const result = await runCommand(command, [], {
 });
 ```
 
-The returned `CommandExecutionResult` exposes `exitCode`, `stdout`, `stderr`, `error`, and `data` (the `run()` return value, for `json: true` commands).
+The returned `CommandExecutionResult` exposes `exitCode`, `stdout`, `stderr`, `error`, and an `output` union. Use `output.document` for `json: true` commands and `output.records` for `jsonl: true` commands.
 
 ## CLI
 

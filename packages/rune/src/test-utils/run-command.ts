@@ -1,5 +1,5 @@
 import type { CommandFailure } from "../core/command-error";
-import type { DefinedCommand, InferCommandData } from "../core/command-types";
+import type { DefinedCommand, InferCommandData, InferCommandRecords } from "../core/command-types";
 import type { RuneConfig } from "../core/define-config";
 import type { CommandArgField, CommandOptionField } from "../core/field-types";
 
@@ -8,7 +8,7 @@ import { runCommandPipeline } from "../core/run-command-pipeline";
 
 type RunnableCommand = Pick<
   DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
-  "json" | "options" | "args"
+  "json" | "jsonl" | "options" | "args"
 > & {
   readonly run: (ctx: any) => unknown;
 };
@@ -41,13 +41,38 @@ export interface RunCommandContext {
   readonly stdin?: RunCommandStdinInput;
 }
 
-export interface CommandExecutionResult<TCommandData = unknown> {
+export type CommandExecutionOutput<TCommandDocument = never, TCommandRecord = never> =
+  | { readonly kind: "text" }
+  | { readonly kind: "json"; readonly document: TCommandDocument | undefined }
+  | { readonly kind: "jsonl"; readonly records: TCommandRecord[] };
+
+export interface CommandExecutionResult<TCommandDocument = never, TCommandRecord = never> {
   readonly exitCode: number;
   readonly stdout: string;
   readonly stderr: string;
   readonly error?: CommandFailure | undefined;
-  readonly data?: TCommandData | undefined;
+  readonly output: CommandExecutionOutput<TCommandDocument, TCommandRecord>;
 }
+
+export type RunCommandResult<TCommand extends RunnableCommand> = CommandExecutionResult<
+  InferCommandData<TCommand>,
+  InferCommandRecords<TCommand>
+> &
+  (TCommand extends { readonly jsonl: true }
+    ? {
+        readonly output: {
+          readonly kind: "jsonl";
+          readonly records: InferCommandRecords<TCommand>[];
+        };
+      }
+    : TCommand extends { readonly json: true }
+      ? {
+          readonly output: {
+            readonly kind: "json";
+            readonly document: InferCommandData<TCommand> | undefined;
+          };
+        }
+      : { readonly output: { readonly kind: "text" } });
 
 /**
  * Exercises a resolved leaf command through Rune's real parse-and-execute
@@ -63,7 +88,7 @@ export interface CommandExecutionResult<TCommandData = unknown> {
  *                  pipeline. Defaults to `[]` (no arguments).
  * @param context - Optional execution context such as `cwd`.
  * @returns A captured result including `exitCode`, `stdout`, `stderr`,
- *          `error`, and `data` (for `json: true` commands).
+ *          `error`, and `output`.
  *
  * @example Basic usage
  * ```ts
@@ -114,7 +139,7 @@ export interface CommandExecutionResult<TCommandData = unknown> {
  *
  * const result = await runCommand(command, ["--json"]);
  *
- * expect(result.data).toEqual({ items: [1, 2, 3] });
+ * expect(result.output.document).toEqual({ items: [1, 2, 3] });
  * expect(result.stdout).toBe("");
  * ```
  */
@@ -122,7 +147,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
   command: TCommand,
   argv: string[] = [],
   context: RunCommandContext = {},
-): Promise<CommandExecutionResult<InferCommandData<TCommand>>> {
+): Promise<RunCommandResult<TCommand>> {
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
 
@@ -135,12 +160,18 @@ export async function runCommand<TCommand extends RunnableCommand>(
     simulateAgent: context.simulateAgent ?? false,
     stdin: createRunCommandStdinSource(context.stdin),
     sink: {
-      stdout: (message) => stdoutChunks.push(message),
-      stderr: (message) => stderrChunks.push(message),
+      stdout: (message) => {
+        stdoutChunks.push(message);
+      },
+      stderr: (message) => {
+        stderrChunks.push(message);
+      },
     },
   });
 
-  if (!result.jsonMode && result.error) {
+  if (result.jsonlMode && result.error) {
+    stderrChunks.push(`${JSON.stringify(renderJsonError(result.error))}\n`);
+  } else if (!result.jsonMode && result.error) {
     const rendered = renderHumanError(result.error);
 
     if (rendered !== "") {
@@ -148,13 +179,42 @@ export async function runCommand<TCommand extends RunnableCommand>(
     }
   }
 
-  return {
+  const executionResult = {
     exitCode: result.exitCode,
     stdout: stdoutChunks.join(""),
     stderr: stderrChunks.join(""),
     error: result.error,
-    data: result.data as InferCommandData<TCommand>,
+    output: createCommandOutput<TCommand>(command, result),
   };
+
+  return executionResult as RunCommandResult<TCommand>;
+}
+
+function createCommandOutput<TCommand extends RunnableCommand>(
+  command: TCommand,
+  result: {
+    readonly data?: InferCommandData<TCommand> | undefined;
+    readonly records?: InferCommandRecords<TCommand>[] | undefined;
+  },
+): CommandExecutionOutput<InferCommandData<TCommand>, InferCommandRecords<TCommand>> {
+  if (command.jsonl) {
+    return {
+      kind: "jsonl",
+      // The pipeline result keeps records optional for non-jsonl callers. The
+      // test helper makes JSON Lines records a stable array, including parse
+      // failures or failures before the command yields.
+      records: result.records ?? [],
+    };
+  }
+
+  if (command.json) {
+    return {
+      kind: "json",
+      document: result.data,
+    };
+  }
+
+  return { kind: "text" };
 }
 
 export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
@@ -162,11 +222,39 @@ export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
     command: TCommand,
     argv: string[] = [],
     context: RunCommandContext = {},
-  ): Promise<CommandExecutionResult<InferCommandData<TCommand>>> {
+  ): Promise<RunCommandResult<TCommand>> {
     return runCommand(command, argv, {
       ...context,
       globalOptions: config.options,
     });
+  };
+}
+
+function getSerializableDetails(error: CommandFailure): unknown {
+  if (error.details === undefined) {
+    return undefined;
+  }
+
+  try {
+    JSON.stringify(error.details);
+    return error.details;
+  } catch {
+    return undefined;
+  }
+}
+
+function renderJsonError(error: CommandFailure): {
+  readonly error: Record<string, unknown>;
+} {
+  const details = getSerializableDetails(error);
+
+  return {
+    error: {
+      kind: error.kind,
+      message: error.message,
+      ...(error.hint ? { hint: error.hint } : {}),
+      ...(details !== undefined ? { details } : {}),
+    },
   };
 }
 

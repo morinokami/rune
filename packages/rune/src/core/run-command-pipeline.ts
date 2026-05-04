@@ -2,7 +2,7 @@ import { isAgent } from "std-env";
 
 import type { OutputSink } from "./command-output";
 import type { CommandStdinSource } from "./command-stdin";
-import type { DefinedCommand, InferCommandData } from "./command-types";
+import type { DefinedCommand, InferCommandData, InferCommandRecords } from "./command-types";
 import type { CommandArgField, CommandOptionField } from "./field-types";
 
 import { resolveAgentDetected } from "./agent-detection";
@@ -19,7 +19,7 @@ import { isSchemaField } from "./schema-field";
 
 type RunnableCommand = Pick<
   DefinedCommand<readonly CommandArgField[], readonly CommandOptionField[]>,
-  "json" | "options" | "args"
+  "json" | "jsonl" | "options" | "args"
 > & {
   readonly run: (ctx: any) => unknown;
 };
@@ -47,13 +47,15 @@ export interface RunCommandPipelineInput {
   readonly simulateAgent?: boolean | undefined;
 }
 
-export interface RunCommandPipelineResult<TCommandData = unknown> {
+export interface RunCommandPipelineResult<TCommandData = unknown, TCommandRecord = never> {
   /** Whether argv parsing succeeded. When `false`, the command did not run. */
   readonly parseOk: boolean;
   readonly exitCode: number;
   readonly error?: CommandFailure | undefined;
   readonly data?: TCommandData | undefined;
+  readonly records?: TCommandRecord[] | undefined;
   readonly jsonMode: boolean;
+  readonly jsonlMode: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,7 +72,7 @@ export interface RunCommandPipelineResult<TCommandData = unknown> {
  */
 export async function runCommandPipeline<TCommand extends RunnableCommand>(
   input: Omit<RunCommandPipelineInput, "command"> & { readonly command: TCommand },
-): Promise<RunCommandPipelineResult<InferCommandData<TCommand>>> {
+): Promise<RunCommandPipelineResult<InferCommandData<TCommand>, InferCommandRecords<TCommand>>> {
   const {
     command,
     argv,
@@ -94,14 +96,28 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
   const { jsonMode: explicitJsonMode, parseArgv } = commandDefinition.json
     ? extractJsonFlag(argv)
     : { jsonMode: false, parseArgv: argv };
-  const agentDetected = resolveAgentDetected({
-    simulateAgent,
-    detectedAgent: isAgent,
-    env: process.env,
-  });
+  if (commandDefinition.jsonl && hasJsonFlagBeforeTerminator(argv)) {
+    return {
+      parseOk: false,
+      exitCode: 1,
+      error: normalizeParseFailure("--json is not supported by JSON Lines commands"),
+      data: undefined,
+      records: [],
+      jsonMode: false,
+      jsonlMode: true,
+    };
+  }
+  const agentDetected =
+    commandDefinition.json && !commandDefinition.jsonl
+      ? resolveAgentDetected({
+          simulateAgent,
+          detectedAgent: isAgent,
+          env: process.env,
+        })
+      : false;
   const jsonMode = commandDefinition.json && (explicitJsonMode || agentDetected);
 
-  const output = createOutput(sink, { silentStdout: jsonMode });
+  const output = createOutput(sink, { silentStdout: jsonMode || commandDefinition.jsonl });
   const stdin = createCommandStdin(stdinSource);
 
   const parsed = await parseCommandArgs(effectiveCommandDefinition, parseArgv, { env });
@@ -112,9 +128,13 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       exitCode: 1,
       error: normalizeParseFailure(parsed.error.message),
       data: undefined,
+      records: commandDefinition.jsonl ? [] : undefined,
       jsonMode,
+      jsonlMode: commandDefinition.jsonl,
     };
   }
+
+  const records: unknown[] = [];
 
   try {
     const args = addCamelCaseAliases(
@@ -143,11 +163,61 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       stdin,
     });
 
+    if (commandDefinition.jsonl) {
+      if (!isJsonLineIterable(data)) {
+        const failure = normalizeExecutionFailure(
+          new CommandError({
+            kind: INVALID_COMMAND_RESULT_ERROR_KIND,
+            message: "JSON Lines commands must return an iterable",
+          }),
+        );
+
+        return {
+          parseOk: true,
+          exitCode: failure.exitCode,
+          error: failure,
+          data: undefined,
+          records: records as InferCommandRecords<TCommand>[],
+          jsonMode: false,
+          jsonlMode: true,
+        };
+      }
+
+      for await (const record of data) {
+        const serialized = serializeJsonLineRecord(record, records.length);
+
+        if (!serialized.ok) {
+          return {
+            parseOk: true,
+            exitCode: serialized.error.exitCode,
+            error: serialized.error,
+            data: undefined,
+            records: records as InferCommandRecords<TCommand>[],
+            jsonMode: false,
+            jsonlMode: true,
+          };
+        }
+
+        records.push(record);
+        await sink.stdout(`${serialized.value}\n`);
+      }
+
+      return {
+        parseOk: true,
+        exitCode: 0,
+        data: undefined,
+        records: records as InferCommandRecords<TCommand>[],
+        jsonMode: false,
+        jsonlMode: true,
+      };
+    }
+
     return {
       parseOk: true,
       exitCode: 0,
       data: data as InferCommandData<TCommand>,
       jsonMode,
+      jsonlMode: false,
     };
   } catch (error) {
     const failure = normalizeExecutionFailure(error);
@@ -157,7 +227,9 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       exitCode: failure.exitCode,
       error: failure,
       data: undefined,
+      records: commandDefinition.jsonl ? (records as InferCommandRecords<TCommand>[]) : undefined,
       jsonMode,
+      jsonlMode: commandDefinition.jsonl,
     };
   }
 }
@@ -168,14 +240,16 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
 
 const defaultSink: OutputSink = {
   stdout: (message) => {
-    process.stdout.write(message);
+    return writeStream(process.stdout, message);
   },
   stderr: (message) => {
-    process.stderr.write(message);
+    return writeStream(process.stderr, message);
   },
 };
 
 const INVALID_ARGUMENTS_ERROR_KIND = "rune/invalid-arguments";
+const INVALID_COMMAND_RESULT_ERROR_KIND = "rune/invalid-command-result";
+const SERIALIZATION_FAILED_ERROR_KIND = "rune/serialization-failed";
 const UNEXPECTED_ERROR_KIND = "rune/unexpected";
 
 /**
@@ -200,6 +274,71 @@ function extractJsonFlag(argv: readonly string[]): {
 
   const parseArgv = [...argv.slice(0, jsonIndex), ...argv.slice(jsonIndex + 1)];
   return { jsonMode: true, parseArgv };
+}
+
+function hasJsonFlagBeforeTerminator(argv: readonly string[]): boolean {
+  const terminatorIndex = argv.indexOf("--");
+  const scanEnd = terminatorIndex === -1 ? argv.length : terminatorIndex;
+  return argv.slice(0, scanEnd).includes("--json");
+}
+
+function isJsonLineIterable(value: unknown): value is Iterable<unknown> | AsyncIterable<unknown> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  return Symbol.iterator in value || Symbol.asyncIterator in value;
+}
+
+function serializeJsonLineRecord(
+  record: unknown,
+  index: number,
+):
+  | { readonly ok: true; readonly value: string }
+  | { readonly ok: false; readonly error: CommandFailure } {
+  try {
+    const value = JSON.stringify(record);
+
+    if (value === undefined) {
+      return {
+        ok: false,
+        error: {
+          kind: SERIALIZATION_FAILED_ERROR_KIND,
+          message: "Failed to serialize JSON Lines record",
+          details: { index, reason: "JSON.stringify returned undefined" },
+          exitCode: 1,
+        },
+      };
+    }
+
+    return { ok: true, value };
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        kind: SERIALIZATION_FAILED_ERROR_KIND,
+        message: "Failed to serialize JSON Lines record",
+        details: {
+          index,
+          reason: formatUnexpectedExecutionError(error),
+        },
+        exitCode: 1,
+      },
+    };
+  }
+}
+
+async function writeStream(stream: NodeJS.WriteStream, contents: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    stream.write(contents, (error?: Error | null) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
 }
 
 function formatUnexpectedExecutionError(error: unknown): string {

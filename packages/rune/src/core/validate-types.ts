@@ -31,6 +31,11 @@ type TupleOf<T, TField> = T extends readonly TField[]
 type NamedFieldTuple<T> = TupleOf<T, NamedField>;
 type ArgFieldTuple<T> = TupleOf<T, CommandArgField>;
 type OptionFieldTuple<T> = TupleOf<T, CommandOptionField>;
+type ReservedOptionNamesForMode<TJson extends true | undefined, TJsonl extends true | undefined> = (
+  TJson extends true ? true : TJsonl extends true ? true : false
+) extends true
+  ? AlwaysReservedOptionName | JsonReservedOptionName
+  : AlwaysReservedOptionName;
 
 export type ValidateFieldNames<TArgs, TOpts> = ([NamedFieldTuple<TArgs>] extends [never]
   ? unknown
@@ -78,24 +83,35 @@ export type ValidateNegationCollision<TOpts> = [OptionFieldTuple<TOpts>] extends
       }
     : unknown;
 
-export type ValidateReservedNames<TOpts, TJson extends true | undefined = undefined> = [
-  OptionFieldTuple<TOpts>,
-] extends [never]
+export type ValidateReservedNames<
+  TOpts,
+  TJson extends true | undefined = undefined,
+  TJsonl extends true | undefined = undefined,
+> = [OptionFieldTuple<TOpts>] extends [never]
   ? unknown
   : HasReservedOptionName<
         OptionFieldTuple<TOpts>,
-        TJson extends true
-          ? AlwaysReservedOptionName | JsonReservedOptionName
-          : AlwaysReservedOptionName
+        ReservedOptionNamesForMode<TJson, TJsonl>
       > extends true
     ? {
-        readonly __reservedOptionName: ErrorMessage<"ERROR: Option name conflicts with a framework-reserved flag (--help, or --json when json mode is enabled).">;
+        readonly __reservedOptionName: ErrorMessage<"ERROR: Option name conflicts with a framework-reserved flag (--help, or --json when json/jsonl mode is enabled).">;
       }
     : HasReservedShortName<OptionFieldTuple<TOpts>> extends true
       ? {
           readonly __reservedShortName: ErrorMessage<"ERROR: Short name conflicts with a framework-reserved flag (-h).">;
         }
       : unknown;
+
+export type ValidateOutputModes<
+  TJson extends true | undefined = undefined,
+  TJsonl extends true | undefined = undefined,
+> = TJson extends true
+  ? TJsonl extends true
+    ? {
+        readonly __conflictingOutputModes: ErrorMessage<"ERROR: json and jsonl output modes cannot be enabled together.">;
+      }
+    : unknown
+  : unknown;
 
 // When arg ordering is invalid, intersects to make `args` unassignable with a
 // descriptive message. For non-tuple (widened) arrays, bails out to `unknown`

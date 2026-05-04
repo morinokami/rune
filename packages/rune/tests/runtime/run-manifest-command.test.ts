@@ -243,6 +243,7 @@ export default defineCommand({
         aliases: [],
         examples: [],
       },
+      stdout: { kind: "text", jsonFlag: false },
       args: [
         {
           name: "id",
@@ -382,6 +383,27 @@ export default defineCommand({
         path: ["project", "create"],
         name: "create",
       },
+    });
+    expect(captured.stderr).toBe("");
+  });
+
+  test("runManifestCommand allows --help --json for JSON Lines commands", async () => {
+    const { manifest } = await createJsonFixture(`  jsonl: true,
+  async *run() {
+    yield { id: "a" };
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list", "--help", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(JSON.parse(captured.stdout)).toMatchObject({
+      schemaVersion: HELP_JSON_SCHEMA_VERSION,
+      kind: "command",
+      stdout: { kind: "json-lines", jsonFlag: false },
     });
     expect(captured.stderr).toBe("");
   });
@@ -676,6 +698,75 @@ describe("json mode", () => {
 
     expect(captured.exitCode).toBe(0);
     expect(JSON.parse(captured.stdout)).toBeNull();
+  });
+});
+
+describe("json lines mode", () => {
+  test("runManifestCommand emits streamed records to stdout", async () => {
+    const { manifest } = await createJsonFixture(`  jsonl: true,
+  async *run({ output }) {
+    output.log("hidden");
+    output.error("diagnostic");
+    yield { id: "a" };
+    yield { id: "b" };
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe('{"id":"a"}\n{"id":"b"}\n');
+    expect(captured.stderr).toBe("diagnostic\n");
+  });
+
+  test("runManifestCommand writes JSON Lines failures to stderr", async () => {
+    const { manifest } = await createJsonFixture(`  jsonl: true,
+  async *run({ output }) {
+    output.error("diagnostic");
+    yield { id: "a" };
+    throw new CommandError({
+      kind: "stream/aborted",
+      message: "Lost connection",
+      hint: "Retry later",
+    });
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(captured.stdout).toBe('{"id":"a"}\n');
+    expect(captured.stderr).toBe(
+      'diagnostic\n{"error":{"kind":"stream/aborted","message":"Lost connection","hint":"Retry later"}}\n',
+    );
+  });
+
+  test("runManifestCommand rejects runtime --json for JSON Lines commands", async () => {
+    const { manifest } = await createJsonFixture(`  jsonl: true,
+  async *run() {
+    yield { id: "a" };
+  },`);
+
+    const captured = await captureRunManifestCommandResult({
+      manifest,
+      rawArgs: ["list", "--json"],
+      cliName: "mycli",
+    });
+
+    expect(captured.exitCode).toBe(1);
+    expect(captured.stdout).toBe("");
+    expect(JSON.parse(captured.stderr)).toEqual({
+      error: {
+        kind: "rune/invalid-arguments",
+        message: "--json is not supported by JSON Lines commands",
+      },
+    });
   });
 });
 

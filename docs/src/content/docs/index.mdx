@@ -32,13 +32,15 @@ Command options and arguments can be validated with any [Standard Schema](https:
 
 ### Test utilities
 
-`runCommand()` lets you test commands in-process without spawning a child process. It runs the full command execution as-is, including argument parsing, type coercion, validation, and default value resolution. You can assert directly on the result's `exitCode`, `stdout`, `stderr`, `error`, and `data`, making command tests fast and reliable.
+`runCommand()` lets you test commands in-process without spawning a child process. It runs the full command execution as-is, including argument parsing, type coercion, validation, and default value resolution. You can assert directly on the result's `exitCode`, `stdout`, `stderr`, `error`, and typed `output`, making command tests fast and reliable.
 
 ### JSON output
 
 Setting `json: true` in `defineCommand()` enables a built-in `--json` flag. When the flag is passed, the command's return value is written to stdout as structured JSON.
 
 In this mode, human-readable stdout from `output.log()` is automatically suppressed, while `output.error()` continues to write to stderr so diagnostic messages are not lost. Without `--json`, the command behaves as a normal text CLI, so a single implementation can serve both humans and machines. When the CLI is invoked by an AI agent, JSON mode is auto-enabled even without `--json`, so agents receive structured output by default.
+
+For streaming structured output, `jsonl: true` makes the command emit JSON Lines: each `yield`ed record is serialized as one JSON line and `runCommand()` exposes those records as `result.output.records`.
 
 ### Automatic help generation
 

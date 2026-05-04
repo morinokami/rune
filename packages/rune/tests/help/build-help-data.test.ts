@@ -189,6 +189,7 @@ describe("help data builders", () => {
       short: "h",
       description: "Show help",
     });
+    expect(data.stdout).toEqual({ kind: "text", jsonFlag: true });
 
     const json = toHelpJson({ data, aliases: [] });
     if (json.kind !== "command") throw new Error("Expected command help JSON");
@@ -197,6 +198,25 @@ describe("help data builders", () => {
       name: "name",
       env: "PROJECT_NAME",
     });
+    expect(json.stdout).toEqual({ kind: "text", jsonFlag: true });
+  });
+
+  test("buildCommandHelpData exposes JSON Lines stdout contracts", async () => {
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: "a" };
+      },
+    });
+
+    const data = await buildCommandHelpData({
+      command,
+      pathSegments: ["events"],
+      cliName: "mycli",
+    });
+
+    expect(data.frameworkOptions).toEqual([{ name: "help", short: "h", description: "Show help" }]);
+    expect(data.stdout).toEqual({ kind: "json-lines", jsonFlag: false });
   });
 
   test("buildCommandHelpData includes subcommands when provided", async () => {
