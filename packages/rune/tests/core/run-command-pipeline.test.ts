@@ -1048,3 +1048,450 @@ describe("execution failures", () => {
     });
   });
 });
+
+describe("global hooks", () => {
+  test("runs beforeRun and afterRun around a successful command", async () => {
+    const events: string[] = [];
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      options: [{ name: "name", type: "string", required: true }],
+      args: [{ name: "id", type: "string", required: true }],
+      run(ctx) {
+        events.push("run");
+        ctx.output.log(`${ctx.args.id}:${ctx.options.name}`);
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: ["task-1", "--name", "rune"],
+      cwd: "/tmp/rune-project",
+      commandMetadata: { cliName: "my-cli", path: ["task", "show"], name: "show" },
+      hooks: {
+        beforeRun(ctx) {
+          events.push("before");
+          observed.push({
+            command: ctx.command,
+            outputMode: ctx.outputMode,
+            args: ctx.args,
+            options: ctx.options,
+            cwd: ctx.cwd,
+            rawArgs: ctx.rawArgs,
+          });
+        },
+        afterRun(ctx) {
+          events.push("after");
+          observed.push(ctx.result);
+        },
+      },
+      sink: { stdout() {}, stderr() {} },
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(events).toEqual(["before", "run", "after"]);
+    expect(observed).toEqual([
+      {
+        command: { cliName: "my-cli", path: ["task", "show"], name: "show" },
+        outputMode: "text",
+        args: { id: "task-1" },
+        options: { name: "rune" },
+        cwd: "/tmp/rune-project",
+        rawArgs: ["task-1", "--name", "rune"],
+      },
+      { kind: "text" },
+    ]);
+  });
+
+  test("exposes effective outputMode separately from JSON command result kind", async () => {
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      json: true,
+      run() {
+        return { ok: true };
+      },
+    });
+
+    await runCommandPipeline({
+      command,
+      argv: [],
+      simulateAgent: false,
+      hooks: {
+        afterRun(ctx) {
+          observed.push({ outputMode: ctx.outputMode, result: ctx.result });
+        },
+      },
+    });
+    await runCommandPipeline({
+      command,
+      argv: ["--json"],
+      simulateAgent: false,
+      hooks: {
+        afterRun(ctx) {
+          observed.push({ outputMode: ctx.outputMode, result: ctx.result });
+        },
+      },
+    });
+
+    expect(observed).toEqual([
+      { outputMode: "text", result: { kind: "json", data: { ok: true } } },
+      { outputMode: "json", result: { kind: "json", data: { ok: true } } },
+    ]);
+  });
+
+  test("does not include the framework-injected json flag in hook options", async () => {
+    let hookOptions: Readonly<Record<string, unknown>> | undefined;
+    let commandJsonOption: boolean | undefined;
+    const command = defineCommand({
+      json: true,
+      run(ctx) {
+        commandJsonOption = ctx.options.json;
+        return { ok: true };
+      },
+    });
+
+    await runCommandPipeline({
+      command,
+      argv: ["--json"],
+      simulateAgent: false,
+      hooks: {
+        beforeRun(ctx) {
+          hookOptions = ctx.options;
+        },
+      },
+    });
+
+    expect(commandJsonOption).toBe(true);
+    expect(hookOptions).toEqual({});
+  });
+
+  test("does not run hooks when argument parsing fails", async () => {
+    const beforeRun = vi.fn();
+    const afterRun = vi.fn();
+    const onRunError = vi.fn();
+    const command = defineCommand({
+      options: [{ name: "name", type: "string", required: true }],
+      run() {},
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      hooks: { beforeRun, afterRun, onRunError },
+    });
+
+    expect(result.parseOk).toBe(false);
+    expect(beforeRun).not.toHaveBeenCalled();
+    expect(afterRun).not.toHaveBeenCalled();
+    expect(onRunError).not.toHaveBeenCalled();
+  });
+
+  test("calls onRunError with the failing stage and preserves the original failure", async () => {
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      run() {
+        throw new CommandError({
+          kind: "project/failed",
+          message: "project failed",
+          details: { id: "task-1" },
+          exitCode: 7,
+        });
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      hooks: {
+        onRunError(ctx) {
+          observed.push({ stage: ctx.stage, error: ctx.error });
+        },
+      },
+    });
+
+    expect(observed).toEqual([
+      {
+        stage: "run",
+        error: {
+          kind: "project/failed",
+          message: "project failed",
+          details: { id: "task-1" },
+          exitCode: 7,
+        },
+      },
+    ]);
+    expect(result.error).toEqual({
+      kind: "project/failed",
+      message: "project failed",
+      details: { id: "task-1" },
+      exitCode: 7,
+    });
+  });
+
+  test("does not run the command when beforeRun fails and reports the beforeRun stage", async () => {
+    const run = vi.fn();
+    const observed: unknown[] = [];
+    const command = defineCommand({ run });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      hooks: {
+        beforeRun() {
+          throw new CommandError({ kind: "auth/failed", message: "auth failed", exitCode: 4 });
+        },
+        onRunError(ctx) {
+          observed.push({ stage: ctx.stage, error: ctx.error });
+        },
+      },
+    });
+
+    expect(run).not.toHaveBeenCalled();
+    expect(observed).toEqual([
+      {
+        stage: "beforeRun",
+        error: {
+          kind: "auth/failed",
+          message: "auth failed",
+          exitCode: 4,
+        },
+      },
+    ]);
+    expect(result.error).toEqual({
+      kind: "auth/failed",
+      message: "auth failed",
+      exitCode: 4,
+    });
+  });
+
+  test("reports the afterRun stage when afterRun fails", async () => {
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      run() {},
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      hooks: {
+        afterRun() {
+          throw new CommandError({
+            kind: "audit/failed",
+            message: "audit failed",
+            exitCode: 5,
+          });
+        },
+        onRunError(ctx) {
+          observed.push({ stage: ctx.stage, error: ctx.error });
+        },
+      },
+    });
+
+    expect(observed).toEqual([
+      {
+        stage: "afterRun",
+        error: {
+          kind: "audit/failed",
+          message: "audit failed",
+          exitCode: 5,
+        },
+      },
+    ]);
+    expect(result.error).toEqual({
+      kind: "audit/failed",
+      message: "audit failed",
+      exitCode: 5,
+    });
+  });
+
+  test("wraps onRunError failures with the original and hook failures", async () => {
+    const command = defineCommand({
+      run() {
+        throw new CommandError({
+          kind: "project/failed",
+          message: "project failed",
+          hint: "Fix the project",
+          details: { id: "task-1" },
+          exitCode: 7,
+        });
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      hooks: {
+        onRunError() {
+          throw new CommandError({
+            kind: "audit/failed",
+            message: "audit failed",
+            details: { sink: "audit-log" },
+            exitCode: 6,
+          });
+        },
+      },
+    });
+
+    expect(result.error).toEqual({
+      kind: "rune/hook-failed",
+      message: "onRunError hook failed: audit failed",
+      details: {
+        originalFailure: {
+          kind: "project/failed",
+          message: "project failed",
+          exitCode: 7,
+          hint: "Fix the project",
+          details: { id: "task-1" },
+        },
+        hookFailure: {
+          kind: "audit/failed",
+          message: "audit failed",
+          exitCode: 6,
+          details: { sink: "audit-log" },
+        },
+      },
+      exitCode: 6,
+    });
+  });
+
+  test("calls onRunError when a JSON Lines command does not return an iterable", async () => {
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      jsonl: true,
+      run() {
+        return null as never;
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      hooks: {
+        onRunError(ctx) {
+          observed.push({ stage: ctx.stage, error: ctx.error });
+        },
+      },
+    });
+
+    expect(observed).toEqual([
+      {
+        stage: "run",
+        error: {
+          kind: "rune/invalid-command-result",
+          message: "JSON Lines commands must return an iterable",
+          exitCode: 1,
+        },
+      },
+    ]);
+    expect(result.error).toEqual({
+      kind: "rune/invalid-command-result",
+      message: "JSON Lines commands must return an iterable",
+      exitCode: 1,
+    });
+  });
+
+  test("calls onRunError when a JSON Lines record cannot be serialized", async () => {
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield undefined;
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      hooks: {
+        onRunError(ctx) {
+          observed.push({ stage: ctx.stage, error: ctx.error });
+        },
+      },
+    });
+
+    expect(observed).toEqual([
+      {
+        stage: "run",
+        error: {
+          kind: "rune/serialization-failed",
+          message: "Failed to serialize JSON Lines record",
+          details: { index: 0, reason: "JSON.stringify returned undefined" },
+          exitCode: 1,
+        },
+      },
+    ]);
+    expect(result.error).toEqual({
+      kind: "rune/serialization-failed",
+      message: "Failed to serialize JSON Lines record",
+      details: { index: 0, reason: "JSON.stringify returned undefined" },
+      exitCode: 1,
+    });
+  });
+
+  test("preserves JSON Lines records when afterRun fails", async () => {
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: "a" };
+        yield { id: "b" };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink: { stdout() {}, stderr() {} },
+      hooks: {
+        afterRun() {
+          throw new CommandError({ kind: "audit/failed", message: "audit failed" });
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: 1,
+      error: {
+        kind: "audit/failed",
+        message: "audit failed",
+        exitCode: 1,
+      },
+      records: [{ id: "a" }, { id: "b" }],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+  });
+
+  test("does not run afterRun or onRunError when JSON Lines output hits a broken pipe", async () => {
+    const afterRun = vi.fn();
+    const onRunError = vi.fn();
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: "a" };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink: {
+        stdout() {
+          throw Object.assign(new Error("closed"), { code: "EPIPE" });
+        },
+        stderr() {},
+      },
+      hooks: { afterRun, onRunError },
+    });
+
+    expect(result).toMatchObject({
+      parseOk: true,
+      exitCode: 0,
+      records: [{ id: "a" }],
+      jsonMode: false,
+      jsonlMode: true,
+      brokenPipe: true,
+    });
+    expect(afterRun).not.toHaveBeenCalled();
+    expect(onRunError).not.toHaveBeenCalled();
+  });
+});

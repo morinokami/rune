@@ -2,6 +2,7 @@ import type { CommandFailure } from "../core/command-error";
 import type { DefinedCommand, InferCommandData, InferCommandRecords } from "../core/command-types";
 import type { RuneConfig } from "../core/define-config";
 import type { CommandArgField, CommandOptionField } from "../core/field-types";
+import type { RuneHooks, RunHookCommandMetadata } from "../core/run-hooks";
 
 import { createBytesStdinSource } from "../core/command-stdin";
 import { runCommandPipeline } from "../core/run-command-pipeline";
@@ -34,6 +35,13 @@ export interface RunCommandContext {
   readonly simulateAgent?: boolean;
   /** Global options to inject as if they were defined by `defineConfig({ options })`. */
   readonly globalOptions?: readonly CommandOptionField[];
+  /** Project-level hooks to inject as if they were defined by `defineConfig({ hooks })`. */
+  readonly hooks?: RuneHooks;
+  /**
+   * Command route metadata exposed to hooks. `runCommand()` does not involve
+   * manifest routing, so omitted metadata defaults to empty values.
+   */
+  readonly commandMetadata?: RunHookCommandMetadata;
   /**
    * Stdin bytes injected into `ctx.stdin`. When omitted, tests receive an
    * isolated empty TTY-like stdin instead of inheriting `process.stdin`.
@@ -155,6 +163,8 @@ export async function runCommand<TCommand extends RunnableCommand>(
     command,
     argv,
     globalOptions: context.globalOptions,
+    hooks: context.hooks,
+    commandMetadata: context.commandMetadata,
     env: context.env ?? {},
     cwd: context.cwd,
     simulateAgent: context.simulateAgent ?? false,
@@ -225,7 +235,8 @@ export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
   ): Promise<RunCommandResult<TCommand>> {
     return runCommand(command, argv, {
       ...context,
-      globalOptions: config.options,
+      globalOptions: context.globalOptions ?? config.options,
+      hooks: context.hooks ?? config.hooks,
     });
   };
 }

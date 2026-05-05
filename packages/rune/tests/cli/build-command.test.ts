@@ -229,6 +229,43 @@ export default defineCommand({
     });
   });
 
+  test("the built CLI applies defineConfig hooks", async () => {
+    const { projectRoot } = await createBuildProject({
+      "rune.config.ts": `import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({
+  hooks: {
+    beforeRun(ctx) {
+      ctx.output.error(\`before \${ctx.command.cliName}:\${ctx.command.path.join("/")}:\${ctx.outputMode}\`);
+    },
+    afterRun(ctx) {
+      ctx.output.error(\`after \${ctx.result.kind}\`);
+    },
+  },
+});
+`,
+      "src/commands/deploy/index.ts": `import { defineCommand } from "@rune-cli/rune";
+
+export default defineCommand({
+  async run() {
+    console.log("deployed");
+  },
+});
+`,
+    });
+
+    const buildResult = await captureRuneCliResult(["build"], projectRoot);
+    expect(buildResult.exitCode).toBe(0);
+    expect(buildResult.stderr).toBe("");
+
+    const runResult = await captureBuiltCliResult(projectRoot, ["deploy"]);
+    expect(runResult).toEqual({
+      exitCode: 0,
+      stdout: "deployed\n",
+      stderr: "before mycli:deploy:text\nafter text\n",
+    });
+  });
+
   test("runRuneCli builds a bare file command and emits the correct dist path", async () => {
     const { projectRoot } = await createBuildProject({
       "src/commands/hello.ts": `import { defineCommand } from "@rune-cli/rune";

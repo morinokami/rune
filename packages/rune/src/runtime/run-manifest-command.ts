@@ -156,6 +156,12 @@ async function runResolvedCommand(
     command,
     argv: route.remainingArgs,
     globalOptions,
+    hooks: config?.hooks,
+    commandMetadata: {
+      cliName: options.cliName,
+      path: route.node.pathSegments,
+      name: route.node.pathSegments.at(-1) ?? "",
+    },
     env: options.env ?? process.env,
     cwd: options.cwd,
     simulateAgent: options.simulateAgent,

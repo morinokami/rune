@@ -127,9 +127,23 @@ test("reads stdin", async () => {
 
 Low-level injection point for global options. Prefer `createRunCommand(config)` for normal tests.
 
+#### `hooks`
+
+- **Type:** `RuneHooks`
+- **Optional**
+
+Low-level injection point for global hooks. Prefer `createRunCommand(config)` for normal tests.
+
+#### `commandMetadata`
+
+- **Type:** `RunHookCommandMetadata`
+- **Optional**
+
+Command route metadata exposed to hooks. `runCommand()` does not perform manifest routing, so omitted metadata defaults to empty values. Pass this when testing hooks that branch on `ctx.command.cliName` or `ctx.command.path`.
+
 ## `createRunCommand()`
 
-Creates a `runCommand()` helper that bakes in your project config. Use this when your project defines `defineConfig({ options })`.
+Creates a `runCommand()` helper that bakes in your project config. Use this when your project defines `defineConfig({ options })` or `defineConfig({ hooks })`.
 
 ```ts
 import { createRunCommand } from "@rune-cli/rune/test";
@@ -138,7 +152,7 @@ import config from "../rune.config";
 const runCommand = createRunCommand(config);
 ```
 
-The returned function has the same call shape as `runCommand(command, argv, context)` and injects `config.options` into each command execution.
+The returned function has the same call shape as `runCommand(command, argv, context)` and injects `config.options` and `config.hooks` into each command execution. Pass `context.globalOptions` or `context.hooks` to override the config-provided values for a specific test.
 
 ### CommandExecutionResult
 

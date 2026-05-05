@@ -4,6 +4,14 @@ import type { OutputSink } from "./command-output";
 import type { CommandStdinSource } from "./command-stdin";
 import type { DefinedCommand, InferCommandData, InferCommandRecords } from "./command-types";
 import type { CommandArgField, CommandOptionField } from "./field-types";
+import type {
+  BaseRunHookContext,
+  RuneHooks,
+  RunErrorStage,
+  RunHookCommandMetadata,
+  RunHookOutputMode,
+  RunHookResult,
+} from "./run-hooks";
 
 import { resolveAgentDetected } from "./agent-detection";
 import { BrokenPipeError, installBrokenPipeGuard, isBrokenPipeError } from "./broken-pipe";
@@ -12,6 +20,7 @@ import { CommandError, type CommandFailure } from "./command-error";
 import { createOutput } from "./command-output";
 import { createCommandStdin, createProcessStdinSource } from "./command-stdin";
 import { parseCommandArgs } from "./parse-command-args";
+import { createHookFailedFailure } from "./run-hooks";
 import { isSchemaField } from "./schema-field";
 
 // ---------------------------------------------------------------------------
@@ -33,6 +42,8 @@ export interface RunCommandPipelineInput {
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
   readonly stdin?: CommandStdinSource | undefined;
+  readonly hooks?: RuneHooks | undefined;
+  readonly commandMetadata?: RunHookCommandMetadata | undefined;
   /**
    * Overrides agent-environment detection for `json: true` commands. When the
    * environment looks like an AI agent, JSON mode is auto-enabled even
@@ -83,6 +94,8 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     cwd,
     sink = defaultSink,
     stdin: stdinSource = createProcessStdinSource(),
+    hooks,
+    commandMetadata = DEFAULT_COMMAND_METADATA,
     simulateAgent,
   } = input;
   const commandDefinition = command as unknown as DefinedCommand<
@@ -118,6 +131,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
         })
       : false;
   const jsonMode = commandDefinition.json && (explicitJsonMode || agentDetected);
+  const outputMode = resolveOutputMode(commandDefinition, jsonMode);
 
   const output = createOutput(sink, { silentStdout: jsonMode || commandDefinition.jsonl });
   const stdin = createCommandStdin(stdinSource);
@@ -137,6 +151,15 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
   }
 
   const records: unknown[] = [];
+  let runErrorStage: RunErrorStage = "beforeRun";
+  let hookContext: BaseRunHookContext = createFallbackHookContext({
+    command: commandMetadata,
+    outputMode,
+    cwd: cwd ?? process.cwd(),
+    argv,
+    output,
+    stdin,
+  });
 
   try {
     const args = addCamelCaseAliases(
@@ -148,9 +171,24 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       effectiveOptions,
       parsed.value.options as Record<string, unknown>,
     );
+    const hookOptions = addCamelCaseAliases({ ...rawOptions });
     const options = addCamelCaseAliases(
       commandDefinition.json ? { ...rawOptions, json: jsonMode } : rawOptions,
     );
+    const commandCwd = hookContext.cwd;
+    hookContext = {
+      command: commandMetadata,
+      outputMode,
+      args,
+      options: hookOptions,
+      cwd: commandCwd,
+      rawArgs: argv,
+      output,
+      stdin,
+    };
+
+    await hooks?.beforeRun?.(hookContext);
+    runErrorStage = "run";
 
     // The `command.run` signature is generic, but at this layer we operate on
     // erased `DefinedCommand` instances. The casts above produce the shapes
@@ -159,7 +197,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     const data = await commandDefinition.run({
       options: options as never,
       args: args as never,
-      cwd: cwd ?? process.cwd(),
+      cwd: commandCwd,
       rawArgs: argv,
       output,
       stdin,
@@ -173,11 +211,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
             message: "JSON Lines commands must return an iterable",
           }),
         );
+        const finalFailure = await applyRunErrorHook(hooks, hookContext, "run", failure);
 
         return {
           parseOk: true,
-          exitCode: failure.exitCode,
-          error: failure,
+          exitCode: finalFailure.exitCode,
+          error: finalFailure,
           data: undefined,
           records: records as InferCommandRecords<TCommand>[],
           jsonMode: false,
@@ -189,10 +228,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
         const serialized = serializeJsonLineRecord(record, records.length);
 
         if (!serialized.ok) {
+          const finalFailure = await applyRunErrorHook(hooks, hookContext, "run", serialized.error);
+
           return {
             parseOk: true,
-            exitCode: serialized.error.exitCode,
-            error: serialized.error,
+            exitCode: finalFailure.exitCode,
+            error: finalFailure,
             data: undefined,
             records: records as InferCommandRecords<TCommand>[],
             jsonMode: false,
@@ -220,6 +261,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
         }
       }
 
+      runErrorStage = "afterRun";
+      await hooks?.afterRun?.({
+        ...hookContext,
+        result: { kind: "jsonl", records: records as InferCommandRecords<TCommand>[] },
+      });
+
       return {
         parseOk: true,
         exitCode: 0,
@@ -230,6 +277,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       };
     }
 
+    runErrorStage = "afterRun";
+    await hooks?.afterRun?.({
+      ...hookContext,
+      result: createRunHookResult(commandDefinition, data),
+    });
+
     return {
       parseOk: true,
       exitCode: 0,
@@ -239,11 +292,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     };
   } catch (error) {
     const failure = normalizeExecutionFailure(error);
+    const finalFailure = await applyRunErrorHook(hooks, hookContext, runErrorStage, failure);
 
     return {
       parseOk: true,
-      exitCode: failure.exitCode,
-      error: failure,
+      exitCode: finalFailure.exitCode,
+      error: finalFailure,
       data: undefined,
       records: commandDefinition.jsonl ? (records as InferCommandRecords<TCommand>[]) : undefined,
       jsonMode,
@@ -271,6 +325,73 @@ const INVALID_ARGUMENTS_ERROR_KIND = "rune/invalid-arguments";
 const INVALID_COMMAND_RESULT_ERROR_KIND = "rune/invalid-command-result";
 const SERIALIZATION_FAILED_ERROR_KIND = "rune/serialization-failed";
 const UNEXPECTED_ERROR_KIND = "rune/unexpected";
+
+const DEFAULT_COMMAND_METADATA: RunHookCommandMetadata = {
+  cliName: "",
+  path: [],
+  name: "",
+};
+
+function resolveOutputMode(
+  command: Pick<DefinedCommand, "json" | "jsonl">,
+  jsonMode: boolean,
+): RunHookOutputMode {
+  if (command.jsonl) {
+    return "jsonl";
+  }
+
+  return jsonMode ? "json" : "text";
+}
+
+function createFallbackHookContext(options: {
+  readonly command: RunHookCommandMetadata;
+  readonly outputMode: RunHookOutputMode;
+  readonly cwd: string;
+  readonly argv: readonly string[];
+  readonly output: BaseRunHookContext["output"];
+  readonly stdin: BaseRunHookContext["stdin"];
+}): BaseRunHookContext {
+  return {
+    command: options.command,
+    outputMode: options.outputMode,
+    args: {},
+    options: {},
+    cwd: options.cwd,
+    rawArgs: options.argv,
+    output: options.output,
+    stdin: options.stdin,
+  };
+}
+
+function createRunHookResult(command: Pick<DefinedCommand, "json">, data: unknown): RunHookResult {
+  if (command.json) {
+    return { kind: "json", data };
+  }
+
+  return { kind: "text" };
+}
+
+async function applyRunErrorHook(
+  hooks: RuneHooks | undefined,
+  context: BaseRunHookContext,
+  stage: RunErrorStage,
+  failure: CommandFailure,
+): Promise<CommandFailure> {
+  if (!hooks?.onRunError) {
+    return failure;
+  }
+
+  try {
+    await hooks.onRunError({
+      ...context,
+      stage,
+      error: failure,
+    });
+    return failure;
+  } catch (error) {
+    return createHookFailedFailure(failure, normalizeExecutionFailure(error));
+  }
+}
 
 /**
  * Extracts a framework-managed `--json` flag from argv.

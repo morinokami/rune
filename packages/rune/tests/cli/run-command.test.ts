@@ -81,6 +81,41 @@ export default defineCommand({
     expect(generatedTypes).toContain("interface RuneConfigOptions");
   });
 
+  test("runRuneCli applies defineConfig hooks to the matched command", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({
+  hooks: {
+    beforeRun(ctx) {
+      ctx.output.error(\`before \${ctx.command.cliName}:\${ctx.command.path.join("/")}:\${ctx.outputMode}\`);
+    },
+    afterRun(ctx) {
+      ctx.output.error(\`after \${ctx.result.kind}\`);
+    },
+  },
+});
+`,
+        "src/commands/deploy/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  async run() {
+    console.log("deployed");
+  },
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "deploy"], projectRoot);
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("deployed\n");
+    expect(captured.stderr).toBe("before mycli:deploy:text\nafter text\n");
+  });
+
   test("runRuneCli shows global options in command help but not group help", async () => {
     const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
       files: {

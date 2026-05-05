@@ -1,5 +1,6 @@
 import type { CommandOptionField, NormalizeFields } from "./field-types";
 import type { HelpData } from "./help-types";
+import type { RuneHooks } from "./run-hooks";
 
 import {
   validateEnumFields,
@@ -51,6 +52,12 @@ export interface RuneConfigInput {
    * supported.
    */
   readonly options?: readonly CommandOptionField[] | undefined;
+
+  /**
+   * Project-wide hooks that run around every executable command's `run()`
+   * lifecycle after routing and argument parsing have succeeded.
+   */
+  readonly hooks?: RuneHooks | undefined;
 }
 
 /** The resolved configuration object returned by {@link defineConfig}. */
@@ -59,6 +66,7 @@ export interface RuneConfig<TInput extends RuneConfigInput = RuneConfigInput> {
   readonly version?: string | undefined;
   readonly help?: ((data: HelpData) => string) | undefined;
   readonly options: NormalizeFields<TInput["options"], CommandOptionField>;
+  readonly hooks?: RuneHooks | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +103,7 @@ export function defineConfig<const TInput extends RuneConfigInput>(
     version: input.version,
     help: input.help,
     options: [...(input.options ?? [])],
+    hooks: input.hooks,
   };
 
   Object.defineProperty(config, RUNE_CONFIG_BRAND, {

@@ -37,6 +37,17 @@ describe("defineConfig", () => {
     expect(config.help).toBeUndefined();
   });
 
+  test("defineConfig returns configured hooks", () => {
+    const hooks = {
+      beforeRun() {},
+      afterRun() {},
+      onRunError() {},
+    };
+    const config = defineConfig({ hooks });
+
+    expect(config.hooks).toBe(hooks);
+  });
+
   test("defineConfig preserves option identity for config option inference", () => {
     const config = defineConfig({
       options: [

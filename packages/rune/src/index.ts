@@ -17,4 +17,15 @@ export type {
   HelpData,
   UnknownCommandHelpData,
 } from "./core/help-types";
+export type {
+  AfterRunContext,
+  BeforeRunContext,
+  BaseRunHookContext,
+  RuneHooks,
+  RunErrorContext,
+  RunErrorStage,
+  RunHookCommandMetadata,
+  RunHookOutputMode,
+  RunHookResult,
+} from "./core/run-hooks";
 export { renderDefaultHelp } from "./help/render-default-help";
