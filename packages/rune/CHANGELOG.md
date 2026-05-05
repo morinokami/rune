@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.1.1
+
+### Patch Changes
+
+- [#181](https://github.com/morinokami/rune/pull/181) [`b90f6aa`](https://github.com/morinokami/rune/commit/b90f6aab1f80468ba80fa874742c4f387016b666) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): handle broken pipes in JSON Lines output
+
 ## 0.1.0
 
 ### Minor Changes
