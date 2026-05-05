@@ -141,7 +141,7 @@ $ your-cli events
 {"id":"b","status":"done"}
 ```
 
-JSON Lines モードでは `output.log()` は常に抑制され、`output.error()` は引き続き stderr に出力されます。`jsonl: true` は `json: true` と併用できず、Rune は `--jsonl` フラグを追加しません。人間向けの表示と JSON Lines ストリームの両方が必要な場合は、stdout の契約が明確になるよう別コマンドに分けることを推奨します。
+JSON Lines モードでは `output.log()` は常に抑制され、`output.error()` は引き続き stderr に出力されます。`jsonl: true` は `json: true` と併用できず、Rune は `--jsonl` フラグを追加しません。downstream の pipe が早期に閉じた場合、Rune は broken pipe をエラー出力せず通常の早期終了として扱います。人間向けの表示と JSON Lines ストリームの両方が必要な場合は、stdout の契約が明確になるよう別コマンドに分けることを推奨します。
 
 JSON Lines コマンドがレコードを出力した後に失敗した場合、すでに stdout に書かれたレコードはそのまま有効な JSON Lines として残ります。最後のエラーは compact な JSON error オブジェクトとして stderr に出力されます。ただし stderr には `output.error()` による人間向け診断も混在し得るため、JSON Lines として保証されるのは stdout のみです。
 

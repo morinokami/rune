@@ -8,6 +8,7 @@ import type {
   ResolveCommandRouteResult,
 } from "../routing/resolve-command-route";
 
+import { installBrokenPipeGuard } from "../core/broken-pipe";
 import { runCommandPipeline } from "../core/run-command-pipeline";
 import { toHelpJson } from "../help/help-json";
 import { renderResolvedHelp, resolveHelpData } from "../help/render-resolved-help";
@@ -38,6 +39,9 @@ export interface RunManifestCommandOptions {
 
 // Resolves argv, loads only the matched leaf module, and executes it in-process.
 export async function runManifestCommand(options: RunManifestCommandOptions): Promise<number> {
+  installBrokenPipeGuard(process.stdout);
+  installBrokenPipeGuard(process.stderr);
+
   try {
     if (isVersionRequest(options)) {
       process.stdout.write(`${options.cliName} v${options.version}\n`);
@@ -164,6 +168,10 @@ function emitCommandResult(result: RunCommandPipelineResult): number {
   let exitCode = result.exitCode;
 
   if (result.jsonlMode) {
+    if (result.brokenPipe) {
+      return 0;
+    }
+
     if (result.error) {
       writeJsonToStderr(renderJsonError(result.error));
     }

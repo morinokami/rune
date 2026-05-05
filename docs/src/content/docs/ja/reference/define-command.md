@@ -248,7 +248,7 @@ options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true
 - **型:** `true`
 - **省略可能**
 
-設定すると、そのコマンドの stdout 契約は JSON Lines（NDJSON）になります。`run()` 関数は `Iterable` または `AsyncIterable` を返す必要があり、Rune は `yield` された各レコードを 1 行のコンパクトな JSON としてシリアライズします。`output.log()` は抑制され、`output.error()` は引き続き stderr に出力されます。
+設定すると、そのコマンドの stdout 契約は JSON Lines（NDJSON）になります。`run()` 関数は `Iterable` または `AsyncIterable` を返す必要があり、Rune は `yield` された各レコードを 1 行のコンパクトな JSON としてシリアライズします。`output.log()` は抑制され、`output.error()` は引き続き stderr に出力されます。downstream の pipe が早期に閉じた場合、Rune は broken pipe をエラー出力せず通常の早期終了として扱います。
 
 `jsonl: true` は `json: true` と併用できません。Rune は `--jsonl` フラグを追加しません。
 

@@ -308,6 +308,7 @@ export default defineCommand({
 - `jsonl: true` cannot be combined with `json: true`
 - Rune does not add a `--jsonl` flag; use a separate command for a human-readable view
 - Runtime `--json` is rejected for JSON Lines commands, but `--help --json` still returns structured help JSON
+- Downstream broken pipes are treated as normal early stops and do not print errors
 - `runCommand()` exposes records as `result.output.records`
 
 ## File-based routing
