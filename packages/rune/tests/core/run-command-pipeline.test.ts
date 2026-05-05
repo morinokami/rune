@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import { CommandError } from "../../src/core/command-error";
 import { createBytesStdinSource, createProcessStdinSource } from "../../src/core/command-stdin";
@@ -624,6 +624,127 @@ describe("output and json mode", () => {
     });
     expect(stdout).toEqual(['{"id":1}\n', '{"id":2}\n']);
     expect(stderr).toEqual(["warning\n"]);
+  });
+
+  test("treats EPIPE from JSON Lines stdout as a broken pipe early exit", async () => {
+    const stdout = vi.fn(async () => {
+      const error = new Error("write EPIPE") as NodeJS.ErrnoException;
+      error.code = "EPIPE";
+      throw error;
+    });
+
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: 1 };
+        yield { id: 2 };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink: {
+        stdout,
+        stderr: async () => {},
+      },
+    });
+
+    expect(stdout).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 0,
+      data: undefined,
+      records: [{ id: 1 }],
+      jsonMode: false,
+      jsonlMode: true,
+      brokenPipe: true,
+    });
+  });
+
+  test("does not treat command-thrown EPIPE as a broken pipe", async () => {
+    const error = new Error("domain EPIPE") as NodeJS.ErrnoException;
+    error.code = "EPIPE";
+
+    const command = defineCommand({
+      jsonl: true,
+      run() {
+        return {
+          [Symbol.asyncIterator]() {
+            return {
+              async next() {
+                throw error;
+              },
+            };
+          },
+        };
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      sink: {
+        stdout: async () => {},
+        stderr: async () => {},
+      },
+    });
+
+    expect(result).toEqual({
+      parseOk: true,
+      exitCode: 1,
+      error: {
+        kind: "rune/unexpected",
+        message: "domain EPIPE",
+        exitCode: 1,
+      },
+      data: undefined,
+      records: [],
+      jsonMode: false,
+      jsonlMode: true,
+    });
+  });
+
+  test("guards process stdout EPIPE events while returning a broken pipe result", async () => {
+    const command = defineCommand({
+      jsonl: true,
+      async *run() {
+        yield { id: 1 };
+        yield { id: 2 };
+      },
+    });
+    const error = new Error("write EPIPE") as NodeJS.ErrnoException;
+    error.code = "EPIPE";
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(((
+      _chunk,
+      encoding,
+      callback,
+    ) => {
+      const writeCallback = typeof encoding === "function" ? encoding : callback;
+      writeCallback?.(error);
+      process.stdout.emit("error", error);
+      return false;
+    }) as typeof process.stdout.write);
+
+    try {
+      const result = await runCommandPipeline({
+        command,
+        argv: [],
+      });
+
+      expect(write).toHaveBeenCalledWith('{"id":1}\n', expect.any(Function));
+      expect(result).toEqual({
+        parseOk: true,
+        exitCode: 0,
+        data: undefined,
+        records: [{ id: 1 }],
+        jsonMode: false,
+        jsonlMode: true,
+        brokenPipe: true,
+      });
+    } finally {
+      write.mockRestore();
+    }
   });
 
   test("fails JSON Lines commands when a record cannot be serialized", async () => {

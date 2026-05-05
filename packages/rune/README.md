@@ -294,7 +294,7 @@ my-cli  # {"id":"a"}
         # {"id":"b"}
 ```
 
-JSON Lines mode is fixed for the command; Rune does not add a `--jsonl` flag and `json: true` cannot be combined with `jsonl: true`. If you need both a human view and a JSON Lines stream, prefer separate commands. In tests, `runCommand()` exposes yielded records as `result.output.records`.
+JSON Lines mode is fixed for the command; Rune does not add a `--jsonl` flag and `json: true` cannot be combined with `jsonl: true`. If the downstream pipe closes early, Rune treats that broken pipe as a normal early stop instead of printing an error. If you need both a human view and a JSON Lines stream, prefer separate commands. In tests, `runCommand()` exposes yielded records as `result.output.records`.
 
 ## Structured Errors
 

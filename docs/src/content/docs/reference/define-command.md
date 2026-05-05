@@ -248,7 +248,7 @@ Commands with `json: true` receive a framework-managed `options.json: boolean` v
 - **Type:** `true`
 - **Optional**
 
-When set, the command stdout contract is JSON Lines (NDJSON). The `run()` function must return an `Iterable` or `AsyncIterable`; Rune serializes each `yield`ed record as one compact JSON line. `output.log()` is suppressed and `output.error()` continues to write to stderr.
+When set, the command stdout contract is JSON Lines (NDJSON). The `run()` function must return an `Iterable` or `AsyncIterable`; Rune serializes each `yield`ed record as one compact JSON line. `output.log()` is suppressed and `output.error()` continues to write to stderr. If the downstream pipe closes early, Rune treats the broken pipe as a normal early stop instead of printing an error.
 
 `jsonl: true` cannot be combined with `json: true`. Rune does not add a `--jsonl` flag.
 

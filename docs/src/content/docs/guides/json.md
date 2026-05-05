@@ -141,7 +141,7 @@ $ your-cli events
 {"id":"b","status":"done"}
 ```
 
-In JSON Lines mode, `output.log()` is always suppressed and `output.error()` still writes to stderr. `jsonl: true` cannot be combined with `json: true`, and Rune does not add a `--jsonl` flag. If a CLI needs both a human-readable view and a JSON Lines stream, prefer separate commands so each command has one predictable stdout contract.
+In JSON Lines mode, `output.log()` is always suppressed and `output.error()` still writes to stderr. `jsonl: true` cannot be combined with `json: true`, and Rune does not add a `--jsonl` flag. If the downstream pipe closes early, Rune treats the broken pipe as a normal early stop instead of printing an error. If a CLI needs both a human-readable view and a JSON Lines stream, prefer separate commands so each command has one predictable stdout contract.
 
 If a JSON Lines command fails after emitting records, already-written stdout records remain valid. Rune reports the final error as a compact JSON error object on stderr; stderr may also contain human-readable `output.error()` diagnostics, so only stdout is guaranteed to be JSON Lines.
 

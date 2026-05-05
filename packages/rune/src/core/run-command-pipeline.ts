@@ -6,6 +6,7 @@ import type { DefinedCommand, InferCommandData, InferCommandRecords } from "./co
 import type { CommandArgField, CommandOptionField } from "./field-types";
 
 import { resolveAgentDetected } from "./agent-detection";
+import { BrokenPipeError, installBrokenPipeGuard, isBrokenPipeError } from "./broken-pipe";
 import { addCamelCaseAliases, normalizeToCanonicalKeys } from "./camel-case-aliases";
 import { CommandError, type CommandFailure } from "./command-error";
 import { createOutput } from "./command-output";
@@ -56,6 +57,7 @@ export interface RunCommandPipelineResult<TCommandData = unknown, TCommandRecord
   readonly records?: TCommandRecord[] | undefined;
   readonly jsonMode: boolean;
   readonly jsonlMode: boolean;
+  readonly brokenPipe?: true | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,7 +201,23 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
         }
 
         records.push(record);
-        await sink.stdout(`${serialized.value}\n`);
+        try {
+          await sink.stdout(`${serialized.value}\n`);
+        } catch (error) {
+          if (!isBrokenPipeError(error)) {
+            throw error;
+          }
+
+          return {
+            parseOk: true,
+            exitCode: 0,
+            data: undefined,
+            records: records as InferCommandRecords<TCommand>[],
+            jsonMode: false,
+            jsonlMode: true,
+            brokenPipe: true,
+          };
+        }
       }
 
       return {
@@ -240,9 +258,11 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
 
 const defaultSink: OutputSink = {
   stdout: (message) => {
+    installBrokenPipeGuard(process.stdout);
     return writeStream(process.stdout, message);
   },
   stderr: (message) => {
+    installBrokenPipeGuard(process.stderr);
     return writeStream(process.stderr, message);
   },
 };
@@ -332,7 +352,7 @@ async function writeStream(stream: NodeJS.WriteStream, contents: string): Promis
   await new Promise<void>((resolve, reject) => {
     stream.write(contents, (error?: Error | null) => {
       if (error) {
-        reject(error);
+        reject(isBrokenPipeError(error) ? new BrokenPipeError() : error);
         return;
       }
 

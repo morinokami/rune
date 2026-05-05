@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, describe, expect, test } from "vite-plus/test";
+import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 
 import type { CommandManifest } from "../../src/manifest/manifest-types";
 
@@ -745,6 +745,44 @@ describe("json lines mode", () => {
     expect(captured.stderr).toBe(
       'diagnostic\n{"error":{"kind":"stream/aborted","message":"Lost connection","hint":"Retry later"}}\n',
     );
+  });
+
+  test("runManifestCommand suppresses JSON Lines errors for broken pipes", async () => {
+    const { manifest } = await createJsonFixture(`  jsonl: true,
+  async *run() {
+    yield { id: "a" };
+    yield { id: "b" };
+  },`);
+    const error = new Error("write EPIPE") as NodeJS.ErrnoException;
+    error.code = "EPIPE";
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(((
+      _chunk,
+      encoding,
+      callback,
+    ) => {
+      const writeCallback = typeof encoding === "function" ? encoding : callback;
+      writeCallback?.(error);
+      process.stdout.emit("error", error);
+      return false;
+    }) as typeof process.stdout.write);
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((() => true) as typeof process.stderr.write);
+
+    try {
+      const exitCode = await runManifestCommand({
+        manifest,
+        rawArgs: ["list"],
+        cliName: "mycli",
+      });
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toHaveBeenCalledWith('{"id":"a"}\n', expect.any(Function));
+      expect(stderr).not.toHaveBeenCalled();
+    } finally {
+      stdout.mockRestore();
+      stderr.mockRestore();
+    }
   });
 
   test("runManifestCommand rejects runtime --json for JSON Lines commands", async () => {
