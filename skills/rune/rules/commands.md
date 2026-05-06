@@ -78,6 +78,24 @@ Use global options after the resolved command path, e.g. `my-cli deploy --profil
 
 After changing global options in `rune.config.ts`, run `rune sync` to refresh `.rune/global-options.d.ts` for editor type inference. `rune run` refreshes it before execution, and `rune build` refreshes it and validates global options against command options.
 
+`defineConfig({ locals })` creates project-defined runtime values once per successful executable command invocation and exposes them as `ctx.locals`:
+
+```ts
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+  async locals(ctx) {
+    const workspace = await resolveWorkspace(ctx.cwd);
+
+    return {
+      workspace,
+      api: createApiClient({ profile: ctx.options.profile }),
+    };
+  },
+});
+```
+
+Locals are created after routing and argument parsing succeed, before `beforeRun`. They are not created for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. The locals factory receives parsed `args` / `options`, `cwd`, `rawArgs`, `output`, command metadata, and `outputMode`; it intentionally does not receive `stdin`. Hooks and commands receive the same locals object. After changing locals, run `rune sync` to refresh `.rune/global-locals.d.ts`.
+
 `defineConfig({ hooks })` registers project-wide hooks around each executable command's `run()` lifecycle:
 
 ```ts
@@ -96,7 +114,7 @@ export default defineConfig({
 });
 ```
 
-Hooks run only after routing and argument parsing succeed for a leaf command. They do not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Hook `options` include global and command options but not the framework-injected `json` flag; use `ctx.outputMode` for the effective stdout mode. Prefer `ctx.output.error()` for hook diagnostics because `ctx.output.log()` writes to stdout for text commands.
+Hooks run only after routing and argument parsing succeed for a leaf command. They do not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Hook `options` include global and command options but not the framework-injected `json` flag; use `ctx.outputMode` for the effective stdout mode. Hook context includes `ctx.locals` after locals are created. If locals creation fails, `onRunError` runs with `stage: "locals"` and no `ctx.locals`. Prefer `ctx.output.error()` for hook diagnostics because `ctx.output.log()` writes to stdout for text commands.
 
 Priority order:
 
@@ -120,6 +138,7 @@ This works for commands, groups, and unknown-command suggestions. It does not re
 | --------- | ------------------- | ------------------------------------------------------ |
 | `args`    | `object`            | Parsed positional argument values                      |
 | `options` | `object`            | Parsed option values                                   |
+| `locals`  | `object`            | Project locals from `defineConfig({ locals })`         |
 | `cwd`     | `string`            | Working directory                                      |
 | `rawArgs` | `readonly string[]` | Original unparsed argv tokens                          |
 | `output`  | `CommandOutput`     | `output.log()` for stdout, `output.error()` for stderr |

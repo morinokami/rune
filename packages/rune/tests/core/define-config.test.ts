@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, test } from "vite-plus/test";
 import { z } from "zod";
 
-import type { InferConfigOptions } from "../../src/core/command-types";
+import type { InferConfigLocals, InferConfigOptions } from "../../src/core/command-types";
 
 import { defineConfig } from "../../src/core/define-config";
 
@@ -48,6 +48,29 @@ describe("defineConfig", () => {
     expect(config.hooks).toBe(hooks);
   });
 
+  test("defineConfig returns configured locals factory", async () => {
+    const config = defineConfig({
+      locals(ctx) {
+        return { cwd: ctx.cwd, profile: ctx.options.profile };
+      },
+    });
+
+    expect(config.locals).toBeDefined();
+    await expect(
+      Promise.resolve(
+        config.locals!({
+          command: { cliName: "my-cli", path: ["show"], name: "show" },
+          outputMode: "text",
+          args: {},
+          options: { profile: "dev" },
+          cwd: "/tmp/project",
+          rawArgs: [],
+          output: {} as never,
+        }),
+      ),
+    ).resolves.toEqual({ cwd: "/tmp/project", profile: "dev" });
+  });
+
   test("defineConfig preserves option identity for config option inference", () => {
     const config = defineConfig({
       options: [
@@ -61,6 +84,22 @@ describe("defineConfig", () => {
       profile: string;
       region?: "ap-northeast-1" | "us-east-1";
       verbose: boolean;
+    }>();
+  });
+
+  test("defineConfig preserves locals return type for config locals inference", () => {
+    const config = defineConfig({
+      locals() {
+        return {
+          workspace: { id: "workspace-1" },
+          api: { listProjects: () => ["rune"] },
+        };
+      },
+    });
+
+    expectTypeOf<InferConfigLocals<typeof config>>().toEqualTypeOf<{
+      workspace: { id: string };
+      api: { listProjects: () => string[] };
     }>();
   });
 

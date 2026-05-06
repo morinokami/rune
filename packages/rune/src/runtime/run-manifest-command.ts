@@ -157,6 +157,7 @@ async function runResolvedCommand(
     argv: route.remainingArgs,
     globalOptions,
     globalHooks: config?.hooks,
+    createLocals: config?.locals,
     commandMetadata: {
       cliName: options.cliName,
       path: route.node.pathSegments,

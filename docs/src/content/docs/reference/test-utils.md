@@ -134,6 +134,28 @@ Low-level injection point for global options. Prefer `createRunCommand(config)` 
 
 Low-level injection point for global hooks. Prefer `createRunCommand(config)` for normal tests.
 
+#### `createLocals`
+
+- **Type:** `(ctx: LocalsFactoryContext) => unknown`
+- **Optional**
+
+Low-level injection point for project locals. Prefer `createRunCommand(config)` for normal tests.
+
+#### `locals`
+
+- **Type:** `RuneConfigLocals`
+- **Optional**
+
+Shorthand for injecting a fixed `ctx.locals` value in a command test.
+
+```ts
+const result = await runCommand(command, [], {
+  locals: { workspace: fakeWorkspace, api: fakeApi },
+});
+```
+
+Pass either `createLocals` or `locals`, not both.
+
 #### `commandMetadata`
 
 - **Type:** `RunHookCommandMetadata`
@@ -143,7 +165,7 @@ Command route metadata exposed to hooks. `runCommand()` does not perform manifes
 
 ## `createRunCommand()`
 
-Creates a `runCommand()` helper that bakes in your project config. Use this when your project defines `defineConfig({ options })` or `defineConfig({ hooks })`.
+Creates a `runCommand()` helper that bakes in your project config. Use this when your project defines `defineConfig({ options })`, `defineConfig({ hooks })`, or `defineConfig({ locals })`.
 
 ```ts
 import { createRunCommand } from "@rune-cli/rune/test";
@@ -152,7 +174,7 @@ import config from "../rune.config";
 const runCommand = createRunCommand(config);
 ```
 
-The returned function has the same call shape as `runCommand(command, argv, context)` and injects `config.options` and `config.hooks` into each command execution. Pass `context.globalOptions` or `context.globalHooks` to override the config-provided values for a specific test.
+The returned function has the same call shape as `runCommand(command, argv, context)` and injects `config.options`, `config.hooks`, and `config.locals` into each command execution. Pass `context.globalOptions`, `context.globalHooks`, `context.createLocals`, or `context.locals` to override the config-provided values for a specific test.
 
 ### CommandExecutionResult
 

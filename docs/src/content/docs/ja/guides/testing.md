@@ -186,9 +186,9 @@ test("reads injected stdin", async () => {
 });
 ```
 
-## グローバルオプションを使うテスト
+## プロジェクト設定を使うテスト
 
-プロジェクトで `defineConfig({ options })` を定義している場合は、プロジェクト設定を組み込んだヘルパーを一度作成し、`runCommand()` と同じように使います:
+プロジェクトで `defineConfig({ options })`、`defineConfig({ hooks })`、または `defineConfig({ locals })` を定義している場合は、プロジェクト設定を組み込んだヘルパーを一度作成し、`runCommand()` と同じように使います:
 
 ```ts
 import { expect, test } from "vitest";
@@ -206,6 +206,6 @@ test("uses the configured profile", async () => {
 });
 ```
 
-これにより、各テストでグローバルオプションを繰り返し指定せずに、実際の CLI と同じパース・バリデーション経路でコマンドをテストできます。
+これにより、各テストでプロジェクト設定を繰り返し指定せずに、実際の CLI と同じパース・バリデーション経路でコマンドをテストできます。
 
 API の詳細については[テストユーティリティのリファレンス](/ja/reference/test-utils/)を参照してください。

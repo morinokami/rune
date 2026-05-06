@@ -1,5 +1,7 @@
 import { expectTypeOf, test } from "vite-plus/test";
 
+import type { RunCommandContext } from "../../src/test-utils/run-command";
+
 import { defineCommand } from "../../src/core/define-command";
 import { runCommand } from "../../src/test-utils/run-command";
 
@@ -80,4 +82,30 @@ test("runCommand accepts stdin context and exposes ctx.stdin", async () => {
   await runCommand(command, [], { stdin: "hello" });
   await runCommand(command, [], { stdin: Buffer.from("hello") });
   await runCommand(command, [], { stdin: new Uint8Array([1, 2, 3]) });
+});
+
+test("runCommand locals context accepts either factory or shorthand", async () => {
+  const command = defineCommand({
+    run() {},
+  });
+
+  await runCommand(command, [], {
+    createLocals() {
+      return { workspace: "factory" };
+    },
+  });
+
+  await runCommand(command, [], {
+    locals: { workspace: "shorthand" },
+  });
+
+  const invalidLocalsContext = {
+    createLocals() {
+      return { workspace: "factory" };
+    },
+    locals: { workspace: "shorthand" },
+  };
+
+  // @ts-expect-error createLocals and locals are mutually exclusive
+  void (invalidLocalsContext satisfies RunCommandContext);
 });

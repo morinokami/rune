@@ -302,6 +302,12 @@ export default defineCommand({
 
 `json: true` のコマンドでは、このオブジェクトにフレームワーク管理の `json` boolean も含まれます。この値は現在の実行において JSON モードが有効かどうかを表わします。明示的な `--json` フラグと自動的な JSON 有効化を区別したい場合は `rawArgs` を使用してください。
 
+### `locals`
+
+- **型:** `object`
+
+`defineConfig({ locals })` が返した、プロジェクト定義のランタイム値です。locals ファクトリが設定されていない場合は空のオブジェクトになります。
+
 ### `cwd`
 
 - **型:** `string`

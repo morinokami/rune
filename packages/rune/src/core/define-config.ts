@@ -1,5 +1,6 @@
 import type { CommandOptionField, NormalizeFields } from "./field-types";
 import type { HelpData } from "./help-types";
+import type { LocalsFactoryContext } from "./run-hooks";
 import type { RuneHooks } from "./run-hooks";
 
 import {
@@ -58,6 +59,13 @@ export interface RuneConfigInput {
    * lifecycle after routing and argument parsing have succeeded.
    */
   readonly hooks?: RuneHooks | undefined;
+
+  /**
+   * Project-defined runtime values available to every executable command as
+   * `ctx.locals`. The factory runs once per successful command invocation,
+   * after routing and argument parsing have succeeded and before `beforeRun`.
+   */
+  readonly locals?: ((ctx: LocalsFactoryContext) => unknown) | undefined;
 }
 
 /** The resolved configuration object returned by {@link defineConfig}. */
@@ -67,6 +75,7 @@ export interface RuneConfig<TInput extends RuneConfigInput = RuneConfigInput> {
   readonly help?: ((data: HelpData) => string) | undefined;
   readonly options: NormalizeFields<TInput["options"], CommandOptionField>;
   readonly hooks?: RuneHooks | undefined;
+  readonly locals?: TInput["locals"] | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +113,7 @@ export function defineConfig<const TInput extends RuneConfigInput>(
     help: input.help,
     options: [...(input.options ?? [])],
     hooks: input.hooks,
+    locals: input.locals,
   };
 
   Object.defineProperty(config, RUNE_CONFIG_BRAND, {

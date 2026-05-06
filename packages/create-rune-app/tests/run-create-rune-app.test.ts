@@ -18,6 +18,7 @@ function createCommandContext(
     args: { projectName: "my-app" },
     cwd: "/tmp/create-rune-app",
     options: { yes: false, install: true, git: true },
+    locals: {},
     rawArgs: [],
     output,
     stdin: {

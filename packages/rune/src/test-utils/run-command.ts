@@ -1,8 +1,13 @@
 import type { CommandFailure } from "../core/command-error";
-import type { DefinedCommand, InferCommandData, InferCommandRecords } from "../core/command-types";
+import type {
+  DefinedCommand,
+  InferCommandData,
+  InferCommandRecords,
+  RuneConfigLocals,
+} from "../core/command-types";
 import type { RuneConfig } from "../core/define-config";
 import type { CommandArgField, CommandOptionField } from "../core/field-types";
-import type { RuneHooks, RunHookCommandMetadata } from "../core/run-hooks";
+import type { LocalsFactoryContext, RuneHooks, RunHookCommandMetadata } from "../core/run-hooks";
 
 import { createBytesStdinSource } from "../core/command-stdin";
 import { runCommandPipeline } from "../core/run-command-pipeline";
@@ -16,7 +21,21 @@ type RunnableCommand = Pick<
 
 export type RunCommandStdinInput = string | Buffer | Uint8Array;
 
-export interface RunCommandContext {
+type RunCommandLocalsContext =
+  | {
+      /** Project locals factory to inject as if it were defined by `defineConfig({ locals })`. */
+      readonly createLocals?: ((ctx: LocalsFactoryContext) => unknown) | undefined;
+      readonly locals?: never;
+    }
+  | {
+      readonly createLocals?: never;
+      /** Project locals value shorthand for command tests. */
+      readonly locals?: RuneConfigLocals | undefined;
+    };
+
+export type RunCommandContext = RunCommandBaseContext & RunCommandLocalsContext;
+
+export interface RunCommandBaseContext {
   /** Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`. */
   readonly cwd?: string;
   /**
@@ -158,12 +177,14 @@ export async function runCommand<TCommand extends RunnableCommand>(
 ): Promise<RunCommandResult<TCommand>> {
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
+  const createLocals = resolveCreateLocals(context);
 
   const result = await runCommandPipeline({
     command,
     argv,
     globalOptions: context.globalOptions,
     globalHooks: context.globalHooks,
+    createLocals,
     commandMetadata: context.commandMetadata,
     env: context.env ?? {},
     cwd: context.cwd,
@@ -233,12 +254,40 @@ export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
     argv: string[] = [],
     context: RunCommandContext = {},
   ): Promise<RunCommandResult<TCommand>> {
-    return runCommand(command, argv, {
-      ...context,
+    const { createLocals, locals, ...contextWithoutLocals } = context;
+    const baseContext = {
+      ...contextWithoutLocals,
       globalOptions: context.globalOptions ?? config.options,
       globalHooks: context.globalHooks ?? config.hooks,
+    };
+
+    if (locals !== undefined) {
+      return runCommand(command, argv, { ...baseContext, locals });
+    }
+
+    if (createLocals !== undefined) {
+      return runCommand(command, argv, { ...baseContext, createLocals });
+    }
+
+    return runCommand(command, argv, {
+      ...baseContext,
+      createLocals: config.locals,
     });
   };
+}
+
+function resolveCreateLocals(
+  context: RunCommandContext,
+): ((ctx: LocalsFactoryContext) => unknown) | undefined {
+  if (context.createLocals !== undefined && context.locals !== undefined) {
+    throw new Error("RunCommandContext cannot specify both createLocals and locals.");
+  }
+
+  if (context.locals !== undefined) {
+    return () => context.locals;
+  }
+
+  return context.createLocals;
 }
 
 function getSerializableDetails(error: CommandFailure): unknown {

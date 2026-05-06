@@ -7,6 +7,8 @@ export type {
   CommandContext,
   DefinedCommand,
   InferConfigOptions,
+  InferConfigLocals,
+  RuneConfigLocals,
   RuneConfigOptions,
 } from "./core/command-types";
 export type { DefinedGroup } from "./core/define-group";
@@ -21,6 +23,7 @@ export type {
   AfterRunContext,
   BeforeRunContext,
   BaseRunHookContext,
+  LocalsFactoryContext,
   RuneHooks,
   RunErrorContext,
   RunErrorStage,
