@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.2.0
+
+### Minor Changes
+
+- [#183](https://github.com/morinokami/rune/pull/183) [`c684409`](https://github.com/morinokami/rune/commit/c684409312f6b36d13c286e3a5a3d8f0ed35d6b4) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add global run hooks
+
 ## 0.1.1
 
 ### Patch Changes
