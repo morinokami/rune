@@ -18,8 +18,15 @@ import {
 // Public types
 // ---------------------------------------------------------------------------
 
+type ConfigOptionFields<TOptionsFields extends readonly CommandOptionField[] | undefined> =
+  NormalizeFields<TOptionsFields, CommandOptionField>;
+
 /** The configuration object accepted by {@link defineConfig}. */
-export interface RuneConfigInput {
+export interface RuneConfigInput<
+  TOptionsFields extends readonly CommandOptionField[] | undefined =
+    | readonly CommandOptionField[]
+    | undefined,
+> {
   /**
    * CLI display name used in help output and `--version` output.
    *
@@ -52,20 +59,22 @@ export interface RuneConfigInput {
    * be optional: `required: true` and schemas that reject `undefined` are not
    * supported.
    */
-  readonly options?: readonly CommandOptionField[] | undefined;
+  readonly options?: TOptionsFields | undefined;
 
   /**
    * Project-wide hooks that run around every executable command's `run()`
    * lifecycle after routing and argument parsing have succeeded.
    */
-  readonly hooks?: RuneHooks | undefined;
+  readonly hooks?: RuneHooks<ConfigOptionFields<TOptionsFields>> | undefined;
 
   /**
    * Project-defined runtime values available to every executable command as
    * `ctx.locals`. The factory runs once per successful command invocation,
    * after routing and argument parsing have succeeded and before `beforeRun`.
    */
-  readonly locals?: ((ctx: LocalsFactoryContext) => unknown) | undefined;
+  readonly locals?:
+    | ((ctx: LocalsFactoryContext<ConfigOptionFields<TOptionsFields>>) => unknown)
+    | undefined;
 }
 
 /** The resolved configuration object returned by {@link defineConfig}. */
@@ -74,7 +83,7 @@ export interface RuneConfig<TInput extends RuneConfigInput = RuneConfigInput> {
   readonly version?: string | undefined;
   readonly help?: ((data: HelpData) => string) | undefined;
   readonly options: NormalizeFields<TInput["options"], CommandOptionField>;
-  readonly hooks?: RuneHooks | undefined;
+  readonly hooks?: TInput["hooks"] | undefined;
   readonly locals?: TInput["locals"] | undefined;
 }
 
@@ -100,9 +109,10 @@ export interface RuneConfig<TInput extends RuneConfigInput = RuneConfigInput> {
  * });
  * ```
  */
-export function defineConfig<const TInput extends RuneConfigInput>(
-  input: TInput,
-): RuneConfig<TInput> {
+export function defineConfig<
+  const TOptionsFields extends readonly CommandOptionField[] | undefined,
+  const TInput extends RuneConfigInput<TOptionsFields>,
+>(input: TInput & RuneConfigInput<TOptionsFields>): RuneConfig<TInput> {
   if (input.options) {
     validateConfigOptions(input.options);
   }
