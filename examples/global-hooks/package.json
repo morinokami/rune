@@ -1,0 +1,19 @@
+{
+  "name": "global-hooks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "rune run --",
+    "build": "rune build",
+    "test": "vitest run",
+    "rune": "rune"
+  },
+  "devDependencies": {
+    "@rune-cli/rune": "^0.2.0",
+    "@types/node": "^22.19.17",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
