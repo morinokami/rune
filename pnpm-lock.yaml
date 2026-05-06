@@ -139,8 +139,8 @@ importers:
   examples/jsonl:
     devDependencies:
       '@rune-cli/rune':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.2.0
+        version: 0.2.0
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
@@ -151,8 +151,8 @@ importers:
   examples/standard-schema:
     devDependencies:
       '@rune-cli/rune':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.2.0
+        version: 0.2.0
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
@@ -172,8 +172,8 @@ importers:
   examples/starter:
     devDependencies:
       '@rune-cli/rune':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.2.0
+        version: 0.2.0
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
@@ -1768,8 +1768,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@rune-cli/rune@0.1.1':
-    resolution: {integrity: sha512-NllJeURUQFzMqMIMQgoomfTIWXUElCTaiVRdPTRb4pDfVNLVEH3GHbALHcD9FaGQixMzvfsqLINtTov9Z5SLTA==}
+  '@rune-cli/rune@0.2.0':
+    resolution: {integrity: sha512-U/PKn2KPw7FSc5LFPwndFqJZ/IeXwqou0Xt7JJvpja8B9SEP03WXBjoLIl8HcO1xImnzos45eeo9tyhI1tPH1w==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -5398,7 +5398,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.60.0':
     optional: true
 
-  '@rune-cli/rune@0.1.1':
+  '@rune-cli/rune@0.2.0':
     dependencies:
       oxc-parser: 0.128.0
       rolldown: 1.0.0-rc.18
