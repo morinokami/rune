@@ -136,7 +136,7 @@ export default defineConfig({
 
 Rune creates locals once per executable command invocation after routing and argument parsing succeed, and before `hooks.beforeRun`. Locals are not created for `--help`, `--version`, unknown commands, group help, JSON help, or parse and validation failures.
 
-The locals factory context includes parsed `args`, parsed `options`, `cwd`, `rawArgs`, `output`, command metadata, and `outputMode`. It intentionally does not include `stdin`; hooks and commands can still use `ctx.stdin`.
+The locals factory context includes parsed `args`, parsed `options`, `cwd`, `rawArgs`, `output`, command metadata, and `outputMode`. `ctx.options` infers the global options declared in the same `defineConfig()` call; command-specific options remain available as `unknown` keys. It intentionally does not include `stdin`; hooks and commands can still use `ctx.stdin`.
 
 Hooks and the command receive the same locals object. If the locals factory fails, Rune calls `hooks.onRunError` with `stage: "locals"` and no `ctx.locals` value.
 
@@ -169,7 +169,7 @@ export default defineConfig({
 
 Hooks run after Rune resolves the matched leaf command and successfully parses its arguments. They do not run for `--help`, `--version`, unknown commands, group help, JSON help, or parse and validation failures.
 
-Hook context includes parsed `args`, parsed `options`, `locals`, `cwd`, `rawArgs`, `output`, `stdin`, command metadata, and `outputMode`. `outputMode` is the effective stdout mode for the invocation: `"text"`, `"json"`, or `"jsonl"`. Hook `options` include global and command options, but do not include the framework-injected `json` flag; use `outputMode` instead.
+Hook context includes parsed `args`, parsed `options`, `locals`, `cwd`, `rawArgs`, `output`, `stdin`, command metadata, and `outputMode`. `outputMode` is the effective stdout mode for the invocation: `"text"`, `"json"`, or `"jsonl"`. Hook `options` include global and command options, and global options declared in the same `defineConfig()` call are inferred on `ctx.options`. Hook `options` do not include the framework-injected `json` flag; use `outputMode` instead.
 
 Prefer `output.error()` for hook diagnostics. `output.log()` writes to stdout for text commands and can change the command's user-facing stdout contract.
 

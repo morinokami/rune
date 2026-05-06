@@ -136,7 +136,7 @@ export default defineConfig({
 
 Rune は、実行可能コマンドのルーティングと引数解析に成功したあと、`hooks.beforeRun` より前に locals を 1 回作成します。`--help`、`--version`、存在しないコマンド、グループヘルプ、JSON ヘルプ、引数の解析・検証に失敗した場合には作成されません。
 
-locals ファクトリの `ctx` には、解析済みの `args`、解析済みの `options`、`cwd`、`rawArgs`、`output`、コマンド情報、`outputMode` が含まれます。`stdin` は意図的に含めていません。フックとコマンドでは引き続き `ctx.stdin` を使えます。
+locals ファクトリの `ctx` には、解析済みの `args`、解析済みの `options`、`cwd`、`rawArgs`、`output`、コマンド情報、`outputMode` が含まれます。同じ `defineConfig()` 呼び出しで宣言したグローバルオプションは `ctx.options` 上で型推論され、コマンド固有のオプションは `unknown` のキーとして引き続き参照できます。`stdin` は意図的に含めていません。フックとコマンドでは引き続き `ctx.stdin` を使えます。
 
 フックとコマンドは同じ locals オブジェクトを受け取ります。locals ファクトリが失敗した場合、Rune は `stage: "locals"` で `hooks.onRunError` を呼び、この時点では `ctx.locals` は存在しません。
 
@@ -169,7 +169,7 @@ export default defineConfig({
 
 これらのフックは、Rune が実行対象のコマンドを決定し、引数の解析に成功したあとに実行されます。`--help`、`--version`、存在しないコマンド、サブコマンドの一覧を表示するだけのグループ、JSON 形式のヘルプ、引数の解析・検証に失敗した場合には実行されません。
 
-各フックに渡される `ctx` には、解析済みの `args`、解析済みの `options`、`locals`、`cwd`、`rawArgs`、`output`、`stdin`、コマンド情報、`outputMode` が含まれます。`outputMode` は、その実行で標準出力をどの形式として扱うかを表わし、`"text"`、`"json"`、`"jsonl"` のいずれかです。`ctx.options` にはグローバルオプションとコマンド自身のオプションが含まれますが、Rune が追加する `json` フラグは含まれません。JSON 出力として動いているかどうかは `outputMode` を参照してください。
+各フックに渡される `ctx` には、解析済みの `args`、解析済みの `options`、`locals`、`cwd`、`rawArgs`、`output`、`stdin`、コマンド情報、`outputMode` が含まれます。`outputMode` は、その実行で標準出力をどの形式として扱うかを表わし、`"text"`、`"json"`、`"jsonl"` のいずれかです。`ctx.options` にはグローバルオプションとコマンド自身のオプションが含まれ、同じ `defineConfig()` 呼び出しで宣言したグローバルオプションは型推論されます。ただし Rune が追加する `json` フラグは含まれません。JSON 出力として動いているかどうかは `outputMode` を参照してください。
 
 フックから診断メッセージを出す場合は、`output.error()` の使用を推奨します。`output.log()` は通常のテキスト出力のコマンドでは標準出力に書き込むため、コマンド本来の出力を変えてしまう可能性があります。
 

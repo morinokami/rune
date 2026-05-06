@@ -87,6 +87,48 @@ describe("defineConfig", () => {
     }>();
   });
 
+  test("defineConfig infers global options inside locals factory context", () => {
+    defineConfig({
+      options: [
+        { name: "repo", type: "string" },
+        { name: "dry-run", type: "boolean" },
+        { name: "profile", type: "string", default: "dev" },
+      ],
+      locals({ options }) {
+        expectTypeOf(options.repo).toEqualTypeOf<string | undefined>();
+        expectTypeOf(options.dryRun).toEqualTypeOf<boolean>();
+        expectTypeOf(options["dry-run"]).toEqualTypeOf<boolean>();
+        expectTypeOf(options.profile).toEqualTypeOf<string>();
+        expectTypeOf(options.commandOnly).toEqualTypeOf<unknown>();
+
+        return {};
+      },
+    });
+  });
+
+  test("defineConfig infers global options inside hook contexts", () => {
+    defineConfig({
+      options: [
+        { name: "repo", type: "string" },
+        { name: "verbose", type: "boolean" },
+      ],
+      hooks: {
+        beforeRun({ options }) {
+          expectTypeOf(options.repo).toEqualTypeOf<string | undefined>();
+          expectTypeOf(options.verbose).toEqualTypeOf<boolean>();
+        },
+        afterRun({ options }) {
+          expectTypeOf(options.repo).toEqualTypeOf<string | undefined>();
+          expectTypeOf(options.verbose).toEqualTypeOf<boolean>();
+        },
+        onRunError({ options }) {
+          expectTypeOf(options.repo).toEqualTypeOf<string | undefined>();
+          expectTypeOf(options.verbose).toEqualTypeOf<boolean>();
+        },
+      },
+    });
+  });
+
   test("defineConfig preserves locals return type for config locals inference", () => {
     const config = defineConfig({
       locals() {

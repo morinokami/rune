@@ -163,7 +163,7 @@ export default defineConfig({
 });
 ```
 
-Hooks run only after routing and argument parsing succeed for an executable command. They do not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Hook context exposes parsed `args`, parsed `options`, `outputMode`, command metadata, `output`, and `stdin`.
+Hooks run only after routing and argument parsing succeed for an executable command. They do not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Hook context exposes parsed `args`, parsed `options`, `outputMode`, command metadata, `output`, and `stdin`. Global options declared in the same `defineConfig()` call are inferred on hook `ctx.options`.
 
 ### Project Locals
 
@@ -185,7 +185,7 @@ export default defineConfig({
 });
 ```
 
-`locals` runs after routing and argument parsing succeed, before `beforeRun`. It does not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. The factory context intentionally does not include `stdin`; hooks and commands can still use `ctx.stdin`.
+`locals` runs after routing and argument parsing succeed, before `beforeRun`. It does not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Global options declared in the same `defineConfig()` call are inferred on `ctx.options`. The factory context intentionally does not include `stdin`; hooks and commands can still use `ctx.stdin`.
 
 ### Primitive Fields
 
