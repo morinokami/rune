@@ -237,4 +237,12 @@ test("uses the configured profile", async () => {
 });
 ```
 
-This injects `config.options` into each command test so parsing and validation match the real CLI. `RunCommandContext.globalOptions` exists as a low-level escape hatch, but normal project tests should prefer `createRunCommand(config)`.
+This injects `config.options` and `config.hooks` into each command test so parsing, validation, and project hooks match the real CLI. `RunCommandContext.globalOptions` and `RunCommandContext.globalHooks` exist as low-level escape hatches and override the config-provided values for a specific test, but normal project tests should prefer `createRunCommand(config)`.
+
+When testing a hook that depends on route metadata, pass `commandMetadata` explicitly. `runCommand()` does not perform manifest routing and otherwise uses empty metadata:
+
+```ts
+const result = await runCommand(command, [], {
+  commandMetadata: { cliName: "my-cli", path: ["deploy"], name: "deploy" },
+});
+```

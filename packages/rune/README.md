@@ -10,6 +10,7 @@ Key features:
 - File-based command routing — directory structure maps directly to the CLI command tree
 - Type-safe command definitions with full inference from `defineCommand()`
 - Global options via `defineConfig({ options })`
+- Global lifecycle hooks via `defineConfig({ hooks })`
 - [Standard Schema](https://standardschema.dev/) support for options and args (Zod, Valibot, ArkType, ...)
 - Built-in `--json` mode that turns the same command into a machine-readable API, auto-enabled under AI agents
 - In-process test utility with no child-process overhead
@@ -138,6 +139,30 @@ Use them after the resolved command path:
 ```sh
 my-cli deploy --profile dev
 ```
+
+### Global Hooks
+
+Project-wide hooks can be registered in `rune.config.ts` and run around each matched command's `run()` lifecycle:
+
+```ts
+import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({
+  hooks: {
+    beforeRun(ctx) {
+      ctx.output.error(`running ${ctx.command.path.join(" ")}`);
+    },
+    afterRun(ctx) {
+      ctx.output.error(`completed ${ctx.result.kind}`);
+    },
+    onRunError(ctx) {
+      ctx.output.error(`${ctx.stage} failed: ${ctx.error.message}`);
+    },
+  },
+});
+```
+
+Hooks run only after routing and argument parsing succeed for an executable command. They do not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Hook context exposes parsed `args`, parsed `options`, `outputMode`, command metadata, `output`, and `stdin`.
 
 ### Primitive Fields
 
@@ -403,7 +428,7 @@ Rune ships an official [Agent Skill](https://agentskills.io/home) that gives AI 
 | --------------------- | ----------------------------------------------------------------------- |
 | `defineCommand(def)`  | Define a command. The returned value must be the file's default export. |
 | `defineGroup(def)`    | Define metadata for a command group in `_group.ts`.                     |
-| `defineConfig(def)`   | Define project-wide CLI metadata and help configuration.                |
+| `defineConfig(def)`   | Define project-wide CLI metadata, help, options, and hooks.             |
 | `CommandError`        | Structured error class for command failures.                            |
 | `renderDefaultHelp()` | Render the default help output as a string; useful from custom `help`.  |
 | `runCommand()`        | (from `@rune-cli/rune/test`) Execute a command in-process for testing.  |

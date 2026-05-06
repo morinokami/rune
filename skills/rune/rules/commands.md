@@ -78,6 +78,26 @@ Use global options after the resolved command path, e.g. `my-cli deploy --profil
 
 After changing global options in `rune.config.ts`, run `rune sync` to refresh `.rune/global-options.d.ts` for editor type inference. `rune run` refreshes it before execution, and `rune build` refreshes it and validates global options against command options.
 
+`defineConfig({ hooks })` registers project-wide hooks around each executable command's `run()` lifecycle:
+
+```ts
+export default defineConfig({
+  hooks: {
+    beforeRun(ctx) {
+      ctx.output.error(`running ${ctx.command.path.join(" ")}`);
+    },
+    afterRun(ctx) {
+      ctx.output.error(`completed ${ctx.result.kind}`);
+    },
+    onRunError(ctx) {
+      ctx.output.error(`${ctx.stage} failed: ${ctx.error.message}`);
+    },
+  },
+});
+```
+
+Hooks run only after routing and argument parsing succeed for a leaf command. They do not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Hook `options` include global and command options but not the framework-injected `json` flag; use `ctx.outputMode` for the effective stdout mode. Prefer `ctx.output.error()` for hook diagnostics because `ctx.output.log()` writes to stdout for text commands.
+
 Priority order:
 
 1. `defineCommand({ help })`

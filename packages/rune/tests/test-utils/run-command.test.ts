@@ -57,6 +57,66 @@ describe("execution capture", () => {
     expect(providedResult.stdout).toBe("profile=dev\n");
   });
 
+  test("createRunCommand allows context global options to override config options", async () => {
+    const config = defineConfig({
+      options: [{ name: "profile", type: "string", default: "prod" }],
+    });
+    const runCommand = createRunCommand(config);
+    const command = defineCommand({
+      async run(ctx) {
+        ctx.output.log(JSON.stringify(ctx.options));
+      },
+    });
+
+    const result = await runCommand(command, [], { globalOptions: [] });
+
+    expect(result.stdout).toBe("{}\n");
+  });
+
+  test("runCommand injects hooks and command metadata for command tests", async () => {
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      run() {},
+    });
+
+    const result = await runCommand(command, [], {
+      commandMetadata: { cliName: "my-cli", path: ["project", "list"], name: "list" },
+      globalHooks: {
+        beforeRun(ctx) {
+          observed.push(ctx.command);
+        },
+      },
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(observed).toEqual([{ cliName: "my-cli", path: ["project", "list"], name: "list" }]);
+  });
+
+  test("createRunCommand injects config hooks for command tests", async () => {
+    const observed: string[] = [];
+    const config = defineConfig({
+      hooks: {
+        beforeRun() {
+          observed.push("before");
+        },
+        afterRun() {
+          observed.push("after");
+        },
+      },
+    });
+    const runCommand = createRunCommand(config);
+    const command = defineCommand({
+      run() {
+        observed.push("run");
+      },
+    });
+
+    const result = await runCommand(command);
+
+    expect(result.exitCode).toBe(0);
+    expect(observed).toEqual(["before", "run", "after"]);
+  });
+
   test("runCommand injects env as a complete replacement for option env fallbacks", async () => {
     vi.stubEnv("RUNE_RUN_COMMAND_PROFILE", "host");
 

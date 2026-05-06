@@ -103,6 +103,41 @@ Global options support the same `env` fallback as command options. CLI values st
 
 Run `rune sync` after changing `rune.config.ts` to refresh `.rune/global-options.d.ts` for editor type inference. `rune run` regenerates the same file before execution, and `rune build` regenerates it and validates global options against command options before building.
 
+### `hooks`
+
+- **Type:** `RuneHooks`
+- **Optional**
+
+Project-wide hooks that run around every executable command's `run()` lifecycle.
+
+```ts
+import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({
+  hooks: {
+    beforeRun(ctx) {
+      ctx.output.error(`running ${ctx.command.path.join(" ")}`);
+    },
+    afterRun(ctx) {
+      ctx.output.error(`completed ${ctx.command.path.join(" ")}`);
+    },
+    onRunError(ctx) {
+      ctx.output.error(`${ctx.stage} failed: ${ctx.error.message}`);
+    },
+  },
+});
+```
+
+Hooks run after Rune resolves the matched leaf command and successfully parses its arguments. They do not run for `--help`, `--version`, unknown commands, group help, JSON help, or parse and validation failures.
+
+Hook context includes parsed `args`, parsed `options`, `cwd`, `rawArgs`, `output`, `stdin`, command metadata, and `outputMode`. `outputMode` is the effective stdout mode for the invocation: `"text"`, `"json"`, or `"jsonl"`. Hook `options` include global and command options, but do not include the framework-injected `json` flag; use `outputMode` instead.
+
+Prefer `output.error()` for hook diagnostics. `output.log()` writes to stdout for text commands and can change the command's user-facing stdout contract.
+
+`afterRun` receives a `result` snapshot. Text commands receive `{ kind: "text" }`, `json: true` commands receive `{ kind: "json", data }` even when effective JSON mode is off, and `jsonl: true` commands receive `{ kind: "jsonl", records }` after the iterable is consumed.
+
+If `beforeRun`, the command `run()`, or `afterRun` fails, Rune calls `onRunError` with `stage` set to `"beforeRun"`, `"run"`, or `"afterRun"`. If `onRunError` itself fails, Rune reports `rune/hook-failed` and keeps both the original failure and the hook failure in structured details. The `rune/hook-failed` exit code comes from the `onRunError` failure; both nested failures keep their original `exitCode` in details.
+
 ## Behavior
 
 ### Metadata resolution

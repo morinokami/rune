@@ -124,9 +124,23 @@ test("reads stdin", async () => {
 
 グローバルオプションを注入する低レベル API です。通常のテストでは `createRunCommand(config)` を使ってください。
 
+#### `globalHooks`
+
+- **型:** `RuneHooks`
+- **省略可能**
+
+グローバルフックを注入する低レベル API です。通常のテストでは `createRunCommand(config)` を使ってください。
+
+#### `commandMetadata`
+
+- **型:** `RunHookCommandMetadata`
+- **省略可能**
+
+フックに公開されるコマンドルートメタデータです。`runCommand()` はマニフェストのルーティングを実行しないため、省略した場合は空のメタデータになります。`ctx.command.cliName` や `ctx.command.path` で分岐するフックをテストするときに指定してください。
+
 ## `createRunCommand()`
 
-プロジェクト設定を組み込んだ `runCommand()` ヘルパーを作成します。プロジェクトで `defineConfig({ options })` を定義している場合に使います。
+プロジェクト設定を組み込んだ `runCommand()` ヘルパーを作成します。プロジェクトで `defineConfig({ options })` または `defineConfig({ hooks })` を定義している場合に使います。
 
 ```ts
 import { createRunCommand } from "@rune-cli/rune/test";
@@ -135,7 +149,7 @@ import config from "../rune.config";
 const runCommand = createRunCommand(config);
 ```
 
-返される関数は `runCommand(command, argv, context)` と同じ形で呼び出せ、各コマンド実行に `config.options` を注入します。
+返される関数は `runCommand(command, argv, context)` と同じかたちで呼び出せ、各コマンド実行に `config.options` と `config.hooks` を注入します。特定のテストで設定由来の値を上書きしたい場合は、`context.globalOptions` または `context.globalHooks` を渡してください。
 
 ### CommandExecutionResult
 
