@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.3.1
+
+### Patch Changes
+
+- [#189](https://github.com/morinokami/rune/pull/189) [`d7af111`](https://github.com/morinokami/rune/commit/d7af1118fe8385b315cadaac8cea015fabc95306) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): infer config options in locals and hook contexts
+
 ## 0.3.0
 
 ### Minor Changes
