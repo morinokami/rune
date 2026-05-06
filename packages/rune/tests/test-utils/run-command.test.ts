@@ -164,7 +164,7 @@ describe("execution capture", () => {
       runCommand(command, [], {
         createLocals: () => ({ workspace: "factory" }),
         locals: { workspace: "shorthand" },
-      }),
+      } as never),
     ).rejects.toThrow("RunCommandContext cannot specify both createLocals and locals.");
   });
 

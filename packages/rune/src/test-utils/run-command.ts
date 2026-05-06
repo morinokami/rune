@@ -21,7 +21,21 @@ type RunnableCommand = Pick<
 
 export type RunCommandStdinInput = string | Buffer | Uint8Array;
 
-export interface RunCommandContext {
+type RunCommandLocalsContext =
+  | {
+      /** Project locals factory to inject as if it were defined by `defineConfig({ locals })`. */
+      readonly createLocals?: ((ctx: LocalsFactoryContext) => unknown) | undefined;
+      readonly locals?: never;
+    }
+  | {
+      readonly createLocals?: never;
+      /** Project locals value shorthand for command tests. */
+      readonly locals?: RuneConfigLocals | undefined;
+    };
+
+export type RunCommandContext = RunCommandBaseContext & RunCommandLocalsContext;
+
+export interface RunCommandBaseContext {
   /** Working directory value injected into `ctx.cwd`. Does not change `process.cwd()`. */
   readonly cwd?: string;
   /**
@@ -42,10 +56,6 @@ export interface RunCommandContext {
   readonly globalOptions?: readonly CommandOptionField[];
   /** Project-level hooks to inject as if they were defined by `defineConfig({ hooks })`. */
   readonly globalHooks?: RuneHooks;
-  /** Project locals factory to inject as if it were defined by `defineConfig({ locals })`. */
-  readonly createLocals?: ((ctx: LocalsFactoryContext) => unknown) | undefined;
-  /** Project locals value shorthand for command tests. */
-  readonly locals?: RuneConfigLocals | undefined;
   /**
    * Command route metadata exposed to hooks. `runCommand()` does not involve
    * manifest routing, so omitted metadata defaults to empty values.
@@ -244,13 +254,24 @@ export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
     argv: string[] = [],
     context: RunCommandContext = {},
   ): Promise<RunCommandResult<TCommand>> {
-    const hasLocalsOverride = context.locals !== undefined || context.createLocals !== undefined;
-
-    return runCommand(command, argv, {
-      ...context,
+    const { createLocals, locals, ...contextWithoutLocals } = context;
+    const baseContext = {
+      ...contextWithoutLocals,
       globalOptions: context.globalOptions ?? config.options,
       globalHooks: context.globalHooks ?? config.hooks,
-      createLocals: hasLocalsOverride ? context.createLocals : config.locals,
+    };
+
+    if (locals !== undefined) {
+      return runCommand(command, argv, { ...baseContext, locals });
+    }
+
+    if (createLocals !== undefined) {
+      return runCommand(command, argv, { ...baseContext, createLocals });
+    }
+
+    return runCommand(command, argv, {
+      ...baseContext,
+      createLocals: config.locals,
     });
   };
 }
