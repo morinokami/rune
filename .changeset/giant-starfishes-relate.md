@@ -1,5 +1,5 @@
 ---
-"@rune-cli/rune": patch
+"@rune-cli/rune": minor
 ---
 
 feat(rune): add project locals
