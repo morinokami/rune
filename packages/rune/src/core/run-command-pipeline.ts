@@ -2,10 +2,16 @@ import { isAgent } from "std-env";
 
 import type { OutputSink } from "./command-output";
 import type { CommandStdinSource } from "./command-stdin";
-import type { DefinedCommand, InferCommandData, InferCommandRecords } from "./command-types";
+import type {
+  DefinedCommand,
+  InferCommandData,
+  InferCommandRecords,
+  RuneConfigLocals,
+} from "./command-types";
 import type { CommandArgField, CommandOptionField } from "./field-types";
 import type {
   BaseRunHookContext,
+  LocalsFactoryContext,
   RuneHooks,
   RunErrorStage,
   RunHookCommandMetadata,
@@ -38,6 +44,7 @@ export interface RunCommandPipelineInput {
   readonly command: RunnableCommand;
   readonly argv: readonly string[];
   readonly globalOptions?: readonly CommandOptionField[] | undefined;
+  readonly createLocals?: ((ctx: LocalsFactoryContext) => unknown) | undefined;
   readonly env?: Readonly<Record<string, string | undefined>> | undefined;
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
@@ -95,6 +102,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     sink = defaultSink,
     stdin: stdinSource = createProcessStdinSource(),
     globalHooks,
+    createLocals,
     commandMetadata = DEFAULT_COMMAND_METADATA,
     simulateAgent,
   } = input;
@@ -151,8 +159,8 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
   }
 
   const records: unknown[] = [];
-  let runErrorStage: RunErrorStage = "beforeRun";
-  let hookContext: BaseRunHookContext = createFallbackHookContext({
+  let runErrorStage: RunErrorStage = "locals";
+  let errorHookContext: RunErrorHookContext = createFallbackHookContext({
     command: commandMetadata,
     outputMode,
     cwd: cwd ?? process.cwd(),
@@ -175,8 +183,8 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     const options = addCamelCaseAliases(
       commandDefinition.json ? { ...rawOptions, json: jsonMode } : rawOptions,
     );
-    const commandCwd = hookContext.cwd;
-    hookContext = {
+    const commandCwd = errorHookContext.cwd;
+    const localsFactoryContext: LocalsFactoryContext = {
       command: commandMetadata,
       outputMode,
       args,
@@ -184,8 +192,18 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       cwd: commandCwd,
       rawArgs: argv,
       output,
+    };
+    errorHookContext = { ...localsFactoryContext, stdin };
+    const locals = (
+      createLocals ? await createLocals(localsFactoryContext) : {}
+    ) as RuneConfigLocals;
+    const hookContext: BaseRunHookContext = {
+      ...localsFactoryContext,
+      locals,
       stdin,
     };
+    errorHookContext = hookContext;
+    runErrorStage = "beforeRun";
 
     await globalHooks?.beforeRun?.(hookContext);
     runErrorStage = "run";
@@ -197,6 +215,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     const data = await commandDefinition.run({
       options: options as never,
       args: args as never,
+      locals,
       cwd: commandCwd,
       rawArgs: argv,
       output,
@@ -297,7 +316,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     };
   } catch (error) {
     const failure = normalizeExecutionFailure(error);
-    const finalFailure = await applyRunErrorHook(globalHooks, hookContext, runErrorStage, failure);
+    const finalFailure = await applyRunErrorHook(
+      globalHooks,
+      errorHookContext,
+      runErrorStage,
+      failure,
+    );
 
     return {
       parseOk: true,
@@ -355,7 +379,7 @@ function createFallbackHookContext(options: {
   readonly argv: readonly string[];
   readonly output: BaseRunHookContext["output"];
   readonly stdin: BaseRunHookContext["stdin"];
-}): BaseRunHookContext {
+}): RunErrorHookContext {
   return {
     command: options.command,
     outputMode: options.outputMode,
@@ -378,7 +402,7 @@ function createRunHookResult(command: Pick<DefinedCommand, "json">, data: unknow
 
 async function applyRunErrorHook(
   hooks: RuneHooks | undefined,
-  context: BaseRunHookContext,
+  context: RunErrorHookContext,
   stage: RunErrorStage,
   failure: CommandFailure,
 ): Promise<CommandFailure> {
@@ -397,6 +421,10 @@ async function applyRunErrorHook(
     return createHookFailedFailure(failure, normalizeExecutionFailure(error));
   }
 }
+
+type RunErrorHookContext = Omit<BaseRunHookContext, "locals"> & {
+  readonly locals?: RuneConfigLocals | undefined;
+};
 
 /**
  * Extracts a framework-managed `--json` flag from argv.

@@ -1050,6 +1050,139 @@ describe("execution failures", () => {
 });
 
 describe("global hooks", () => {
+  test("creates locals before hooks and command run", async () => {
+    const events: string[] = [];
+    const observed: unknown[] = [];
+    const command = defineCommand({
+      options: [{ name: "profile", type: "string", default: "prod" }],
+      run(ctx) {
+        events.push("run");
+        observed.push({
+          locals: ctx.locals,
+          stdinIsPiped: ctx.stdin.isPiped,
+        });
+      },
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: ["--profile", "dev"],
+      cwd: "/tmp/rune-project",
+      createLocals(ctx) {
+        events.push("locals");
+        expect("stdin" in ctx).toBe(false);
+        return {
+          cwd: ctx.cwd,
+          profile: ctx.options.profile,
+          commandPath: ctx.command.path,
+        };
+      },
+      commandMetadata: { cliName: "my-cli", path: ["deploy"], name: "deploy" },
+      globalHooks: {
+        beforeRun(ctx) {
+          events.push("before");
+          observed.push({ beforeLocals: ctx.locals });
+        },
+        afterRun(ctx) {
+          events.push("after");
+          observed.push({ afterLocals: ctx.locals });
+        },
+      },
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(events).toEqual(["locals", "before", "run", "after"]);
+    expect(observed).toEqual([
+      {
+        beforeLocals: {
+          cwd: "/tmp/rune-project",
+          profile: "dev",
+          commandPath: ["deploy"],
+        },
+      },
+      {
+        locals: {
+          cwd: "/tmp/rune-project",
+          profile: "dev",
+          commandPath: ["deploy"],
+        },
+        stdinIsPiped: expect.any(Boolean),
+      },
+      {
+        afterLocals: {
+          cwd: "/tmp/rune-project",
+          profile: "dev",
+          commandPath: ["deploy"],
+        },
+      },
+    ]);
+  });
+
+  test("does not create locals when argument parsing fails", async () => {
+    const createLocals = vi.fn();
+    const command = defineCommand({
+      options: [{ name: "profile", type: "string", required: true }],
+      run() {},
+    });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      createLocals,
+    });
+
+    expect(result.parseOk).toBe(false);
+    expect(createLocals).not.toHaveBeenCalled();
+  });
+
+  test("calls onRunError with locals stage when locals factory fails", async () => {
+    const run = vi.fn();
+    const observed: unknown[] = [];
+    const command = defineCommand({ run });
+
+    const result = await runCommandPipeline({
+      command,
+      argv: [],
+      createLocals() {
+        throw new CommandError({ kind: "project/no-workspace", message: "no workspace" });
+      },
+      globalHooks: {
+        beforeRun() {
+          observed.push("before");
+        },
+        onRunError(ctx) {
+          observed.push({
+            stage: ctx.stage,
+            error: ctx.error,
+            locals: ctx.locals,
+            args: ctx.args,
+            options: ctx.options,
+          });
+        },
+      },
+    });
+
+    expect(run).not.toHaveBeenCalled();
+    expect(observed).toEqual([
+      {
+        stage: "locals",
+        error: {
+          kind: "project/no-workspace",
+          message: "no workspace",
+          exitCode: 1,
+        },
+        locals: undefined,
+        args: {},
+        options: {},
+      },
+    ]);
+    expect(result.error).toEqual({
+      kind: "project/no-workspace",
+      message: "no workspace",
+      exitCode: 1,
+    });
+  });
+
   test("runs beforeRun and afterRun around a successful command", async () => {
     const events: string[] = [];
     const observed: unknown[] = [];

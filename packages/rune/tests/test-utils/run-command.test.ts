@@ -117,6 +117,57 @@ describe("execution capture", () => {
     expect(observed).toEqual(["before", "run", "after"]);
   });
 
+  test("createRunCommand injects config locals for command tests", async () => {
+    const config = defineConfig({
+      locals(ctx) {
+        return {
+          cwd: ctx.cwd,
+          commandName: ctx.command.name,
+        };
+      },
+    });
+    const runCommand = createRunCommand(config);
+    const command = defineCommand({
+      run(ctx) {
+        const locals = ctx.locals as { readonly cwd: string; readonly commandName: string };
+        ctx.output.log(`${locals.commandName}:${locals.cwd}`);
+      },
+    });
+
+    const result = await runCommand(command, [], {
+      cwd: "/tmp/project",
+      commandMetadata: { cliName: "my-cli", path: ["show"], name: "show" },
+    });
+
+    expect(result.stdout).toBe("show:/tmp/project\n");
+  });
+
+  test("runCommand accepts locals shorthand for command tests", async () => {
+    const command = defineCommand({
+      run(ctx) {
+        const locals = ctx.locals as { readonly workspace: string };
+        ctx.output.log(locals.workspace);
+      },
+    });
+
+    const result = await runCommand(command, [], {
+      locals: { workspace: "workspace-1" },
+    });
+
+    expect(result.stdout).toBe("workspace-1\n");
+  });
+
+  test("runCommand rejects ambiguous locals injection", async () => {
+    const command = defineCommand({ run() {} });
+
+    await expect(
+      runCommand(command, [], {
+        createLocals: () => ({ workspace: "factory" }),
+        locals: { workspace: "shorthand" },
+      }),
+    ).rejects.toThrow("RunCommandContext cannot specify both createLocals and locals.");
+  });
+
   test("runCommand injects env as a complete replacement for option env fallbacks", async () => {
     vi.stubEnv("RUNE_RUN_COMMAND_PROFILE", "host");
 

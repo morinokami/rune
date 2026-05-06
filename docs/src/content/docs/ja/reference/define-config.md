@@ -12,6 +12,14 @@ export default defineConfig({
   name: "my-cli",
   version: "1.0.0",
   options: [{ name: "profile", type: "string", default: "prod" }],
+  locals(ctx) {
+    return { profile: ctx.options.profile };
+  },
+  hooks: {
+    beforeRun(ctx) {
+      ctx.output.error(`running ${ctx.command.path.join(" ")}`);
+    },
+  },
   help(data) {
     return `${data.cliName}\n\n${renderDefaultHelp(data)}`;
   },
@@ -103,6 +111,37 @@ my-cli deploy --profile dev
 
 `rune.config.ts` を変更したら、`rune sync` を実行してエディタの型推論用 `.rune/global-options.d.ts` を更新できます。`rune run` は実行前に同ファイルの再生成を、`rune build` はビルド前に再生成と衝突検証を自動実行します。
 
+### `locals`
+
+- **型:** `(ctx: LocalsFactoryContext) => unknown`
+- **省略可能**
+
+すべての実行可能コマンドに `ctx.locals` として渡す、プロジェクト定義のランタイム値です。
+
+```ts
+import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+  async locals(ctx) {
+    const workspace = await resolveWorkspace(ctx.cwd);
+
+    return {
+      workspace,
+      api: createApiClient({ profile: ctx.options.profile }),
+    };
+  },
+});
+```
+
+Rune は、実行可能コマンドのルーティングと引数解析に成功したあと、`hooks.beforeRun` より前に locals を 1 回作成します。`--help`、`--version`、存在しないコマンド、グループヘルプ、JSON ヘルプ、引数の解析・検証に失敗した場合には作成されません。
+
+locals ファクトリの `ctx` には、解析済みの `args`、解析済みの `options`、`cwd`、`rawArgs`、`output`、コマンド情報、`outputMode` が含まれます。`stdin` は意図的に含めていません。フックとコマンドでは引き続き `ctx.stdin` を使えます。
+
+フックとコマンドは同じ locals オブジェクトを受け取ります。locals ファクトリが失敗した場合、Rune は `stage: "locals"` で `hooks.onRunError` を呼び、この時点では `ctx.locals` は存在しません。
+
+`locals` を変更したら、`rune sync` を実行してエディタの型推論用 `.rune/global-locals.d.ts` を更新できます。`rune run` と `rune build` は同ファイルを自動的に再生成します。
+
 ### `hooks`
 
 - **型:** `RuneHooks`
@@ -130,13 +169,13 @@ export default defineConfig({
 
 これらのフックは、Rune が実行対象のコマンドを決定し、引数の解析に成功したあとに実行されます。`--help`、`--version`、存在しないコマンド、サブコマンドの一覧を表示するだけのグループ、JSON 形式のヘルプ、引数の解析・検証に失敗した場合には実行されません。
 
-各フックに渡される `ctx` には、解析済みの `args`、解析済みの `options`、`cwd`、`rawArgs`、`output`、`stdin`、コマンド情報、`outputMode` が含まれます。`outputMode` は、その実行で標準出力をどの形式として扱うかを表わし、`"text"`、`"json"`、`"jsonl"` のいずれかです。`ctx.options` にはグローバルオプションとコマンド自身のオプションが含まれますが、Rune が追加する `json` フラグは含まれません。JSON 出力として動いているかどうかは `outputMode` を参照してください。
+各フックに渡される `ctx` には、解析済みの `args`、解析済みの `options`、`locals`、`cwd`、`rawArgs`、`output`、`stdin`、コマンド情報、`outputMode` が含まれます。`outputMode` は、その実行で標準出力をどの形式として扱うかを表わし、`"text"`、`"json"`、`"jsonl"` のいずれかです。`ctx.options` にはグローバルオプションとコマンド自身のオプションが含まれますが、Rune が追加する `json` フラグは含まれません。JSON 出力として動いているかどうかは `outputMode` を参照してください。
 
 フックから診断メッセージを出す場合は、`output.error()` の使用を推奨します。`output.log()` は通常のテキスト出力のコマンドでは標準出力に書き込むため、コマンド本来の出力を変えてしまう可能性があります。
 
 `afterRun` は `result` を受け取ります。通常のテキスト出力のコマンドでは `{ kind: "text" }`、`json: true` のコマンドでは実際に JSON 出力が有効でない場合でも `{ kind: "json", data }`、`jsonl: true` のコマンドではすべてのレコードを書き出したあとに `{ kind: "jsonl", records }` を受け取ります。
 
-`beforeRun`、コマンドの `run()`、`afterRun` のいずれかでエラーが発生した場合、Rune は `stage` に `"beforeRun"`、`"run"`、`"afterRun"` のいずれかを設定して `onRunError` を呼びます。`onRunError` 自身でもエラーが発生した場合、Rune は `rune/hook-failed` を報告し、最初のエラーと `onRunError` のエラーの両方を詳細情報に保持します。`rune/hook-failed` の終了コードは `onRunError` 側のエラーに由来し、入れ子になった各エラーは詳細情報の中にもとの `exitCode` を保持します。
+`locals`、`beforeRun`、コマンドの `run()`、`afterRun` のいずれかでエラーが発生した場合、Rune は `stage` に `"locals"`、`"beforeRun"`、`"run"`、`"afterRun"` のいずれかを設定して `onRunError` を呼びます。`"locals"` の失敗時は作成に失敗しているため、`ctx.locals` は利用できません。`onRunError` 自身でもエラーが発生した場合、Rune は `rune/hook-failed` を報告し、最初のエラーと `onRunError` のエラーの両方を詳細情報に保持します。`rune/hook-failed` の終了コードは `onRunError` 側のエラーに由来し、入れ子になった各エラーは詳細情報の中にもとの `exitCode` を保持します。
 
 ## 挙動
 

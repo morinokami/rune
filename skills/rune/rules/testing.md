@@ -220,7 +220,7 @@ const result = await runCommand(command, [], { stdin: "hello\n" });
 
 ### Global options
 
-When a project defines global options with `defineConfig({ options })`, create a project-aware helper with `createRunCommand(config)` and use it like `runCommand()`:
+When a project defines global options, hooks, or locals with `defineConfig()`, create a project-aware helper with `createRunCommand(config)` and use it like `runCommand()`:
 
 ```ts
 import { createRunCommand } from "@rune-cli/rune/test";
@@ -237,7 +237,17 @@ test("uses the configured profile", async () => {
 });
 ```
 
-This injects `config.options` and `config.hooks` into each command test so parsing, validation, and project hooks match the real CLI. `RunCommandContext.globalOptions` and `RunCommandContext.globalHooks` exist as low-level escape hatches and override the config-provided values for a specific test, but normal project tests should prefer `createRunCommand(config)`.
+This injects `config.options`, `config.hooks`, and `config.locals` into each command test so parsing, validation, project hooks, and project locals match the real CLI. `RunCommandContext.globalOptions`, `RunCommandContext.globalHooks`, `RunCommandContext.createLocals`, and `RunCommandContext.locals` exist as low-level escape hatches and override the config-provided values for a specific test, but normal project tests should prefer `createRunCommand(config)`.
+
+For tests that only need a fixed locals object, pass `locals`:
+
+```ts
+const result = await runCommand(command, [], {
+  locals: { workspace: fakeWorkspace, api: fakeApi },
+});
+```
+
+Use `createLocals` when the test needs to assert or depend on the locals factory context. Do not pass both `locals` and `createLocals`.
 
 When testing a hook that depends on route metadata, pass `commandMetadata` explicitly. `runCommand()` does not perform manifest routing and otherwise uses empty metadata:
 

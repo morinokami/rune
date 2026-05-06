@@ -1,10 +1,11 @@
 import type { CommandFailure, JsonValue } from "./command-error";
 import type { CommandOutput } from "./command-output";
 import type { CommandStdin } from "./command-stdin";
+import type { RuneConfigLocals } from "./command-types";
 
 export type RunHookOutputMode = "text" | "json" | "jsonl";
 
-export type RunErrorStage = "beforeRun" | "run" | "afterRun";
+export type RunErrorStage = "locals" | "beforeRun" | "run" | "afterRun";
 
 export interface RunHookCommandMetadata {
   readonly cliName: string;
@@ -17,10 +18,21 @@ export interface BaseRunHookContext {
   readonly outputMode: RunHookOutputMode;
   readonly args: Readonly<Record<string, unknown>>;
   readonly options: Readonly<Record<string, unknown>>;
+  readonly locals: RuneConfigLocals;
   readonly cwd: string;
   readonly rawArgs: readonly string[];
   readonly output: CommandOutput;
   readonly stdin: CommandStdin;
+}
+
+export interface LocalsFactoryContext {
+  readonly command: RunHookCommandMetadata;
+  readonly outputMode: RunHookOutputMode;
+  readonly args: Readonly<Record<string, unknown>>;
+  readonly options: Readonly<Record<string, unknown>>;
+  readonly cwd: string;
+  readonly rawArgs: readonly string[];
+  readonly output: CommandOutput;
 }
 
 export interface BeforeRunContext extends BaseRunHookContext {}
@@ -29,9 +41,10 @@ export interface AfterRunContext extends BaseRunHookContext {
   readonly result: RunHookResult;
 }
 
-export interface RunErrorContext extends BaseRunHookContext {
+export interface RunErrorContext extends Omit<BaseRunHookContext, "locals"> {
   readonly stage: RunErrorStage;
   readonly error: CommandFailure;
+  readonly locals?: RuneConfigLocals | undefined;
 }
 
 export type RunHookResult =

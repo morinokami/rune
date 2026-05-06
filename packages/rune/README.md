@@ -11,6 +11,7 @@ Key features:
 - Type-safe command definitions with full inference from `defineCommand()`
 - Global options via `defineConfig({ options })`
 - Global lifecycle hooks via `defineConfig({ hooks })`
+- Project locals via `defineConfig({ locals })`
 - [Standard Schema](https://standardschema.dev/) support for options and args (Zod, Valibot, ArkType, ...)
 - Built-in `--json` mode that turns the same command into a machine-readable API, auto-enabled under AI agents
 - In-process test utility with no child-process overhead
@@ -163,6 +164,28 @@ export default defineConfig({
 ```
 
 Hooks run only after routing and argument parsing succeed for an executable command. They do not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. Hook context exposes parsed `args`, parsed `options`, `outputMode`, command metadata, `output`, and `stdin`.
+
+### Project Locals
+
+Project-defined runtime values can be created once per command invocation in `rune.config.ts` and read from `ctx.locals`:
+
+```ts
+import { defineConfig } from "@rune-cli/rune";
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+  async locals(ctx) {
+    const workspace = await resolveWorkspace(ctx.cwd);
+
+    return {
+      workspace,
+      api: createApiClient({ profile: ctx.options.profile }),
+    };
+  },
+});
+```
+
+`locals` runs after routing and argument parsing succeed, before `beforeRun`. It does not run for help, version, unknown-command, group-help, JSON-help, or parse-failure paths. The factory context intentionally does not include `stdin`; hooks and commands can still use `ctx.stdin`.
 
 ### Primitive Fields
 
@@ -428,7 +451,7 @@ Rune ships an official [Agent Skill](https://agentskills.io/home) that gives AI 
 | --------------------- | ----------------------------------------------------------------------- |
 | `defineCommand(def)`  | Define a command. The returned value must be the file's default export. |
 | `defineGroup(def)`    | Define metadata for a command group in `_group.ts`.                     |
-| `defineConfig(def)`   | Define project-wide CLI metadata, help, options, and hooks.             |
+| `defineConfig(def)`   | Define project-wide CLI metadata, help, options, hooks, and locals.     |
 | `CommandError`        | Structured error class for command failures.                            |
 | `renderDefaultHelp()` | Render the default help output as a string; useful from custom `help`.  |
 | `runCommand()`        | (from `@rune-cli/rune/test`) Execute a command in-process for testing.  |

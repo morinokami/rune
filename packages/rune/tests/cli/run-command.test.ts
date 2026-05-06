@@ -116,6 +116,51 @@ export default defineCommand({
     expect(captured.stderr).toBe("before mycli:deploy:text\nafter text\n");
   });
 
+  test("runRuneCli injects defineConfig locals into hooks and the matched command", async () => {
+    const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
+      files: {
+        "package.json": JSON.stringify({ name: "mycli" }, null, 2),
+        "rune.config.ts": `import { defineConfig } from ${defineConfigPath};
+
+export default defineConfig({
+  options: [{ name: "profile", type: "string", default: "prod" }],
+  locals(ctx) {
+    return {
+      workspace: ctx.cwd,
+      profile: ctx.options.profile,
+    };
+  },
+  hooks: {
+    beforeRun(ctx) {
+      ctx.output.error(\`locals=\${ctx.locals.profile}\`);
+    },
+  },
+});
+`,
+        "src/commands/deploy/index.ts": `import { defineCommand } from ${coreEntryPath};
+
+export default defineCommand({
+  async run(ctx) {
+    console.log(\`\${ctx.locals.profile}:\${typeof ctx.locals.workspace}\`);
+  },
+});
+`,
+      },
+    });
+
+    const captured = await captureRuneCliResult(["run", "deploy", "--profile", "dev"], projectRoot);
+    const generatedTypes = await readFile(
+      path.join(projectRoot, ".rune", "global-locals.d.ts"),
+      "utf8",
+    );
+
+    expect(captured.exitCode).toBe(0);
+    expect(captured.stdout).toBe("dev:string\n");
+    expect(captured.stderr).toBe("locals=dev\n");
+    expect(generatedTypes).toContain('import type config from "../rune.config";');
+    expect(generatedTypes).toContain("interface RuneConfigLocals");
+  });
+
   test("runRuneCli shows global options in command help but not group help", async () => {
     const { fixtureDirectory: projectRoot } = await testFixtures.createFixture({
       files: {

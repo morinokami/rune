@@ -302,6 +302,12 @@ Parsed option values, keyed by field name.
 
 For commands with `json: true`, this object also includes the framework-managed `json` boolean. It reflects the effective JSON mode for the invocation. Use `rawArgs` if you need to distinguish an explicit `--json` flag from automatic JSON activation.
 
+### `locals`
+
+- **Type:** `object`
+
+Project-defined runtime values returned by `defineConfig({ locals })`. When no locals factory is configured, this is an empty object.
+
 ### `cwd`
 
 - **Type:** `string`

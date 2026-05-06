@@ -187,9 +187,9 @@ test("reads injected stdin", async () => {
 });
 ```
 
-## Testing with global options
+## Testing with project config
 
-When your project defines `defineConfig({ options })`, create a helper that bakes in your project config once and use it like `runCommand()`:
+When your project defines `defineConfig({ options })`, `defineConfig({ hooks })`, or `defineConfig({ locals })`, create a helper that bakes in your project config once and use it like `runCommand()`:
 
 ```ts
 import { expect, test } from "vitest";
@@ -207,6 +207,6 @@ test("uses the configured profile", async () => {
 });
 ```
 
-This keeps command tests on the same parse-and-validation path as the real CLI without repeating the global options in each test.
+This keeps command tests on the same parse-and-validation path as the real CLI without repeating project config in each test.
 
 For full API details, see the [Test Utilities reference](/reference/test-utils/).

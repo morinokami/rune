@@ -131,6 +131,28 @@ test("reads stdin", async () => {
 
 グローバルフックを注入する低レベル API です。通常のテストでは `createRunCommand(config)` を使ってください。
 
+#### `createLocals`
+
+- **型:** `(ctx: LocalsFactoryContext) => unknown`
+- **省略可能**
+
+project locals を注入する低レベル API です。通常のテストでは `createRunCommand(config)` を使ってください。
+
+#### `locals`
+
+- **型:** `RuneConfigLocals`
+- **省略可能**
+
+コマンドテストで固定の `ctx.locals` 値を注入するためのショートハンドです。
+
+```ts
+const result = await runCommand(command, [], {
+  locals: { workspace: fakeWorkspace, api: fakeApi },
+});
+```
+
+`createLocals` と `locals` はどちらか一方だけを渡してください。
+
 #### `commandMetadata`
 
 - **型:** `RunHookCommandMetadata`
@@ -140,7 +162,7 @@ test("reads stdin", async () => {
 
 ## `createRunCommand()`
 
-プロジェクト設定を組み込んだ `runCommand()` ヘルパーを作成します。プロジェクトで `defineConfig({ options })` または `defineConfig({ hooks })` を定義している場合に使います。
+プロジェクト設定を組み込んだ `runCommand()` ヘルパーを作成します。プロジェクトで `defineConfig({ options })`、`defineConfig({ hooks })`、または `defineConfig({ locals })` を定義している場合に使います。
 
 ```ts
 import { createRunCommand } from "@rune-cli/rune/test";
@@ -149,7 +171,7 @@ import config from "../rune.config";
 const runCommand = createRunCommand(config);
 ```
 
-返される関数は `runCommand(command, argv, context)` と同じかたちで呼び出せ、各コマンド実行に `config.options` と `config.hooks` を注入します。特定のテストで設定由来の値を上書きしたい場合は、`context.globalOptions` または `context.globalHooks` を渡してください。
+返される関数は `runCommand(command, argv, context)` と同じかたちで呼び出せ、各コマンド実行に `config.options`、`config.hooks`、`config.locals` を注入します。特定のテストで設定由来の値を上書きしたい場合は、`context.globalOptions`、`context.globalHooks`、`context.createLocals`、または `context.locals` を渡してください。
 
 ### CommandExecutionResult
 
