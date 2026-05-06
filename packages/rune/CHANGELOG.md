@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.3.0
+
+### Minor Changes
+
+- [#187](https://github.com/morinokami/rune/pull/187) [`dcaa4b6`](https://github.com/morinokami/rune/commit/dcaa4b65310079804f5f956b26f6e3fb677cba57) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): add project locals
+
 ## 0.2.0
 
 ### Minor Changes
