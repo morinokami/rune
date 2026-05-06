@@ -124,7 +124,7 @@ test("reads stdin", async () => {
 
 グローバルオプションを注入する低レベル API です。通常のテストでは `createRunCommand(config)` を使ってください。
 
-#### `hooks`
+#### `globalHooks`
 
 - **型:** `RuneHooks`
 - **省略可能**
@@ -149,7 +149,7 @@ import config from "../rune.config";
 const runCommand = createRunCommand(config);
 ```
 
-返される関数は `runCommand(command, argv, context)` と同じかたちで呼び出せ、各コマンド実行に `config.options` と `config.hooks` を注入します。特定のテストで設定由来の値を上書きしたい場合は、`context.globalOptions` または `context.hooks` を渡してください。
+返される関数は `runCommand(command, argv, context)` と同じかたちで呼び出せ、各コマンド実行に `config.options` と `config.hooks` を注入します。特定のテストで設定由来の値を上書きしたい場合は、`context.globalOptions` または `context.globalHooks` を渡してください。
 
 ### CommandExecutionResult
 

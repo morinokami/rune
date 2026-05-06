@@ -36,7 +36,7 @@ export interface RunCommandContext {
   /** Global options to inject as if they were defined by `defineConfig({ options })`. */
   readonly globalOptions?: readonly CommandOptionField[];
   /** Project-level hooks to inject as if they were defined by `defineConfig({ hooks })`. */
-  readonly hooks?: RuneHooks;
+  readonly globalHooks?: RuneHooks;
   /**
    * Command route metadata exposed to hooks. `runCommand()` does not involve
    * manifest routing, so omitted metadata defaults to empty values.
@@ -163,7 +163,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
     command,
     argv,
     globalOptions: context.globalOptions,
-    hooks: context.hooks,
+    globalHooks: context.globalHooks,
     commandMetadata: context.commandMetadata,
     env: context.env ?? {},
     cwd: context.cwd,
@@ -236,7 +236,7 @@ export function createRunCommand<TConfig extends RuneConfig>(config: TConfig) {
     return runCommand(command, argv, {
       ...context,
       globalOptions: context.globalOptions ?? config.options,
-      hooks: context.hooks ?? config.hooks,
+      globalHooks: context.globalHooks ?? config.hooks,
     });
   };
 }

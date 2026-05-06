@@ -127,7 +127,7 @@ test("reads stdin", async () => {
 
 Low-level injection point for global options. Prefer `createRunCommand(config)` for normal tests.
 
-#### `hooks`
+#### `globalHooks`
 
 - **Type:** `RuneHooks`
 - **Optional**
@@ -152,7 +152,7 @@ import config from "../rune.config";
 const runCommand = createRunCommand(config);
 ```
 
-The returned function has the same call shape as `runCommand(command, argv, context)` and injects `config.options` and `config.hooks` into each command execution. Pass `context.globalOptions` or `context.hooks` to override the config-provided values for a specific test.
+The returned function has the same call shape as `runCommand(command, argv, context)` and injects `config.options` and `config.hooks` into each command execution. Pass `context.globalOptions` or `context.globalHooks` to override the config-provided values for a specific test.
 
 ### CommandExecutionResult
 

@@ -42,7 +42,7 @@ export interface RunCommandPipelineInput {
   readonly cwd?: string | undefined;
   readonly sink?: OutputSink | undefined;
   readonly stdin?: CommandStdinSource | undefined;
-  readonly hooks?: RuneHooks | undefined;
+  readonly globalHooks?: RuneHooks | undefined;
   readonly commandMetadata?: RunHookCommandMetadata | undefined;
   /**
    * Overrides agent-environment detection for `json: true` commands. When the
@@ -94,7 +94,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     cwd,
     sink = defaultSink,
     stdin: stdinSource = createProcessStdinSource(),
-    hooks,
+    globalHooks,
     commandMetadata = DEFAULT_COMMAND_METADATA,
     simulateAgent,
   } = input;
@@ -187,7 +187,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       stdin,
     };
 
-    await hooks?.beforeRun?.(hookContext);
+    await globalHooks?.beforeRun?.(hookContext);
     runErrorStage = "run";
 
     // The `command.run` signature is generic, but at this layer we operate on
@@ -211,7 +211,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
             message: "JSON Lines commands must return an iterable",
           }),
         );
-        const finalFailure = await applyRunErrorHook(hooks, hookContext, "run", failure);
+        const finalFailure = await applyRunErrorHook(globalHooks, hookContext, "run", failure);
 
         return {
           parseOk: true,
@@ -228,7 +228,12 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
         const serialized = serializeJsonLineRecord(record, records.length);
 
         if (!serialized.ok) {
-          const finalFailure = await applyRunErrorHook(hooks, hookContext, "run", serialized.error);
+          const finalFailure = await applyRunErrorHook(
+            globalHooks,
+            hookContext,
+            "run",
+            serialized.error,
+          );
 
           return {
             parseOk: true,
@@ -262,7 +267,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
       }
 
       runErrorStage = "afterRun";
-      await hooks?.afterRun?.({
+      await globalHooks?.afterRun?.({
         ...hookContext,
         result: { kind: "jsonl", records: records as InferCommandRecords<TCommand>[] },
       });
@@ -278,7 +283,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     }
 
     runErrorStage = "afterRun";
-    await hooks?.afterRun?.({
+    await globalHooks?.afterRun?.({
       ...hookContext,
       result: createRunHookResult(commandDefinition, data),
     });
@@ -292,7 +297,7 @@ export async function runCommandPipeline<TCommand extends RunnableCommand>(
     };
   } catch (error) {
     const failure = normalizeExecutionFailure(error);
-    const finalFailure = await applyRunErrorHook(hooks, hookContext, runErrorStage, failure);
+    const finalFailure = await applyRunErrorHook(globalHooks, hookContext, runErrorStage, failure);
 
     return {
       parseOk: true,

@@ -237,7 +237,7 @@ test("uses the configured profile", async () => {
 });
 ```
 
-This injects `config.options` and `config.hooks` into each command test so parsing, validation, and project hooks match the real CLI. `RunCommandContext.globalOptions` and `RunCommandContext.hooks` exist as low-level escape hatches and override the config-provided values for a specific test, but normal project tests should prefer `createRunCommand(config)`.
+This injects `config.options` and `config.hooks` into each command test so parsing, validation, and project hooks match the real CLI. `RunCommandContext.globalOptions` and `RunCommandContext.globalHooks` exist as low-level escape hatches and override the config-provided values for a specific test, but normal project tests should prefer `createRunCommand(config)`.
 
 When testing a hook that depends on route metadata, pass `commandMetadata` explicitly. `runCommand()` does not perform manifest routing and otherwise uses empty metadata:
 

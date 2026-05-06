@@ -1067,7 +1067,7 @@ describe("global hooks", () => {
       argv: ["task-1", "--name", "rune"],
       cwd: "/tmp/rune-project",
       commandMetadata: { cliName: "my-cli", path: ["task", "show"], name: "show" },
-      hooks: {
+      globalHooks: {
         beforeRun(ctx) {
           events.push("before");
           observed.push({
@@ -1115,7 +1115,7 @@ describe("global hooks", () => {
       command,
       argv: [],
       simulateAgent: false,
-      hooks: {
+      globalHooks: {
         afterRun(ctx) {
           observed.push({ outputMode: ctx.outputMode, result: ctx.result });
         },
@@ -1125,7 +1125,7 @@ describe("global hooks", () => {
       command,
       argv: ["--json"],
       simulateAgent: false,
-      hooks: {
+      globalHooks: {
         afterRun(ctx) {
           observed.push({ outputMode: ctx.outputMode, result: ctx.result });
         },
@@ -1153,7 +1153,7 @@ describe("global hooks", () => {
       command,
       argv: ["--json"],
       simulateAgent: false,
-      hooks: {
+      globalHooks: {
         beforeRun(ctx) {
           hookOptions = ctx.options;
         },
@@ -1176,7 +1176,7 @@ describe("global hooks", () => {
     const result = await runCommandPipeline({
       command,
       argv: [],
-      hooks: { beforeRun, afterRun, onRunError },
+      globalHooks: { beforeRun, afterRun, onRunError },
     });
 
     expect(result.parseOk).toBe(false);
@@ -1201,7 +1201,7 @@ describe("global hooks", () => {
     const result = await runCommandPipeline({
       command,
       argv: [],
-      hooks: {
+      globalHooks: {
         onRunError(ctx) {
           observed.push({ stage: ctx.stage, error: ctx.error });
         },
@@ -1235,7 +1235,7 @@ describe("global hooks", () => {
     const result = await runCommandPipeline({
       command,
       argv: [],
-      hooks: {
+      globalHooks: {
         beforeRun() {
           throw new CommandError({ kind: "auth/failed", message: "auth failed", exitCode: 4 });
         },
@@ -1272,7 +1272,7 @@ describe("global hooks", () => {
     const result = await runCommandPipeline({
       command,
       argv: [],
-      hooks: {
+      globalHooks: {
         afterRun() {
           throw new CommandError({
             kind: "audit/failed",
@@ -1319,7 +1319,7 @@ describe("global hooks", () => {
     const result = await runCommandPipeline({
       command,
       argv: [],
-      hooks: {
+      globalHooks: {
         onRunError() {
           throw new CommandError({
             kind: "audit/failed",
@@ -1365,7 +1365,7 @@ describe("global hooks", () => {
     const result = await runCommandPipeline({
       command,
       argv: [],
-      hooks: {
+      globalHooks: {
         onRunError(ctx) {
           observed.push({ stage: ctx.stage, error: ctx.error });
         },
@@ -1401,7 +1401,7 @@ describe("global hooks", () => {
     const result = await runCommandPipeline({
       command,
       argv: [],
-      hooks: {
+      globalHooks: {
         onRunError(ctx) {
           observed.push({ stage: ctx.stage, error: ctx.error });
         },
@@ -1440,7 +1440,7 @@ describe("global hooks", () => {
       command,
       argv: [],
       sink: { stdout() {}, stderr() {} },
-      hooks: {
+      globalHooks: {
         afterRun() {
           throw new CommandError({ kind: "audit/failed", message: "audit failed" });
         },
@@ -1480,7 +1480,7 @@ describe("global hooks", () => {
         },
         stderr() {},
       },
-      hooks: { afterRun, onRunError },
+      globalHooks: { afterRun, onRunError },
     });
 
     expect(result).toMatchObject({

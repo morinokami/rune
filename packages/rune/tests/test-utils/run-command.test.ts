@@ -81,7 +81,7 @@ describe("execution capture", () => {
 
     const result = await runCommand(command, [], {
       commandMetadata: { cliName: "my-cli", path: ["project", "list"], name: "list" },
-      hooks: {
+      globalHooks: {
         beforeRun(ctx) {
           observed.push(ctx.command);
         },
