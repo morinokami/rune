@@ -18,7 +18,7 @@ catalog:
   astro-og: 0.3.2
   knip: 6.11.0
   oxc-parser: 0.128.0
-  pkg-pr-new: 0.0.66
+  pkg-pr-new: 0.0.70
   publint: 0.3.18
   rolldown: 1.0.0-rc.18
   sharp: 0.34.5
