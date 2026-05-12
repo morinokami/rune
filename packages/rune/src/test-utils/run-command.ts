@@ -200,7 +200,7 @@ export async function runCommand<TCommand extends RunnableCommand>(
     },
   });
 
-  if (result.jsonlMode && result.error) {
+  if ((result.jsonMode || result.jsonlMode) && result.error) {
     stderrChunks.push(`${JSON.stringify(renderJsonError(result.error))}\n`);
   } else if (!result.jsonMode && result.error) {
     const rendered = renderHumanError(result.error);

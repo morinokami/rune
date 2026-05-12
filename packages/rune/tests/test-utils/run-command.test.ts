@@ -385,7 +385,7 @@ describe("human error rendering", () => {
     );
   });
 
-  test("runCommand does not write human error to stderr in json mode for CommandError", async () => {
+  test("runCommand writes JSON error envelopes to stderr in json mode for CommandError", async () => {
     const command = defineCommand({
       json: true,
       async run() {
@@ -400,7 +400,14 @@ describe("human error rendering", () => {
     const result = await runCommand(command, ["--json"]);
 
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toBe("");
+    expect(result.stdout).toBe("");
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        kind: "not-found",
+        message: "Resource not found",
+        hint: "Check the ID",
+      },
+    });
     expect(result.error).toEqual({
       kind: "not-found",
       message: "Resource not found",
@@ -409,7 +416,7 @@ describe("human error rendering", () => {
     });
   });
 
-  test("runCommand does not write human error to stderr in json mode for parse failure", async () => {
+  test("runCommand writes JSON error envelopes to stderr in json mode for parse failure", async () => {
     const command = defineCommand({
       json: true,
       args: [{ name: "id", type: "string", required: true }],
@@ -421,7 +428,13 @@ describe("human error rendering", () => {
     const result = await runCommand(command, ["--json"]);
 
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toBe("");
+    expect(result.stdout).toBe("");
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        kind: "rune/invalid-arguments",
+        message: "Missing required argument:\n  id",
+      },
+    });
     expect(result.error).toEqual({
       kind: "rune/invalid-arguments",
       message: "Missing required argument:\n  id",

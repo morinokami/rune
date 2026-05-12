@@ -193,7 +193,7 @@ function emitCommandResult(result: RunCommandPipelineResult): number {
         exitCode = 1;
       }
     } else {
-      writeJsonToStdout(renderJsonError(result.error));
+      writeJsonToStderr(renderJsonError(result.error));
     }
   }
 
@@ -315,8 +315,7 @@ function writeJsonToStdout(
     process.stdout.write(`${JSON.stringify(value)}\n`);
     return true;
   } catch {
-    process.stdout.write(`${JSON.stringify(fallback)}\n`);
-    process.stderr.write("Failed to serialize command output\n");
+    writeJsonToStderr(fallback);
     return false;
   }
 }

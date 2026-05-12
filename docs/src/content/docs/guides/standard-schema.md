@@ -185,4 +185,4 @@ $ my-cli fetch not-a-uuid
 Error: Invalid uuid
 ```
 
-In JSON mode (a command with `json: true` invoked with `--json`), parse errors are emitted as a JSON `error` object on stdout. See the [JSON Output](/guides/json/#error-output) guide for details.
+In JSON mode (a command with `json: true` invoked with `--json`), parse errors are emitted as a JSON `error` object on stderr. See the [JSON Output](/guides/json/#error-output) guide for details.

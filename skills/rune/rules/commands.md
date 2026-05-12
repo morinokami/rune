@@ -308,6 +308,7 @@ export default defineCommand({
 
 - **With `--json`**: `output.log()` suppressed, return value printed as a single-line JSON document to stdout (no indentation)
 - **Without `--json`**: `output.log()` works normally, return value is not printed
+- **On failure with JSON mode active**: Rune writes a compact JSON error object to stderr and leaves stdout empty unless user code wrote directly to stdout
 - **Under AI agents**: Rune auto-enables JSON mode when it detects an AI agent environment (via std-env's `isAgent`), even without `--json`. CI and shell pipes are unaffected — only known agent environment variables trigger this.
 - **Inside `run()`**: `options.json` is `true` whenever JSON mode is active, including agent auto-activation. Use `rawArgs` if you need to distinguish an explicit `--json` flag.
 - **Opting out**: Set `RUNE_DISABLE_AUTO_JSON=1` (or `true`) to suppress auto-activation under agents. `--json` still enables JSON mode explicitly. Mainly intended for agents developing a Rune CLI that need to inspect human-facing output. Has no effect inside `runCommand()` tests.

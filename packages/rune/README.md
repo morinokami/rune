@@ -299,7 +299,7 @@ Hyphenated field names (e.g. `dry-run`) are accessible as both `ctx.options["dry
 
 ## JSON Output
 
-Set `json: true` to opt into a built-in `--json` flag. The `run()` return value becomes the structured output, while `output.log()` is suppressed so the stdout stream remains machine-parseable. `output.error()` still writes to stderr. Inside `run()`, `options.json` is `true` whenever JSON mode is active.
+Set `json: true` to opt into a built-in `--json` flag. The `run()` return value becomes the structured output, while `output.log()` is suppressed so the stdout stream remains machine-parseable. `output.error()` still writes to stderr, and JSON error payloads are emitted to stderr on failure. Inside `run()`, `options.json` is `true` whenever JSON mode is active.
 
 ```ts
 export default defineCommand({
@@ -346,7 +346,7 @@ JSON Lines mode is fixed for the command; Rune does not add a `--jsonl` flag and
 
 ## Structured Errors
 
-`CommandError` carries `kind`, `message`, `hint`, and `details`. Rune formats it for humans in normal mode and emits it as structured JSON under `--json`.
+`CommandError` carries `kind`, `message`, `hint`, and `details`. Rune formats it for humans in normal mode and emits it as structured JSON to stderr under `--json`.
 
 ```ts
 import { CommandError, defineCommand } from "@rune-cli/rune";
