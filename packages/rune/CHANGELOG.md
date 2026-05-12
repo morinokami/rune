@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.3.2
+
+### Patch Changes
+
+- [#195](https://github.com/morinokami/rune/pull/195) [`eff548f`](https://github.com/morinokami/rune/commit/eff548f4913882c5fe278d503f8f665290ae8fc5) Thanks [@morinokami](https://github.com/morinokami)! - fix(rune): emit JSON mode errors to stderr
+
 ## 0.3.1
 
 ### Patch Changes
