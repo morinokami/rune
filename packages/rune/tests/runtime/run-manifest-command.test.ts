@@ -603,13 +603,13 @@ describe("json mode", () => {
     });
 
     expect(captured.exitCode).toBe(1);
-    expect(JSON.parse(captured.stdout)).toEqual({
+    expect(captured.stdout).toBe("");
+    expect(JSON.parse(captured.stderr)).toEqual({
       error: {
         kind: "rune/unexpected",
         message: "something broke",
       },
     });
-    expect(captured.stderr).toBe("");
   });
 
   test("runManifestCommand emits JSON error payload on parse error in JSON mode", async () => {
@@ -626,13 +626,13 @@ describe("json mode", () => {
     });
 
     expect(captured.exitCode).toBe(1);
-    expect(JSON.parse(captured.stdout)).toEqual({
+    expect(captured.stdout).toBe("");
+    expect(JSON.parse(captured.stderr)).toEqual({
       error: {
         kind: "rune/invalid-arguments",
         message: "Missing required option:\n  --count <number>",
       },
     });
-    expect(captured.stderr).toBe("");
   });
 
   test("runManifestCommand omits non-serializable CommandError details in JSON mode", async () => {
@@ -652,13 +652,13 @@ describe("json mode", () => {
     });
 
     expect(captured.exitCode).toBe(1);
-    expect(JSON.parse(captured.stdout)).toEqual({
+    expect(captured.stdout).toBe("");
+    expect(JSON.parse(captured.stderr)).toEqual({
       error: {
         kind: "config/not-found",
         message: "Config file was not found",
       },
     });
-    expect(captured.stderr).toBe("");
   });
 
   test("runManifestCommand handles non-serializable return values in JSON mode", async () => {
@@ -674,14 +674,14 @@ describe("json mode", () => {
     });
 
     expect(captured.exitCode).toBe(1);
-    const parsed = JSON.parse(captured.stdout);
+    expect(captured.stdout).toBe("");
+    const parsed = JSON.parse(captured.stderr);
     expect(parsed).toEqual({
       error: {
         kind: "rune/unexpected",
         message: "Failed to serialize command output",
       },
     });
-    expect(captured.stderr).toContain("Failed to serialize command output");
   });
 
   test("runManifestCommand serializes null when json command returns undefined", async () => {

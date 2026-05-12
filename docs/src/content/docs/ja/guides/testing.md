@@ -118,6 +118,8 @@ test("returns structured document", async () => {
 
 `--json` フラグを渡さない場合でも `result.output.document` は取得できます。`--json` フラグは `output.log()` の出力を制御するものであり、document のキャプチャには影響しません。
 
+JSON モードのコマンドが失敗した場合、`runCommand()` は compact な JSON error envelope を `result.stderr` にキャプチャし、正規化された失敗情報を `result.error` でも返します。
+
 ## コンテキストの注入
 
 `runCommand()` の第 3 引数にコンテキストを渡すことで、コマンドが参照する `ctx.cwd` を差し替えることができます。これは `process.cwd()` を変更せずにテスト固有の作業ディレクトリを注入する手段です:

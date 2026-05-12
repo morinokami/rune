@@ -118,6 +118,8 @@ test("returns structured document", async () => {
 
 `result.output.document` is populated even without the `--json` flag. The `--json` flag controls whether `output.log()` is suppressed, not whether the document is captured.
 
+When a JSON-mode command fails, `runCommand()` captures the compact JSON error envelope in `result.stderr` and also exposes the normalized failure through `result.error`.
+
 ## Injecting context
 
 Pass a context object as the third argument to `runCommand()` to override `ctx.cwd` without changing `process.cwd()`:

@@ -261,3 +261,5 @@ test("returns structured document", async () => {
   expect(result.stdout).toBe("");
 });
 ```
+
+JSON モードのコマンドが失敗した場合、`runCommand()` は compact な JSON error envelope を `result.stderr` にキャプチャし、正規化された失敗情報を `result.error` でも返します。

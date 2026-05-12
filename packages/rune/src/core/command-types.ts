@@ -126,8 +126,9 @@ export interface DefineCommandInput<
   readonly examples?: readonly string[] | undefined;
   /**
    * When `true`, the framework accepts a built-in `--json` flag and the
-   * return value of `run()` becomes the structured stdout payload. Omit to
-   * disable JSON mode.
+   * return value of `run()` becomes the structured success payload written to
+   * stdout. JSON error payloads are written to stderr. Omit to disable JSON
+   * mode.
    */
   readonly json?: TJson;
   /**
@@ -165,7 +166,7 @@ export interface DefineCommandInput<
    * Receives a {@link CommandContext} with fully parsed `args` and `options`.
    *
    * When `json` is `true`, the return value is serialized as structured JSON
-   * output. Otherwise, the return value is ignored.
+   * output on success. Otherwise, the return value is ignored.
    */
   readonly run: (
     ctx: CommandContext<

@@ -185,4 +185,4 @@ $ my-cli fetch not-a-uuid
 Error: Invalid uuid
 ```
 
-JSON モード（`json: true` のコマンドで `--json` を指定した場合）では、パースエラーも `error` オブジェクトとして stdout に JSON 形式で出力されます。詳細は [JSON 出力](/ja/guides/json/#エラー時の出力)ガイドを参照してください。
+JSON モード（`json: true` のコマンドで `--json` を指定した場合）では、パースエラーも `error` オブジェクトとして stderr に JSON 形式で出力されます。詳細は [JSON 出力](/ja/guides/json/#エラー時の出力)ガイドを参照してください。

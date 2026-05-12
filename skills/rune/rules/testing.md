@@ -122,6 +122,8 @@ test("document is populated even without --json", async () => {
 
 `result.output.document` is populated regardless of `--json`. The flag controls only whether `output.log()` is suppressed and whether `options.json` is `true` inside `run()`.
 
+When a JSON-mode command fails, `runCommand()` captures the compact JSON error envelope in `result.stderr` and exposes the normalized failure through `result.error`.
+
 At real CLI invocation, Rune auto-enables JSON mode under AI agents even without `--json`; this also makes `options.json` true inside `run()`. `runCommand()` disables this auto-detection by default (`simulateAgent: false`) so test outcomes do not depend on the host environment. The `RUNE_DISABLE_AUTO_JSON` environment variable that opts out of auto-activation in real CLI runs has no effect here either — `simulateAgent` is the only signal `runCommand()` uses. Pass `{ simulateAgent: true }` as the third argument when you specifically want to exercise the agent auto-enable path:
 
 ```ts

@@ -72,7 +72,7 @@ The underlying error, passed to the native `Error` constructor.
 
 ## CommandFailure
 
-`CommandFailure` is the serialized shape of a `CommandError`, used in test results (e.g. `runCommand().error`). Note that the JSON error output written to stdout in `--json` mode uses a different shape: `{ error: { kind, message, hint?, details? } }`, which omits `exitCode`.
+`CommandFailure` is the serialized shape of a `CommandError`, used in test results (e.g. `runCommand().error`). Note that the JSON error output written to stderr in `--json` mode uses a different shape: `{ error: { kind, message, hint?, details? } }`, which omits `exitCode`.
 
 ```ts
 interface CommandFailure {

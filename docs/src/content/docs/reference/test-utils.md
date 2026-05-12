@@ -264,3 +264,5 @@ test("returns structured document", async () => {
   expect(result.stdout).toBe("");
 });
 ```
+
+When a JSON-mode command fails, `runCommand()` captures the compact JSON error envelope in `result.stderr` and exposes the normalized failure through `result.error`.

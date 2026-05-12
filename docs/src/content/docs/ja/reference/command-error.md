@@ -72,7 +72,7 @@ JSON 出力に含まれる任意の構造化データ。
 
 ## CommandFailure
 
-`CommandFailure` は `CommandError` のシリアライズされた形式で、テスト結果（例: `runCommand().error`）で使用されます。なお、`--json` モードで stdout に書き出される JSON エラー出力は異なる形式（`{ error: { kind, message, hint?, details? } }`）であり、`exitCode` は含まれません。
+`CommandFailure` は `CommandError` のシリアライズされた形式で、テスト結果（例: `runCommand().error`）で使用されます。なお、`--json` モードで stderr に書き出される JSON エラー出力は異なる形式（`{ error: { kind, message, hint?, details? } }`）であり、`exitCode` は含まれません。
 
 ```ts
 interface CommandFailure {

@@ -239,7 +239,7 @@ Usage examples shown in the `Examples:` section of `--help` output. Each entry i
 - **Type:** `true`
 - **Optional**
 
-When set, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output, and `output.log()` calls are suppressed. Omit to keep JSON mode disabled.
+When set, the framework accepts a built-in `--json` flag. In JSON mode, the return value of `run()` becomes structured JSON output on stdout, `output.log()` calls are suppressed, and JSON error payloads are written to stderr. Omit to keep JSON mode disabled.
 
 Commands with `json: true` receive a framework-managed `options.json: boolean` value in `run()`. It is `true` whenever JSON mode is active, including automatic activation under AI agents.
 

@@ -38,7 +38,7 @@ $ your-cli projects list --json
 {"projects":[{"id":1,"name":"alpha"},{"id":2,"name":"beta"}]}
 ```
 
-When the `--json` flag is passed, `output.log()` calls are automatically suppressed. `output.error()` continues to write to stderr. In JSON mode, stdout always contains exactly one JSON document regardless of success or failure, so it can be consumed directly by tools like `jq` or other programs.
+When the `--json` flag is passed, `output.log()` calls are automatically suppressed. `output.error()` continues to write to stderr. On success, stdout contains exactly one JSON document, so it can be consumed directly by tools like `jq` or other programs. On failure, stdout stays empty unless the command wrote to it directly, and Rune writes the JSON error payload to stderr.
 
 Without the `--json` flag, `output.log()` works as normal and the return value of `run()` is not printed. This allows a single command to serve both human-readable and agent-friendly output:
 
@@ -102,7 +102,7 @@ The `--json` flag is only recognized before the `--` terminator. If placed after
 
 ## Error output
 
-When a command fails in JSON mode, error information is output to stdout as a JSON object. This applies not only to failures within `run()`, but also to argument parsing errors such as missing required arguments:
+When a command fails in JSON mode, error information is output to stderr as a JSON object. This applies not only to failures within `run()`, but also to argument parsing errors such as missing required arguments:
 
 ```bash
 $ your-cli projects list --json

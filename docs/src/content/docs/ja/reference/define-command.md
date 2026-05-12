@@ -239,7 +239,7 @@ options: [{ name: "tag", schema: z.array(z.string()).default([]), multiple: true
 - **型:** `true`
 - **省略可能**
 
-設定すると、フレームワークは組み込みの `--json` フラグを受け付けます。JSON モードでは、`run()` の戻り値が構造化された JSON 出力となり、`output.log()` の呼び出しは抑制されます。省略した場合は JSON モード無効のままです。
+設定すると、フレームワークは組み込みの `--json` フラグを受け付けます。JSON モードでは、`run()` の戻り値が構造化された JSON として stdout に出力され、`output.log()` の呼び出しは抑制されます。JSON 形式のエラーペイロードは stderr に出力されます。省略した場合は JSON モード無効のままです。
 
 `json: true` のコマンドでは、`run()` 内でフレームワーク管理の `options.json: boolean` も受け取れます。この値は JSON モードが有効なときに `true` になり、AI エージェント実行時の自動有効化も含みます。
 
