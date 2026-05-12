@@ -27,7 +27,7 @@ catalog:
   std-env: 4.1.0
   typescript: 6.0.3
   vite-plus: 0.1.20
-  zod: 4.3.6
+  zod: 4.4.3
 
 catalogMode: prefer
 
