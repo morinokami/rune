@@ -1,5 +1,11 @@
 # @rune-cli/rune
 
+## 0.3.3
+
+### Patch Changes
+
+- [#197](https://github.com/morinokami/rune/pull/197) [`84e8b47`](https://github.com/morinokami/rune/commit/84e8b4727af8696cc4e33970210c392b5719f959) Thanks [@morinokami](https://github.com/morinokami)! - feat(rune): align help section descriptions by padding labels
+
 ## 0.3.2
 
 ### Patch Changes
