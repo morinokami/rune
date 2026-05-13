@@ -105,7 +105,7 @@ describe("resolved help routing", () => {
     expect(help).toContain("Usage: mycli project [command]");
     expect(help).toContain("Subcommands:");
     expect(help).toContain("create  Create a project");
-    expect(help).toContain("list  List projects");
+    expect(help).toContain("list    List projects");
     expect(help).toContain("-h, --help");
   });
 

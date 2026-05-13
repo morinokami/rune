@@ -37,7 +37,7 @@ Usage: my-cli deploy [options]
 
 Options:
   -t, --target <string>  Deploy target
-  -h, --help  Show help
+  -h, --help             Show help
 ```
 
 `CommandHelpData` には、コマンド名やパスセグメント、オプション・引数・サブコマンドの定義情報が含まれています。これらを使って、ヘルプをゼロから組み立てることもできます。詳細は [`defineCommand()` のリファレンス](/ja/reference/define-command/#help)を参照してください。
