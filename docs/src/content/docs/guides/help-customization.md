@@ -37,7 +37,7 @@ Usage: my-cli deploy [options]
 
 Options:
   -t, --target <string>  Deploy target
-  -h, --help  Show help
+  -h, --help             Show help
 ```
 
 `CommandHelpData` includes the command name, path segments, options, arguments, and subcommand definitions. You can use these fields to build an entirely custom layout from scratch. See the [`defineCommand()` reference](/reference/define-command/#help) for details.

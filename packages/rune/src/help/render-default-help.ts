@@ -41,8 +41,11 @@ function formatCommandName(cliName: string, pathSegments: readonly string[]): st
 function formatSectionEntries(
   entries: readonly { label: string; description?: string | undefined }[],
 ): string {
+  const labelWidth = Math.max(...entries.map((entry) => entry.label.length));
   return entries
-    .map(({ label, description }) => `  ${label}${description ? `  ${description}` : ""}`)
+    .map(({ label, description }) =>
+      description ? `  ${label.padEnd(labelWidth)}  ${description}` : `  ${label}`,
+    )
     .join("\n");
 }
 

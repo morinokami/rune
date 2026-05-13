@@ -29,9 +29,9 @@ describe("renderDefaultHelp", () => {
     const help = renderDefaultHelp(data);
 
     expect(help).toContain("Usage: mycli <command>");
-    expect(help).toContain("hello  Say hello");
+    expect(help).toContain("hello       Say hello");
     expect(help).toContain("deploy (d)  Deploy the app");
-    expect(help).toContain("-h, --help  Show help");
+    expect(help).toContain("-h, --help     Show help");
     expect(help).toContain("-V, --version  Show the version number");
   });
 
@@ -86,8 +86,8 @@ describe("renderDefaultHelp", () => {
     expect(help).toContain(
       '--name <string>  Project name (default: "my-project", env: PROJECT_NAME)',
     );
-    expect(help).toContain("-f, --force  Force overwrite");
-    expect(help).toContain("-h, --help  Show help");
+    expect(help).toContain("-f, --force      Force overwrite");
+    expect(help).toContain("-h, --help       Show help");
     expect(help).toContain("  $ mycli create my-app");
   });
 
@@ -169,7 +169,7 @@ describe("renderDefaultHelp", () => {
 
     expect(help).toContain("Usage: mycli run [options] <target>");
     expect(help).toContain("  target  Build target");
-    expect(help).toContain("  --mode  Build mode");
+    expect(help).toContain("  --mode      Build mode");
   });
 
   test("renders env suffix even when option description is omitted", () => {
@@ -238,7 +238,7 @@ describe("renderDefaultHelp", () => {
     const help = renderDefaultHelp(data);
 
     expect(help).toContain("  target <web|node>  Build target");
-    expect(help).toContain('  --mode <dev|prod>  Build mode (default: "dev")');
+    expect(help).toContain('  --mode <dev|prod>     Build mode (default: "dev")');
     expect(help).toContain("  --level <low|1|high>  Level");
   });
 
@@ -355,7 +355,7 @@ describe("renderDefaultHelp", () => {
 
     expect(help).toContain("--color, --no-color  Colorize output");
     expect(help).not.toContain("--no-force");
-    expect(help).toContain("-f, --force  Force deploy");
+    expect(help).toContain("-f, --force          Force deploy");
   });
 
   test("renders default for number options", () => {

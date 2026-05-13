@@ -131,7 +131,7 @@ describe("group help", () => {
     expect(descriptionIndex).toBeGreaterThanOrEqual(0);
     expect(usageIndex).toBeGreaterThan(descriptionIndex);
     expect(help).toContain("create  Create a project");
-    expect(help).toContain("list  List projects");
+    expect(help).toContain("list    List projects");
   });
 
   test("group help omits description section when not present", () => {
@@ -182,7 +182,7 @@ describe("group help", () => {
       cliName: "mycli",
     });
 
-    expect(help).toContain("deploy (d)  Deploy the app");
+    expect(help).toContain("deploy (d)   Deploy the app");
     expect(help).toContain("project (p)  Manage projects");
   });
 
