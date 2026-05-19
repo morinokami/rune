@@ -19,7 +19,7 @@ catalog:
   knip: 6.11.0
   oxc-parser: 0.129.0
   pkg-pr-new: 0.0.70
-  publint: 0.3.18
+  publint: 0.3.21
   rolldown: 1.0.1
   sharp: 0.34.5
   sherif: 1.11.1
